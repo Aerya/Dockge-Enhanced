@@ -7,6 +7,8 @@ Historique complet du projet, du plus récent au plus ancien. Chaque date corres
 
 Le [README](README.fr.md) présente les principales nouveautés récentes et le catalogue des fonctionnalités.
 
+**2026-11-08 — Mode hub uniquement** — DOCKGE_HUB_ONLY=1 transforme cette instance en interface centrale pour les serveurs liés, sans actions Docker, surveillance, planifications ni auto-mise à jour locales. Désactivé par défaut ; redémarrage nécessaire. Pour un nouveau hub, conservez un volume de données dédié et ne montez ni socket Docker ni dossiers de stacks de l’hôte. Utilisez une instance séparée : ne basculez pas pendant une opération. Les fichiers locaux existants restent intacts mais masqués ; désactiver ce mode rétablit le fonctionnement normal.
+
 **2026-11-08 — Onglets de logs par conteneur** — Le panneau Logs propose Tous et un onglet par conteneur réel, y compris les réplicas des instances liées. Chaque onglet conserve recherche, pause et position tant que cette page reste ouverte (20 vues mémorisées au maximum). Les onglets individuels actualisent les 200 dernières lignes toutes les 10 secondes ; Tous conserve le flux en direct et les filtres par service existants.
 
 **2026-11-08 — Créer des stacks par API** — POST /api/v1/stacks enregistre un nouveau Compose, un override et un .env facultatifs, sans déployer. La permission distincte stack:create exige l’accès à toutes les stacks et une confirmation du risque : fournir un Compose arbitraire est un privilège d’administration, pas une isolation entre clients. Aucune stack existante n’est écrasée ; le déploiement reste autorisé séparément.

@@ -71,11 +71,11 @@
             <div v-if="stack.isManagedByDockge" class="mb-3 compose-tight">
                 <div class="stack-action-toolbar" :class="{ 'stack-action-toolbar--labeled': stackActionLabels }" role="toolbar" :aria-label="$t('stackActions')">
                     <div class="stack-action-group stack-action-group--operations">
-                        <button v-if="isEditMode" class="btn btn-primary stack-action" :title="$t('stackActionHelp.deploy')" :aria-label="$t('deployStack')" :disabled="processing" @click="deployStack">
+                        <button v-if="isEditMode" class="btn btn-primary stack-action" :title="$t('stackActionHelp.deploy')" :aria-label="$t('deployStack')" :disabled="processing || ($root.info.hubOnly && !endpoint)" @click="deployStack">
                             <font-awesome-icon icon="rocket" />
                             <span class="stack-action-label">{{ $t("deployStack") }}</span>
                         </button>
-                        <button v-if="isEditMode" class="btn btn-normal stack-action" :title="$t('saveStackDraft')" :aria-label="$t('saveStackDraft')" :disabled="processing" @click="saveStack">
+                        <button v-if="isEditMode" class="btn btn-normal stack-action" :title="$t('saveStackDraft')" :aria-label="$t('saveStackDraft')" :disabled="processing || ($root.info.hubOnly && !endpoint)" @click="saveStack">
                             <font-awesome-icon icon="save" />
                             <span class="stack-action-label">{{ $t("saveStackDraft") }}</span>
                         </button>
@@ -388,6 +388,7 @@
                             <div class="mt-3">
                                 <label for="name" class="form-label">{{ $t("dockgeAgent") }}</label>
                                 <select v-model="stack.endpoint" class="form-select">
+                                    <option v-if="$root.info.hubOnly" disabled value="">{{ $t("hubOnly.chooseAgent") }}</option>
                                     <option v-for="(agent, endpoint) in $root.agentList" :key="endpoint" :value="endpoint" :disabled="$root.agentStatusList[endpoint] != 'online'">
                                         {{ agentOptionLabel(endpoint) }}
                                     </option>

@@ -1,4 +1,8 @@
 {
+    "hubOnly.banner": "Hub only — select a linked instance for Docker operations.",
+    "hubOnly.help": "DOCKGE_HUB_ONLY=1 makes this instance a central interface for linked servers, without local Docker actions, monitoring, schedules or self-updates. Disabled by default; restart required. For a new hub, keep a dedicated data volume and omit the Docker socket and host stacks mounts. Use a separate instance: do not switch during an operation. Existing local files remain untouched but hidden; disabling this mode restores normal operation.",
+    "hubOnly.chooseAgent": "Choose a linked instance",
+    "releaseNews.item.hubOnly": "DOCKGE_HUB_ONLY=1 makes this instance a central interface for linked servers, without local Docker actions, monitoring, schedules or self-updates. Disabled by default; restart required. For a new hub, keep a dedicated data volume and omit the Docker socket and host stacks mounts. Use a separate instance: do not switch during an operation. Existing local files remain untouched but hidden; disabling this mode restores normal operation.",
     "logTabs.heading": "Container logs",
     "logTabs.resume": "Resume refresh",
     "logTabs.pause": "Pause refresh",

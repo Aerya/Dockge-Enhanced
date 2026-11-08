@@ -64,6 +64,8 @@ Die wichtigsten kürzlichen Änderungen sind hier gruppiert, damit Sie schnell s
 
 ### 🆕 November 2026
 
+**Reiner Hub-Modus :** DOCKGE_HUB_ONLY=1 macht diese Instanz zur zentralen Oberfläche für verbundene Server, ohne lokale Docker-Aktionen, Überwachung, Zeitpläne oder Selbstaktualisierungen. Standardmäßig deaktiviert; Neustart erforderlich. Verwenden Sie für einen neuen Hub ein eigenes Datenvolume ohne Docker-Socket und Stack-Verzeichnisse des Hosts. Nutzen Sie eine separate Instanz und wechseln Sie nicht während eines Vorgangs. Vorhandene lokale Dateien bleiben unverändert, werden aber ausgeblendet; nach Deaktivierung läuft die Instanz wieder normal.
+
 **Protokoll-Tabs pro Container :** Das Protokollfeld bietet Alle und einen Tab pro tatsächlichem Container, einschließlich Replikas verknüpfter Instanzen. Jeder Tab behält Suche, Pause und Bildlaufposition solange diese Seite geöffnet bleibt (höchstens 20 gespeicherte Ansichten). Einzelne Tabs aktualisieren alle 10 Sekunden die letzten 200 Zeilen; Alle behält den bestehenden Live-Stream und die Dienstfilter.
 
 **Stacks per API erstellen :** POST /api/v1/stacks speichert eine neue Compose-Datei sowie optional Override und .env, ohne Bereitstellung. Die separate Berechtigung stack:create erfordert Zugriff auf alle Stacks und eine ausdrückliche Risikobestätigung: beliebige Compose-Dateien sind ein Administratorrecht, keine Mandantentrennung. Bestehende Stacks werden nicht überschrieben; die Bereitstellung benötigt eine separate Berechtigung. [API](docs/AUTOMATION.de.md).
@@ -526,6 +528,8 @@ Die Stack-Navigation, der Logs/Compose-Arbeitsbereich, Ressourcenindikatoren, St
 <summary>Alle Funktionen anzeigen</summary>
 
 ### Multi-Server & Föderation
+
+- **Reiner Hub-Modus** — `DOCKGE_HUB_ONLY=1`
 - Full-Mesh-Föderation zwischen Dockge-Enhanced-Instanzen, verwaltbar über jede verknüpfte WebUI
 - Optionale Rückwärtsverbindungen für Hosts hinter NAT/CGNAT, mit einem Token pro Knoten, automatischer Anbindung und Widerruf; Rückwärts-Agents gehören zu ihrem Hub ([Anleitung](docs/compose-and-reverse-agents.md))
 - Persistente Agent-Tags und Tag-Filter, kombinierbar mit dem Instanzfilter
@@ -997,6 +1001,7 @@ Um einen Dienst zu veröffentlichen, bearbeiten Sie dessen Stack und verwenden S
 | `DOCKGE_STACKS_DIR` | `/opt/stacks` | Verzeichnis mit Docker-Compose-Stacks |
 | `COMPOSE_FILENAME` | `compose.yaml` | COMPOSE_FILENAME wählt compose.yaml (Standard), compose.yml, docker-compose.yaml oder docker-compose.yml nur für neue Stacks. Bestehende und übernommene Stacks behalten ihre Dateinamen. Andere Namen und Pfade werden abgelehnt. |
 | `DOCKGE_DATA_DIR` | `/app/data` | Dockge-Datenverzeichnis; nur für einen benutzerdefinierten persistenten Einhängepunkt überschreiben |
+| `DOCKGE_HUB_ONLY` | `0` | Reiner Hub — wählen Sie eine verbundene Instanz für Docker-Aktionen. (`1`) |
 | `DOCKGE_DOCKER_RECOVERY_RETRIES` | `0` | Aufeinanderfolgende Fehler vor dem Beenden (0 deaktiviert; höchstens 100) |
 | `DOCKGE_DOCKER_RECOVERY_INTERVAL_SECONDS` | `30` | Sekunden zwischen abgeschlossenen Prüfungen (5–3600; Zeitlimit je Prüfung 5 Sekunden) |
 | `DOCKGE_PUBLIC_URL` | *(keine)* | Öffentliche URL, die in Discord-Benachrichtigungslinks verwendet wird (z. B. `https://dockge.example.com`) |

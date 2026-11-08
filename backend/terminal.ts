@@ -1,4 +1,5 @@
 import { DockgeServer } from "./dockge-server";
+import { requireLocalRuntime } from "./hub-mode";
 import * as os from "node:os";
 import * as pty from "@homebridge/node-pty-prebuilt-multiarch";
 import { LimitQueue } from "./utils/limit-queue";
@@ -86,6 +87,7 @@ export class Terminal {
     }
 
     public start() {
+        requireLocalRuntime();
         if (this._ptyProcess) {
             return;
         }

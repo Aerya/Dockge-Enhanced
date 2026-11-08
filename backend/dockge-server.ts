@@ -1,4 +1,5 @@
 import { installReverseHub, startReverseNode, stopReverseNode } from "./reverse-agent";
+import { hubOnly } from "./hub-mode";
 import { isSocketOriginAllowed } from "./socket-origin";
 import { accessFromUser, installUserAccessGuard } from "./user-access";
 import "dotenv/config";
@@ -317,6 +318,19 @@ export class DockgeServer {
         }
 
         // Binding Routers
+        if (hubOnly()) {
+            if (process.env.DOCKGE_REVERSE_HUB_URL) {
+                throw new Error("Hub-only mode cannot also be a reverse agent");
+            }
+            this.app.use("/api", (req, res, next) => {
+                if (req.path.startsWith("/auth/oidc/") || req.path === "/auth/oidc") {
+                    next();
+                    return;
+                }
+                res.status(403).json({ ok: false,
+                    msg: "Hub-only mode: local API unavailable; use a linked instance" });
+            });
+        }
         for (const router of this.routerList) {
             this.app.use(router.create(this.app, this));
         }
@@ -613,9 +627,11 @@ export class DockgeServer {
         }
 
         // Load durable reservations before accepting mutations or auto-healing.
-        const rolloutRecovery = getRolloutRecovery(path.join(this.config.dataDir, "rolling-updates"), rolloutTransport([], process.cwd()).docker);
-        await rolloutRecovery.load();
-        rolloutRecovery.start();
+        if (!hubOnly()) {
+            const rolloutRecovery = getRolloutRecovery(path.join(this.config.dataDir, "rolling-updates"), rolloutTransport([], process.cwd()).docker);
+            await rolloutRecovery.load();
+            rolloutRecovery.start();
+        }
 
         // Listen
         this.httpServer.listen(this.config.port, this.config.hostname, () => {
@@ -648,6 +664,11 @@ export class DockgeServer {
             checkVersion.startInterval();
 
             startAnonymousInstallCount(this.config.dataDir);
+
+            if (hubOnly()) {
+                log.info("server", "Hub-only mode: local watchers, schedules, cleanup and self-update disabled");
+                return;
+            }
 
             this.dockerRecovery = new DockerSocketRecovery(
                 dockerRecoveryConfig(process.env), probeDockerConnection,
@@ -720,6 +741,7 @@ export class DockgeServer {
         const oidcConfig = await activeOidcConfig();
 
         socket.emit("info", {
+            hubOnly: hubOnly(),
             version: versionProperty,
             latestVersion: latestVersionProperty,
             isContainer,

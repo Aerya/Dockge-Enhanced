@@ -7,6 +7,8 @@ Historial completo del proyecto, de lo más reciente a lo más antiguo. Cada fec
 
 El [README](README.es-ES.md) presenta las principales novedades recientes y el catálogo de funcionalidades.
 
+**2026-11-08 — Modo solo hub** — DOCKGE_HUB_ONLY=1 convierte esta instancia en una interfaz central para servidores vinculados, sin acciones Docker, supervisión, programaciones ni autoactualizaciones locales. Desactivado por defecto; requiere reinicio. Para un nuevo hub, use un volumen de datos propio sin montar el socket Docker ni directorios de stacks del host. Use una instancia separada y no cambie durante una operación. Los archivos locales existentes quedan intactos pero ocultos; desactivar el modo restaura el funcionamiento normal.
+
 **2026-11-08 — Pestañas de registros por contenedor** — El panel de registros ofrece Todos y una pestaña por contenedor real, incluidas las réplicas de instancias vinculadas. Cada pestaña conserva búsqueda, pausa y posición mientras esta página permanezca abierta (hasta 20 vistas guardadas). Las pestañas individuales actualizan las últimas 200 líneas cada 10 segundos; Todos conserva el flujo en directo y los filtros por servicio existentes.
 
 **2026-11-08 — Crear stacks mediante la API** — POST /api/v1/stacks guarda un Compose nuevo, un override y un .env opcionales, sin desplegar. El permiso separado stack:create requiere acceso a todos los stacks y confirmación del riesgo: proporcionar un Compose arbitrario es un privilegio de administrador, no aislamiento entre clientes. No se sobrescriben stacks existentes; el despliegue requiere autorización independiente.

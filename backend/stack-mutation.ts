@@ -1,4 +1,5 @@
 import { AsyncLocalStorage } from "node:async_hooks";
+import { requireLocalRuntime } from "./hub-mode";
 
 const owners = new Map<string, symbol>();
 const context = new AsyncLocalStorage<ReadonlyMap<string, symbol>>();
@@ -64,6 +65,7 @@ export function stackMutation<This extends { operationProject: string }, Args ex
     _context: ClassMethodDecoratorContext<This, (this: This, ...args: Args) => Promise<Result>>,
 ): (this: This, ...args: Args) => Promise<Result> {
     return function (...args: Args): Promise<Result> {
+        requireLocalRuntime();
         return withStackMutation(this.operationProject, () => method.apply(this, args));
     };
 }

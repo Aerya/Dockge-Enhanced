@@ -64,6 +64,8 @@ Los cambios recientes más importantes se agrupan aquí para entender rápidamen
 
 ### 🆕 Noviembre de 2026
 
+**Modo solo hub :** DOCKGE_HUB_ONLY=1 convierte esta instancia en una interfaz central para servidores vinculados, sin acciones Docker, supervisión, programaciones ni autoactualizaciones locales. Desactivado por defecto; requiere reinicio. Para un nuevo hub, use un volumen de datos propio sin montar el socket Docker ni directorios de stacks del host. Use una instancia separada y no cambie durante una operación. Los archivos locales existentes quedan intactos pero ocultos; desactivar el modo restaura el funcionamiento normal.
+
 **Pestañas de registros por contenedor :** El panel de registros ofrece Todos y una pestaña por contenedor real, incluidas las réplicas de instancias vinculadas. Cada pestaña conserva búsqueda, pausa y posición mientras esta página permanezca abierta (hasta 20 vistas guardadas). Las pestañas individuales actualizan las últimas 200 líneas cada 10 segundos; Todos conserva el flujo en directo y los filtros por servicio existentes.
 
 **Crear stacks mediante la API :** POST /api/v1/stacks guarda un Compose nuevo, un override y un .env opcionales, sin desplegar. El permiso separado stack:create requiere acceso a todos los stacks y confirmación del riesgo: proporcionar un Compose arbitrario es un privilegio de administrador, no aislamiento entre clientes. No se sobrescriben stacks existentes; el despliegue requiere autorización independiente. [API](docs/AUTOMATION.es.md).
@@ -528,6 +530,8 @@ La navegación, Logs/Compose, indicadores de recursos, tarjetas de salud, temas 
 <summary>Mostrar todas las funcionalidades</summary>
 
 ### Multiservidor y federación
+
+- **Modo solo hub** — `DOCKGE_HUB_ONLY=1`
 - Federación en malla completa entre instancias Dockge-Enhanced, administrables desde cualquier WebUI vinculada
 - Conexiones inversas opcionales para hosts detrás de NAT/CGNAT, con un token por nodo, conexión automática y revocación; los agentes inversos pertenecen a su servidor central ([guía](docs/compose-and-reverse-agents.md))
 - Etiquetas de agente persistentes y filtrado por etiqueta, combinados con el filtro por instancia
@@ -999,6 +1003,7 @@ Para publicar un servicio, edita su stack y usa **Publicación PlugNPiN (opciona
 | `DOCKGE_STACKS_DIR` | `/opt/stacks` | Directorio que contiene los stacks Docker Compose |
 | `COMPOSE_FILENAME` | `compose.yaml` | COMPOSE_FILENAME permite elegir compose.yaml (predeterminado), compose.yml, docker-compose.yaml o docker-compose.yml solo para stacks nuevos. Los stacks existentes y adoptados conservan sus archivos. Se rechazan otros nombres y rutas. |
 | `DOCKGE_DATA_DIR` | `/app/data` | Directorio de datos de Dockge; cámbialo solo para un montaje persistente personalizado |
+| `DOCKGE_HUB_ONLY` | `0` | Solo hub — seleccione una instancia vinculada para las acciones Docker. (`1`) |
 | `DOCKGE_DOCKER_RECOVERY_RETRIES` | `0` | Fallos consecutivos antes de salir (0 desactiva; máximo 100) |
 | `DOCKGE_DOCKER_RECOVERY_INTERVAL_SECONDS` | `30` | Segundos entre comprobaciones terminadas (5–3600; cada comprobación expira en 5 segundos) |
 | `DOCKGE_PUBLIC_URL` | *(ninguna)* | URL pública usada en enlaces de notificaciones Discord (por ejemplo `https://dockge.example.com`) |

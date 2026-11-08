@@ -1,4 +1,8 @@
 {
+    "hubOnly.banner": "Solo hub — seleccione una instancia vinculada para las acciones Docker.",
+    "hubOnly.help": "DOCKGE_HUB_ONLY=1 convierte esta instancia en una interfaz central para servidores vinculados, sin acciones Docker, supervisión, programaciones ni autoactualizaciones locales. Desactivado por defecto; requiere reinicio. Para un nuevo hub, use un volumen de datos propio sin montar el socket Docker ni directorios de stacks del host. Use una instancia separada y no cambie durante una operación. Los archivos locales existentes quedan intactos pero ocultos; desactivar el modo restaura el funcionamiento normal.",
+    "hubOnly.chooseAgent": "Elegir una instancia vinculada",
+    "releaseNews.item.hubOnly": "DOCKGE_HUB_ONLY=1 convierte esta instancia en una interfaz central para servidores vinculados, sin acciones Docker, supervisión, programaciones ni autoactualizaciones locales. Desactivado por defecto; requiere reinicio. Para un nuevo hub, use un volumen de datos propio sin montar el socket Docker ni directorios de stacks del host. Use una instancia separada y no cambie durante una operación. Los archivos locales existentes quedan intactos pero ocultos; desactivar el modo restaura el funcionamiento normal.",
     "logTabs.heading": "Registros de contenedores",
     "logTabs.resume": "Reanudar actualización",
     "logTabs.pause": "Pausar actualización",
