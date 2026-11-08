@@ -66,6 +66,8 @@ The most important recent changes are grouped here so you can quickly see what h
 
 **Container log tabs :** The Logs panel offers All and one tab per actual container, including replicas on linked instances. Each tab keeps its search, pause and scroll position while this page stays open (up to 20 cached views). Individual tabs refresh the latest 200 lines every 10 seconds; All retains the existing live stream and service filters.
 
+**Create stacks through the API :** POST /api/v1/stacks saves a new Compose, optional override and .env without deploying. A separate stack:create permission requires all-stack access and explicit risk acknowledgement: arbitrary Compose is an administrator privilege, not tenant isolation. Existing stacks are never overwritten; deployment remains separately authorized. [API](docs/AUTOMATION.md).
+
 **Automatic application catalogs :** All repositories are enabled by default and load progressively when Applications opens. Disable individual repositories from Manage repositories. Search categories in a height-limited scrolling list, separately from application search. Choices are stored per account on this instance.
 
 **Read-only container explorer :** Administrators can browse, preview and download files from a running service container or replica, including linked instances running this version. Access uses the container’s configured user without extra privileges; ownership is checked on every request. Files outside mounted volumes disappear when recreated and may contain secrets. Limits: 500 entries, 1 MiB per file; sh, timeout, readlink, stat and dd required. For stopped containers or minimal images, use the existing volume explorer. No writes or deletions.
@@ -675,7 +677,7 @@ Stack navigation, the Logs/Compose workspace, resource indicators, health cards,
 
 ### Automation & audit
 - [Configurable command buffers](docs/command-buffers.md)
-- Permission- and stack-scoped REST API tokens
+- Permission- and stack-scoped REST API tokens; explicit administrator-level permission to create new stacks without deploying
 - Per-stack webhooks
 - Optional Home Assistant custom integration and examples
 - Centralized audit history with origin, status and duration

@@ -9,6 +9,8 @@ The [README](README.md) presents the main recent updates and the feature catalog
 
 **2026-11-08 — Container log tabs** — The Logs panel offers All and one tab per actual container, including replicas on linked instances. Each tab keeps its search, pause and scroll position while this page stays open (up to 20 cached views). Individual tabs refresh the latest 200 lines every 10 seconds; All retains the existing live stream and service filters.
 
+**2026-11-08 — Create stacks through the API** — POST /api/v1/stacks saves a new Compose, optional override and .env without deploying. A separate stack:create permission requires all-stack access and explicit risk acknowledgement: arbitrary Compose is an administrator privilege, not tenant isolation. Existing stacks are never overwritten; deployment remains separately authorized.
+
 **2026-11-07 — Automatic application catalogs** — All repositories are enabled by default and load progressively when Applications opens. Disable individual repositories from Manage repositories. Search categories in a height-limited scrolling list, separately from application search. Choices are stored per account on this instance.
 
 **2026-11-07 — Customizable top navigation** — Settings → Appearance lets you show or hide navigation links on desktop and mobile. Home and Enhanced remain visible; access to account settings is retained. Choices are stored per account on this instance across browsers. Existing Console preferences are preserved; permissions and direct access are unchanged.

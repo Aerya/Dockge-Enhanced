@@ -94,6 +94,10 @@ jobs:
         if: steps.docs.outputs.docs_only != 'true'
         run: npx tsx --test backend/terminal-env.test.ts backend/container-shell.test.ts frontend/src/terminal-focus.test.ts frontend/src/console-navigation.test.ts
 
+      - name: Tests de création de stacks par API
+        if: steps.docs.outputs.docs_only != 'true'
+        run: npx tsx --test backend/automation-create.test.ts
+
       - name: Tests des fichiers des conteneurs
         if: steps.docs.outputs.docs_only != 'true'
         run: npx tsx --test backend/container-files.test.ts backend/container-instances.test.ts frontend/src/container-log-tabs.test.js

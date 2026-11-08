@@ -201,6 +201,26 @@ export class AutomationRouter extends Router {
             }
         });
 
+        api.post("/stacks", async (req: AutomationRequest, res) => {
+            try {
+                const identity = req.automationIdentity!;
+                const data = await manager.createStack(server, identity, req.body);
+                await AuditLogger.getInstance().logFromRequest(req, {
+                    action: "automation.stack.create",
+                    category: "automation",
+                    targetType: "stack",
+                    target: data.name,
+                    username: `api:${identity.name}`,
+                    metadata: { tokenPrefix: identity.prefix,
+                        deployed: false },
+                });
+                res.status(201).json({ ok: true,
+                    data });
+            } catch (error) {
+                errorResponse(res, error);
+            }
+        });
+
         api.get("/stacks", async (req: AutomationRequest, res) => {
             try {
                 const identity = req.automationIdentity!;
