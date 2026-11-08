@@ -64,6 +64,8 @@ The most important recent changes are grouped here so you can quickly see what h
 
 ### 🆕 November 2026
 
+**Container log tabs :** The Logs panel offers All and one tab per actual container, including replicas on linked instances. Each tab keeps its search, pause and scroll position while this page stays open (up to 20 cached views). Individual tabs refresh the latest 200 lines every 10 seconds; All retains the existing live stream and service filters.
+
 **Automatic application catalogs :** All repositories are enabled by default and load progressively when Applications opens. Disable individual repositories from Manage repositories. Search categories in a height-limited scrolling list, separately from application search. Choices are stored per account on this instance.
 
 **Read-only container explorer :** Administrators can browse, preview and download files from a running service container or replica, including linked instances running this version. Access uses the container’s configured user without extra privileges; ownership is checked on every request. Files outside mounted volumes disappear when recreated and may contain secrets. Limits: 500 entries, 1 MiB per file; sh, timeout, readlink, stat and dd required. For stopped containers or minimal images, use the existing volume explorer. No writes or deletions.
@@ -650,7 +652,7 @@ Stack navigation, the Logs/Compose workspace, resource indicators, health cards,
 - Host system details, temperatures and monitored disk partitions
 - Optional 5-minute CPU/RAM history for the host and per Compose service, with visible gaps
 - Dashboard health cards, crash-loop detection and healthcheck auto-heal
-- Responsive live and fullscreen logs with service filter, search, time ranges, **since last restart**, copy of the latest 50 / 100 / 150 or all loaded lines, autoscroll pause, long-line handling and optional default timestamps
+- Responsive live and fullscreen logs with service filter, search, time ranges, **since last restart**, copy of the latest 50 / 100 / 150 or all loaded lines, autoscroll pause, long-line handling and optional default timestamps; individual container tabs with independent search and pause
 - Low-power mode for NAS and small hosts
 - Optional Kula, Dozzle, PowerWatch and PowerWatch Hub integrations, with current PowerWatch power shown across linked instances
 

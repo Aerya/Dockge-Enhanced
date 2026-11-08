@@ -7,6 +7,8 @@ Historial completo del proyecto, de lo más reciente a lo más antiguo. Cada fec
 
 El [README](README.es-ES.md) presenta las principales novedades recientes y el catálogo de funcionalidades.
 
+**2026-11-08 — Pestañas de registros por contenedor** — El panel de registros ofrece Todos y una pestaña por contenedor real, incluidas las réplicas de instancias vinculadas. Cada pestaña conserva búsqueda, pausa y posición mientras esta página permanezca abierta (hasta 20 vistas guardadas). Las pestañas individuales actualizan las últimas 200 líneas cada 10 segundos; Todos conserva el flujo en directo y los filtros por servicio existentes.
+
 **2026-11-07 — Catálogos cargados automáticamente** — Todos los repositorios están activados por defecto y se cargan progresivamente al abrir Aplicaciones. Desactive los que desee en Gestionar repositorios. Las categorías tienen búsqueda propia y una lista de altura limitada con desplazamiento, separada de la búsqueda de aplicaciones. Preferencias guardadas por cuenta en esta instancia.
 
 **2026-11-07 — Menú superior personalizable** — Ajustes → Apariencia permite mostrar u ocultar enlaces de navegación en escritorio y móvil. Inicio y Enhanced siguen visibles; se mantiene el acceso a los ajustes de la cuenta. Preferencias guardadas por cuenta en esta instancia entre navegadores. Se conserva la elección anterior de Consola; permisos y acceso directo no cambian.

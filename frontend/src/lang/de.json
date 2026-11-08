@@ -1,4 +1,11 @@
 {
+    "logTabs.heading": "Container-Protokolle",
+    "logTabs.resume": "Aktualisierung fortsetzen",
+    "logTabs.pause": "Aktualisierung pausieren",
+    "logTabs.timeout": "Zeitüberschreitung beim Laden. Erneut versuchen.",
+    "logTabs.unavailable": "Protokolle nicht verfügbar oder Zugriff verweigert.",
+    "logTabs.retention": "Suche, Pause und Position bleiben pro Tab auf dieser Seite erhalten.",
+    "releaseNews.item.containerLogTabs": "Protokoll-Tabs pro Container : Das Protokollfeld bietet Alle und einen Tab pro tatsächlichem Container, einschließlich Replikas verknüpfter Instanzen. Jeder Tab behält Suche, Pause und Bildlaufposition solange diese Seite geöffnet bleibt (höchstens 20 gespeicherte Ansichten). Einzelne Tabs aktualisieren alle 10 Sekunden die letzten 200 Zeilen; Alle behält den bestehenden Live-Stream und die Dienstfilter.",
     "releaseNews.item.catalogAutoLoad": "Alle Quellen sind standardmäßig aktiviert und werden beim Öffnen von Anwendungen schrittweise geladen. Deaktivieren Sie einzelne Quellen unter Quellen verwalten. Kategorien haben eine eigene Suche und eine höhenbegrenzte Liste mit Bildlauf, getrennt von der Anwendungssuche. Die Auswahl wird pro Konto auf dieser Instanz gespeichert.",
     "releaseNews.item.navigationPreferences": "Einstellungen → Darstellung ermöglicht das Ein- und Ausblenden von Navigationslinks auf Desktop und Mobilgeräten. Startseite und Enhanced bleiben sichtbar; der Zugang zu den Kontoeinstellungen bleibt erhalten. Die Auswahl wird pro Konto auf dieser Instanz browserübergreifend gespeichert. Die bisherige Konsoleneinstellung bleibt erhalten; Berechtigungen und direkte Zugriffe ändern sich nicht.",
     "uiPreferences.navigation": "Obere Navigation",

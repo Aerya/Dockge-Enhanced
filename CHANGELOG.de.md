@@ -7,6 +7,8 @@ Vollständige Projekthistorie, neueste Einträge zuerst. Jedes Datum ist der Tag
 
 Die [README](README.de.md) stellt die wichtigsten aktuellen Neuerungen und den Funktionskatalog vor.
 
+**2026-11-08 — Protokoll-Tabs pro Container** — Das Protokollfeld bietet Alle und einen Tab pro tatsächlichem Container, einschließlich Replikas verknüpfter Instanzen. Jeder Tab behält Suche, Pause und Bildlaufposition solange diese Seite geöffnet bleibt (höchstens 20 gespeicherte Ansichten). Einzelne Tabs aktualisieren alle 10 Sekunden die letzten 200 Zeilen; Alle behält den bestehenden Live-Stream und die Dienstfilter.
+
 **2026-11-07 — Automatisch geladene Anwendungskataloge** — Alle Quellen sind standardmäßig aktiviert und werden beim Öffnen von Anwendungen schrittweise geladen. Deaktivieren Sie einzelne Quellen unter Quellen verwalten. Kategorien haben eine eigene Suche und eine höhenbegrenzte Liste mit Bildlauf, getrennt von der Anwendungssuche. Die Auswahl wird pro Konto auf dieser Instanz gespeichert.
 
 **2026-11-07 — Anpassbare obere Navigation** — Einstellungen → Darstellung ermöglicht das Ein- und Ausblenden von Navigationslinks auf Desktop und Mobilgeräten. Startseite und Enhanced bleiben sichtbar; der Zugang zu den Kontoeinstellungen bleibt erhalten. Die Auswahl wird pro Konto auf dieser Instanz browserübergreifend gespeichert. Die bisherige Konsoleneinstellung bleibt erhalten; Berechtigungen und direkte Zugriffe ändern sich nicht.

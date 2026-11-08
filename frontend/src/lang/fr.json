@@ -1,4 +1,11 @@
 {
+    "logTabs.heading": "Logs des conteneurs",
+    "logTabs.resume": "Reprendre l’actualisation",
+    "logTabs.pause": "Suspendre l’actualisation",
+    "logTabs.timeout": "Délai de lecture des logs dépassé. Réessayez.",
+    "logTabs.unavailable": "Logs indisponibles ou accès refusé.",
+    "logTabs.retention": "Recherche, pause et position conservées par onglet sur cette page.",
+    "releaseNews.item.containerLogTabs": "Onglets de logs par conteneur : Le panneau Logs propose Tous et un onglet par conteneur réel, y compris les réplicas des instances liées. Chaque onglet conserve recherche, pause et position tant que cette page reste ouverte (20 vues mémorisées au maximum). Les onglets individuels actualisent les 200 dernières lignes toutes les 10 secondes ; Tous conserve le flux en direct et les filtres par service existants.",
     "releaseNews.item.catalogAutoLoad": "Tous les dépôts sont activés par défaut et chargés progressivement à l’ouverture d’Applications. Désactivez ceux de votre choix dans Gérer les dépôts. Les catégories disposent d’une recherche dédiée et d’une liste à hauteur limitée avec défilement, distincte de la recherche d’applications. Choix enregistrés par compte sur cette instance.",
     "releaseNews.item.navigationPreferences": "Paramètres → Apparence permet d’afficher ou masquer les liens de navigation sur ordinateur et mobile. Accueil et Enhanced restent visibles ; l’accès aux paramètres du compte est conservé. Choix enregistrés par compte sur cette instance, entre navigateurs. L’ancien choix pour Console est préservé ; permissions et accès directs inchangés.",
     "uiPreferences.navigation": "Menu supérieur",
