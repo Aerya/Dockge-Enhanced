@@ -7,6 +7,8 @@ Complete project history, newest first. Each date is the day the change was merg
 
 The [README](README.md) presents the main recent updates and the feature catalogue.
 
+**2026-11-08 — Agent without WebUI** — Optional DOCKGE_AGENT_ONLY=1 disables the local WebUI; the dedicated dockge-enhanced-agent image omits frontend assets. The authenticated HTTP/Socket.IO transport and backend remain necessary: this is not a promise of reduced RAM. Use local authentication and initialize a new agent with DOCKGE_BOOTSTRAP_USERNAME and DOCKGE_BOOTSTRAP_PASSWORD_FILE, then add its address from the central instance or configure the existing reverse connection. Never expose it without trusted-network/firewall or TLS protection. Update the agent through its hosting Compose, not internal self-update; stacks and schedules keep their existing behavior.
+
 **2026-11-08 — Hub-only mode** — DOCKGE_HUB_ONLY=1 makes this instance a central interface for linked servers, without local Docker actions, monitoring, schedules or self-updates. Disabled by default; restart required. For a new hub, keep a dedicated data volume and omit the Docker socket and host stacks mounts. Use a separate instance: do not switch during an operation. Existing local files remain untouched but hidden; disabling this mode restores normal operation.
 
 **2026-11-08 — Container log tabs** — The Logs panel offers All and one tab per actual container, including replicas on linked instances. Each tab keeps its search, pause and scroll position while this page stays open (up to 20 cached views). Individual tabs refresh the latest 200 lines every 10 seconds; All retains the existing live stream and service filters.

@@ -1,4 +1,5 @@
 import { installReverseHub, startReverseNode, stopReverseNode } from "./reverse-agent";
+import { agentOnly, requireAgentAuthentication } from "./agent-mode";
 import { hubOnly } from "./hub-mode";
 import { isSocketOriginAllowed } from "./socket-origin";
 import { accessFromUser, installUserAccessGuard } from "./user-access";
@@ -280,7 +281,7 @@ export class DockgeServer {
         this.packageJSON = packageJSON as PackageJson;
 
         try {
-            this.indexHTML = fs.readFileSync("./frontend-dist/index.html").toString();
+            this.indexHTML = agentOnly() ? "" : fs.readFileSync("./frontend-dist/index.html").toString();
         } catch (e) {
             // "dist/index.html" is not necessary for development
             if (process.env.NODE_ENV !== "development") {
@@ -318,6 +319,15 @@ export class DockgeServer {
         }
 
         // Binding Routers
+        if (agentOnly()) {
+            this.app.get("/status", (_request, response) => {
+                response.json({ ok: true });
+            });
+            this.app.get("/", (_request, response) => {
+                response.status(404).json({ ok: false,
+                    msg: "Agent-only instance: use the linked Enhanced interface" });
+            });
+        }
         if (hubOnly()) {
             if (process.env.DOCKGE_REVERSE_HUB_URL) {
                 throw new Error("Hub-only mode cannot also be a reverse agent");
@@ -336,13 +346,20 @@ export class DockgeServer {
         }
 
         // Static files
-        this.app.use("/", expressStaticGzip("frontend-dist", {
-            enableBrotli: true,
-        }));
+        if (!agentOnly()) {
+            this.app.use("/", expressStaticGzip("frontend-dist", {
+                enableBrotli: true,
+            }));
+        }
 
         // Universal Route Handler, must be at the end of all express routes.
         this.app.get("*", async (_request, response) => {
-            response.send(this.indexHTML);
+            if (agentOnly()) {
+                response.status(404).json({ ok: false,
+                    msg: "Agent-only instance: use the linked Enhanced interface" });
+            } else {
+                response.send(this.indexHTML);
+            }
         });
 
         // Allow all CORS origins in development
@@ -619,7 +636,10 @@ export class DockgeServer {
         this.jwtSecret = jwtSecretBean.value;
 
         try {
+            // Refuse disabled/proxy authentication before it could create a bootstrap user.
+            requireAgentAuthentication(await getAuthMode(), false);
             this.needSetup = await initializeAuthentication();
+            requireAgentAuthentication(await getAuthMode(), this.needSetup);
         } catch (error) {
             const message = error instanceof Error ? error.message : String(error);
             log.error("auth", `Invalid authentication configuration: ${message}`);
@@ -699,9 +719,11 @@ export class DockgeServer {
             StackScheduler.getInstance().start(this).catch(e => log.error("server", "StackScheduler start error: " + e));
             StackReplicationManager.getInstance().start(this).catch(e => log.error("server", "StackReplication start error: " + e));
             StartGuardWatcher.getInstance().start(this).catch(e => log.error("server", "StartGuardWatcher start error: " + e));
-            SelfUpdateManager.getInstance().load()
-                .catch(e => log.error("server", "SelfUpdateManager load error: " + e))
-                .finally(() => SelfUpdateChecker.getInstance().start());
+            if (!agentOnly()) {
+                SelfUpdateManager.getInstance().load()
+                    .catch(e => log.error("server", "SelfUpdateManager load error: " + e))
+                    .finally(() => SelfUpdateChecker.getInstance().start());
+            }
         });
 
         gracefulShutdown(this.httpServer, {

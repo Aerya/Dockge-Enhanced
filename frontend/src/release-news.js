@@ -1,5 +1,9 @@
 export const RELEASE_NEWS = [
     {
+        id: "2026-11-08-agent-only",
+        items: [ "releaseNews.item.agentOnly" ],
+    },
+    {
         id: "2026-11-08-hub-only",
         items: [ "releaseNews.item.hubOnly" ],
     },

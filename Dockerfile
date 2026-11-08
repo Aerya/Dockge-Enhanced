@@ -39,7 +39,7 @@ RUN npm run build:frontend
 RUN npm prune --omit=dev
 
 # ─── Stage 2 : image de production ───────────────────────────────
-FROM node:26.13.0-alpine@sha256:c6ad9e9c1d80f6eb607c26b4b0a132ff7a2344fad1c78ea3baa2a7d4c8de6d94
+FROM node:26.13.0-alpine@sha256:c6ad9e9c1d80f6eb607c26b4b0a132ff7a2344fad1c78ea3baa2a7d4c8de6d94 AS runtime
 
 # eMudhra: refresh both the CA sources and the generated bundle.
 RUN apk add --no-cache --upgrade ca-certificates ca-certificates-bundle \
@@ -79,9 +79,6 @@ COPY common/ ./common/
 COPY extra/ ./extra/
 COPY package*.json ./
 
-# Frontend compilé
-COPY --from=builder /app/frontend-dist ./frontend-dist
-
 VOLUME ["/app/data"]
 
 EXPOSE 5001
@@ -91,3 +88,11 @@ HEALTHCHECK --interval=60s --timeout=30s --start-period=180s --retries=5 \
         wget -qO- http://127.0.0.1:5001/status || exit 1
 
 CMD ["./node_modules/.bin/tsx", "./backend/index.ts"]
+
+# Agent: same authenticated backend and native modules, no frontend assets.
+FROM runtime AS agent
+ENV DOCKGE_AGENT_ONLY=1
+
+# Keep the default build and latest image unchanged.
+FROM runtime AS production
+COPY --from=builder /app/frontend-dist ./frontend-dist

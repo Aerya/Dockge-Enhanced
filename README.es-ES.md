@@ -64,6 +64,8 @@ Los cambios recientes más importantes se agrupan aquí para entender rápidamen
 
 ### 🆕 Noviembre de 2026
 
+**Agente sin interfaz web :** DOCKGE_AGENT_ONLY=1 desactiva opcionalmente la WebUI local; la imagen dedicada dockge-enhanced-agent no incluye archivos frontend. El transporte HTTP/Socket.IO autenticado y el backend siguen siendo necesarios: no se promete reducir la RAM. Use autenticación local e inicialice un agente nuevo con DOCKGE_BOOTSTRAP_USERNAME y DOCKGE_BOOTSTRAP_PASSWORD_FILE; añada su dirección desde la instancia central o configure la conexión inversa existente. Proteja el acceso mediante red de confianza/cortafuegos o TLS. Actualice el agente desde su Compose anfitrión, no mediante autoactualización interna; stacks y programaciones conservan su funcionamiento.
+
 **Modo solo hub :** DOCKGE_HUB_ONLY=1 convierte esta instancia en una interfaz central para servidores vinculados, sin acciones Docker, supervisión, programaciones ni autoactualizaciones locales. Desactivado por defecto; requiere reinicio. Para un nuevo hub, use un volumen de datos propio sin montar el socket Docker ni directorios de stacks del host. Use una instancia separada y no cambie durante una operación. Los archivos locales existentes quedan intactos pero ocultos; desactivar el modo restaura el funcionamiento normal.
 
 **Pestañas de registros por contenedor :** El panel de registros ofrece Todos y una pestaña por contenedor real, incluidas las réplicas de instancias vinculadas. Cada pestaña conserva búsqueda, pausa y posición mientras esta página permanezca abierta (hasta 20 vistas guardadas). Las pestañas individuales actualizan las últimas 200 líneas cada 10 segundos; Todos conserva el flujo en directo y los filtros por servicio existentes.
@@ -530,6 +532,8 @@ La navegación, Logs/Compose, indicadores de recursos, tarjetas de salud, temas 
 <summary>Mostrar todas las funcionalidades</summary>
 
 ### Multiservidor y federación
+
+- **Agente sin interfaz web** — `DOCKGE_AGENT_ONLY=1`, `ghcr.io/aerya/dockge-enhanced-agent:latest`.
 
 - **Modo solo hub** — `DOCKGE_HUB_ONLY=1`
 - Federación en malla completa entre instancias Dockge-Enhanced, administrables desde cualquier WebUI vinculada
@@ -1003,6 +1007,7 @@ Para publicar un servicio, edita su stack y usa **Publicación PlugNPiN (opciona
 | `DOCKGE_STACKS_DIR` | `/opt/stacks` | Directorio que contiene los stacks Docker Compose |
 | `COMPOSE_FILENAME` | `compose.yaml` | COMPOSE_FILENAME permite elegir compose.yaml (predeterminado), compose.yml, docker-compose.yaml o docker-compose.yml solo para stacks nuevos. Los stacks existentes y adoptados conservan sus archivos. Se rechazan otros nombres y rutas. |
 | `DOCKGE_DATA_DIR` | `/app/data` | Directorio de datos de Dockge; cámbialo solo para un montaje persistente personalizado |
+| `DOCKGE_AGENT_ONLY` | `0` | Agente sin interfaz web (`1`) |
 | `DOCKGE_HUB_ONLY` | `0` | Solo hub — seleccione una instancia vinculada para las acciones Docker. (`1`) |
 | `DOCKGE_DOCKER_RECOVERY_RETRIES` | `0` | Fallos consecutivos antes de salir (0 desactiva; máximo 100) |
 | `DOCKGE_DOCKER_RECOVERY_INTERVAL_SECONDS` | `30` | Segundos entre comprobaciones terminadas (5–3600; cada comprobación expira en 5 segundos) |

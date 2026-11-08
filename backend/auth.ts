@@ -1,4 +1,5 @@
 import { promises as fs } from "fs";
+import { requireAgentAuthentication } from "./agent-mode";
 import { IncomingMessage } from "http";
 import { BlockList, isIP } from "net";
 import { randomBytes } from "crypto";
@@ -56,10 +57,9 @@ function configuredAuthMode(): AuthMode | null {
 
 export async function getAuthMode(): Promise<AuthMode> {
     const configured = configuredAuthMode();
-    if (configured) {
-        return configured;
-    }
-    return await Settings.get("disableAuth") ? "disabled" : "local";
+    const mode = configured || (await Settings.get("disableAuth") ? "disabled" : "local");
+    requireAgentAuthentication(mode, false);
+    return mode;
 }
 
 function normalizeRemoteAddress(value: string | undefined): {

@@ -64,6 +64,8 @@ The most important recent changes are grouped here so you can quickly see what h
 
 ### 🆕 November 2026
 
+**Agent without WebUI :** Optional DOCKGE_AGENT_ONLY=1 disables the local WebUI; the dedicated dockge-enhanced-agent image omits frontend assets. The authenticated HTTP/Socket.IO transport and backend remain necessary: this is not a promise of reduced RAM. Use local authentication and initialize a new agent with DOCKGE_BOOTSTRAP_USERNAME and DOCKGE_BOOTSTRAP_PASSWORD_FILE, then add its address from the central instance or configure the existing reverse connection. Never expose it without trusted-network/firewall or TLS protection. Update the agent through its hosting Compose, not internal self-update; stacks and schedules keep their existing behavior.
+
 **Hub-only mode :** DOCKGE_HUB_ONLY=1 makes this instance a central interface for linked servers, without local Docker actions, monitoring, schedules or self-updates. Disabled by default; restart required. For a new hub, keep a dedicated data volume and omit the Docker socket and host stacks mounts. Use a separate instance: do not switch during an operation. Existing local files remain untouched but hidden; disabling this mode restores normal operation.
 
 **Container log tabs :** The Logs panel offers All and one tab per actual container, including replicas on linked instances. Each tab keeps its search, pause and scroll position while this page stays open (up to 20 cached views). Individual tabs refresh the latest 200 lines every 10 seconds; All retains the existing live stream and service filters.
@@ -528,6 +530,8 @@ Stack navigation, the Logs/Compose workspace, resource indicators, health cards,
 <summary>Show all features</summary>
 
 ### Multi-server & federation
+
+- **Agent without WebUI** — `DOCKGE_AGENT_ONLY=1`, `ghcr.io/aerya/dockge-enhanced-agent:latest`.
 
 - **Hub-only mode** — `DOCKGE_HUB_ONLY=1`
 - Full-mesh federation between Dockge-Enhanced instances, managed from any linked WebUI
@@ -1001,6 +1005,7 @@ To publish a service, edit its stack and use **PlugNPiN publication (optional)**
 | `DOCKGE_STACKS_DIR` | `/opt/stacks` | Directory containing Docker Compose stacks |
 | `COMPOSE_FILENAME` | `compose.yaml` | COMPOSE_FILENAME selects compose.yaml (default), compose.yml, docker-compose.yaml or docker-compose.yml for new stacks only. Existing and adopted stacks keep their filenames. Other names and paths are rejected. |
 | `DOCKGE_DATA_DIR` | `/app/data` | Dockge data directory; override only for a custom persistent mount |
+| `DOCKGE_AGENT_ONLY` | `0` | Agent without WebUI (`1`) |
 | `DOCKGE_HUB_ONLY` | `0` | Hub only — select a linked instance for Docker operations. (`1`) |
 | `DOCKGE_DOCKER_RECOVERY_RETRIES` | `0` | Consecutive failures before exit (0 disables; maximum 100) |
 | `DOCKGE_DOCKER_RECOVERY_INTERVAL_SECONDS` | `30` | Seconds between completed checks (5–3600; each probe times out after 5 seconds) |
