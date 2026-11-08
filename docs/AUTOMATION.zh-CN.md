@@ -1,5 +1,17 @@
 # REST API、Webhooks 与自动化
 
+## 通过 API 创建堆栈
+
+POST /api/v1/stacks 保存新的 Compose 文件以及可选的 override 和 .env，但不会部署。独立的 stack:create 权限要求访问所有堆栈并明确确认风险：提交任意 Compose 属于管理员权限，不提供租户隔离。不会覆盖现有堆栈；部署需要单独授权。
+
+```json
+{"name":"example","composeYAML":"services:\n  app:\n    image: nginx:alpine\n","composeENV":"","composeOverrideYAML":""}
+```
+
+`Authorization: Bearer <token>` · `POST /api/v1/stacks` · 201: `{"ok":true,"data":{"name":"example","deployed":false}}`.
+
+60 KiB · `POST /api/v1/stacks/example/actions/start` → `stack:start`.
+
 [English](AUTOMATION.md) · [Français](AUTOMATION.fr.md) · [Español](AUTOMATION.es.md) · [Deutsch](AUTOMATION.de.md) · [简体中文](AUTOMATION.zh-CN.md)
 
 本页所有功能均为可选项。只有管理员在 **设置 → 自动化** 中主动请求后，才会创建令牌或 Webhook。

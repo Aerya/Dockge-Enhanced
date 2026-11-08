@@ -1,4 +1,6 @@
 {
+    "automation.createRisk": "我了解 stack:create 要求访问所有堆栈并授予管理员级 Compose 权限。仅供可信自动化使用；创建文件不会启动容器。",
+    "releaseNews.item.automationCreate": "通过 API 创建堆栈 : POST /api/v1/stacks 保存新的 Compose 文件以及可选的 override 和 .env，但不会部署。独立的 stack:create 权限要求访问所有堆栈并明确确认风险：提交任意 Compose 属于管理员权限，不提供租户隔离。不会覆盖现有堆栈；部署需要单独授权。",
     "releaseNews.item.catalogAutoLoad": "所有仓库默认启用，打开应用页面时逐步加载。可在管理仓库中禁用不需要的仓库。分类提供独立搜索和限高滚动列表，与应用搜索分开。设置按账户保存在此实例中。",
     "releaseNews.item.navigationPreferences": "设置 → 外观可选择显示或隐藏桌面和移动端导航链接。首页和 Enhanced 始终可见，账户设置入口保留。设置按账户保存在此实例中，可跨浏览器使用。原有控制台显示选择会保留；权限和直接访问不变。",
     "uiPreferences.navigation": "顶部导航",

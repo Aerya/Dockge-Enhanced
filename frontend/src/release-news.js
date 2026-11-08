@@ -1,5 +1,9 @@
 export const RELEASE_NEWS = [
     {
+        id: "2026-11-08-automation-create",
+        items: [ "releaseNews.item.automationCreate" ],
+    },
+    {
         id: "2026-11-07-catalog-navigation-preferences",
         items: [ "releaseNews.item.catalogAutoLoad", "releaseNews.item.navigationPreferences" ],
     },

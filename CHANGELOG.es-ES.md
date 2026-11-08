@@ -7,6 +7,8 @@ Historial completo del proyecto, de lo más reciente a lo más antiguo. Cada fec
 
 El [README](README.es-ES.md) presenta las principales novedades recientes y el catálogo de funcionalidades.
 
+**2026-11-08 — Crear stacks mediante la API** — POST /api/v1/stacks guarda un Compose nuevo, un override y un .env opcionales, sin desplegar. El permiso separado stack:create requiere acceso a todos los stacks y confirmación del riesgo: proporcionar un Compose arbitrario es un privilegio de administrador, no aislamiento entre clientes. No se sobrescriben stacks existentes; el despliegue requiere autorización independiente.
+
 **2026-11-07 — Catálogos cargados automáticamente** — Todos los repositorios están activados por defecto y se cargan progresivamente al abrir Aplicaciones. Desactive los que desee en Gestionar repositorios. Las categorías tienen búsqueda propia y una lista de altura limitada con desplazamiento, separada de la búsqueda de aplicaciones. Preferencias guardadas por cuenta en esta instancia.
 
 **2026-11-07 — Menú superior personalizable** — Ajustes → Apariencia permite mostrar u ocultar enlaces de navegación en escritorio y móvil. Inicio y Enhanced siguen visibles; se mantiene el acceso a los ajustes de la cuenta. Preferencias guardadas por cuenta en esta instancia entre navegadores. Se conserva la elección anterior de Consola; permisos y acceso directo no cambian.

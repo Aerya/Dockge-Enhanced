@@ -64,6 +64,8 @@ Die wichtigsten kürzlichen Änderungen sind hier gruppiert, damit Sie schnell s
 
 ### 🆕 November 2026
 
+**Stacks per API erstellen :** POST /api/v1/stacks speichert eine neue Compose-Datei sowie optional Override und .env, ohne Bereitstellung. Die separate Berechtigung stack:create erfordert Zugriff auf alle Stacks und eine ausdrückliche Risikobestätigung: beliebige Compose-Dateien sind ein Administratorrecht, keine Mandantentrennung. Bestehende Stacks werden nicht überschrieben; die Bereitstellung benötigt eine separate Berechtigung. [API](docs/AUTOMATION.de.md).
+
 **Automatisch geladene Anwendungskataloge :** Alle Quellen sind standardmäßig aktiviert und werden beim Öffnen von Anwendungen schrittweise geladen. Deaktivieren Sie einzelne Quellen unter Quellen verwalten. Kategorien haben eine eigene Suche und eine höhenbegrenzte Liste mit Bildlauf, getrennt von der Anwendungssuche. Die Auswahl wird pro Konto auf dieser Instanz gespeichert.
 
 **Schreibgeschützter Container-Explorer :** Administratoren können Dateien laufender Container oder Replikate durchsuchen, ansehen und herunterladen, auch auf verbundenen Instanzen mit dieser Version. Der konfigurierte Container-Benutzer bleibt ohne Zusatzprivilegien erhalten; Stack-Zugehörigkeit wird bei jeder Anfrage geprüft. Dateien außerhalb von Volumes gehen bei Neuerstellung verloren und können Geheimnisse enthalten. Grenzen: 500 Einträge, 1 MiB pro Datei; sh, timeout, readlink, stat und dd erforderlich. Für gestoppte Container oder minimale Images den bestehenden Volume-Explorer nutzen. Kein Schreiben oder Löschen.
@@ -673,7 +675,7 @@ Die Stack-Navigation, der Logs/Compose-Arbeitsbereich, Ressourcenindikatoren, St
 
 ### Automatisierung & Audit
 - [Konfigurierbare Befehlspuffer](docs/command-buffers.de.md)
-- REST-API-Tokens, beschränkt nach Berechtigungen und Stacks
+- REST-API-Tokens, beschränkt nach Berechtigungen und Stacks; ausdrückliches Administratorrecht zum Erstellen neuer Stacks ohne Bereitstellung
 - Webhooks pro Stack
 - Optionale benutzerdefinierte Home-Assistant-Integration und Beispiele
 - Zentraler Audit-Verlauf mit Ursprung, Status und Dauer
