@@ -63,6 +63,8 @@ Dockge Enhanced 是 [Dockge](https://github.com/louislam/dockge) 的分支，通
 
 ### 🆕 2026 年 11 月
 
+**仅中心模式 :** DOCKGE_HUB_ONLY=1 将此实例用作关联服务器的中央界面，不运行本地 Docker 操作、监控、计划或自动更新。默认禁用，修改后需要重启。新建中心实例时，请使用独立数据卷，不挂载 Docker 套接字或主机 Stack 目录。请使用独立实例，不要在操作期间切换。现有本地文件保持不变但被隐藏；禁用此模式即可恢复正常运行。
+
 **自动加载应用目录 :** 所有仓库默认启用，打开应用页面时逐步加载。可在管理仓库中禁用不需要的仓库。分类提供独立搜索和限高滚动列表，与应用搜索分开。设置按账户保存在此实例中。
 
 **只读容器文件浏览器 :** 管理员可浏览、预览和下载运行中容器或副本的文件，也支持更新到此版本的关联实例。保留容器配置的用户权限，不提升特权；每次请求均检查容器归属。卷以外的文件会在重建时丢失，也可能包含凭据。限制为 500 条记录、每个文件 1 MiB；需要 sh、timeout、readlink、stat、dd。已停止容器或极简镜像请使用现有卷浏览器。不提供写入或删除。
@@ -523,6 +525,8 @@ Stack 导航、Logs/Compose、资源指标、健康卡片、主题和移动端�
 <summary>查看全部功能</summary>
 
 ### 多服务器与联邦
+
+- **仅中心模式** — `DOCKGE_HUB_ONLY=1`
 - Dockge-Enhanced 实例之间的全网格联邦，可从任意关联 WebUI 管理
 - 为 NAT/CGNAT 后的主机提供可选反向连接：每个节点独立令牌、自动接入和撤销；反向代理只属于其中心服务器（[指南](docs/compose-and-reverse-agents.md)）
 - 持久化代理标签和标签筛选，可与实例筛选组合使用
@@ -996,6 +1000,7 @@ PlugNPiN 需要 Nginx Proxy Manager 凭据。Pi-hole、AdGuard Home、metrics �
 | `DOCKGE_STACKS_DIR` | `/opt/stacks` | Docker Compose Stack 所在目录 |
 | `COMPOSE_FILENAME` | `compose.yaml` | COMPOSE_FILENAME 仅为新建 Stack 选择 compose.yaml（默认）、compose.yml、docker-compose.yaml 或 docker-compose.yml。现有和已接管的 Stack 保留原文件名。其他名称和路径将被拒绝。 |
 | `DOCKGE_DATA_DIR` | `/app/data` | Dockge 数据目录；仅在使用自定义持久化挂载时覆盖 |
+| `DOCKGE_HUB_ONLY` | `0` | 仅中心模式 — 请为 Docker 操作选择关联实例。 (`1`) |
 | `DOCKGE_DOCKER_RECOVERY_RETRIES` | `0` | 退出前的连续失败次数（0 禁用；最大 100） |
 | `DOCKGE_DOCKER_RECOVERY_INTERVAL_SECONDS` | `30` | 每次检查结束后的等待秒数（5–3600；单次检查超时为 5 秒） |
 | `DOCKGE_PUBLIC_URL` | *(无)* | Discord 通知链接使用的公开 URL（例如 `https://dockge.example.com`） |

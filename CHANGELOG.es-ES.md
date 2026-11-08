@@ -7,6 +7,8 @@ Historial completo del proyecto, de lo más reciente a lo más antiguo. Cada fec
 
 El [README](README.es-ES.md) presenta las principales novedades recientes y el catálogo de funcionalidades.
 
+**2026-11-08 — Modo solo hub** — DOCKGE_HUB_ONLY=1 convierte esta instancia en una interfaz central para servidores vinculados, sin acciones Docker, supervisión, programaciones ni autoactualizaciones locales. Desactivado por defecto; requiere reinicio. Para un nuevo hub, use un volumen de datos propio sin montar el socket Docker ni directorios de stacks del host. Use una instancia separada y no cambie durante una operación. Los archivos locales existentes quedan intactos pero ocultos; desactivar el modo restaura el funcionamiento normal.
+
 **2026-11-07 — Catálogos cargados automáticamente** — Todos los repositorios están activados por defecto y se cargan progresivamente al abrir Aplicaciones. Desactive los que desee en Gestionar repositorios. Las categorías tienen búsqueda propia y una lista de altura limitada con desplazamiento, separada de la búsqueda de aplicaciones. Preferencias guardadas por cuenta en esta instancia.
 
 **2026-11-07 — Menú superior personalizable** — Ajustes → Apariencia permite mostrar u ocultar enlaces de navegación en escritorio y móvil. Inicio y Enhanced siguen visibles; se mantiene el acceso a los ajustes de la cuenta. Preferencias guardadas por cuenta en esta instancia entre navegadores. Se conserva la elección anterior de Consola; permisos y acceso directo no cambian.

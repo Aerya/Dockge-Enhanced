@@ -8,6 +8,7 @@ import { StackFileHistory } from "./stack-file-history";
 import { networkRepairTargets } from "./compose-network-repair";
 import type { ResolvedComposeModel } from "./compose-network-namespace";
 import fs, { promises as fsAsync } from "fs";
+import { hubOnly, requireLocalRuntime } from "./hub-mode";
 import { log } from "./log";
 import yaml from "yaml";
 import { DockgeSocket, fileExists, ValidationError } from "./util-server";
@@ -630,6 +631,7 @@ export class Stack {
      */
     @stackMutation
     async save(isAdd : boolean) {
+        requireLocalRuntime();
         this.validate();
 
         let dir = this.path;
@@ -1143,6 +1145,9 @@ export class Stack {
     }
 
     static async getStackList(server : DockgeServer, useCacheForManaged = false) : Promise<Map<string, Stack>> {
+        if (hubOnly()) {
+            return new Map();
+        }
         let stacksDir = server.stacksDir;
         let stackList : Map<string, Stack>;
 
@@ -1360,6 +1365,7 @@ export class Stack {
     }
 
     static async getStack(server: DockgeServer, stackName: string, skipFSOperations = false) : Promise<Stack> {
+        requireLocalRuntime();
         if (!skipFSOperations) {
             const externalRegistration = await server.externalStacks.get(stackName);
             if (externalRegistration) {

@@ -1,5 +1,9 @@
 export const RELEASE_NEWS = [
     {
+        id: "2026-11-08-hub-only",
+        items: [ "releaseNews.item.hubOnly" ],
+    },
+    {
         id: "2026-11-07-catalog-navigation-preferences",
         items: [ "releaseNews.item.catalogAutoLoad", "releaseNews.item.navigationPreferences" ],
     },

@@ -5,6 +5,7 @@ import { callbackError, checkLogin, DockgeSocket } from "../util-server";
 import { AgentSocket } from "../../common/agent-socket";
 import { ALL_ENDPOINTS } from "../../common/util-common";
 import { registerScopedUsers } from "../scoped-users";
+import { requireLocalRpc } from "../hub-mode";
 
 export class AgentProxySocketHandler extends SocketHandler {
 
@@ -28,6 +29,7 @@ export class AgentProxySocketHandler extends SocketHandler {
                     socket.instanceManager.emitToAllEndpoints(eventName, ...args);
 
                 } else if (!endpoint || endpoint === socket.endpoint) {      // Direct connection or matching endpoint
+                    requireLocalRpc(eventName);
                     log.debug("agent", "Matched endpoint: " + eventName);
                     agentSocket.call(eventName, ...args);
 

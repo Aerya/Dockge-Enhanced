@@ -1,5 +1,6 @@
 <template>
     <div :class="classes">
+        <div v-if="$root.loggedIn && $root.info.hubOnly" class="alert alert-info mb-0" role="status">{{ $t("hubOnly.banner") }}</div>
         <div v-if="! $root.socketIO.connected && ! $root.socketIO.firstConnect" class="lost-connection">
             <div class="container-fluid">
                 {{ $root.socketIO.connectionErrorMsg }}

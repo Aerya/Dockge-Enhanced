@@ -1,5 +1,6 @@
 <template>
     <div>
+        <div v-if="$root.info.hubOnly" class="alert alert-info">{{ $t("hubOnly.help") }}</div>
         <form class="my-4" autocomplete="off" @submit.prevent="saveGeneral">
             <!-- Client side Timezone -->
             <div v-if="false" class="mb-4">

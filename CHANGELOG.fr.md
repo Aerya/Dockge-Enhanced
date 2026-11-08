@@ -7,6 +7,8 @@ Historique complet du projet, du plus récent au plus ancien. Chaque date corres
 
 Le [README](README.fr.md) présente les principales nouveautés récentes et le catalogue des fonctionnalités.
 
+**2026-11-08 — Mode hub uniquement** — DOCKGE_HUB_ONLY=1 transforme cette instance en interface centrale pour les serveurs liés, sans actions Docker, surveillance, planifications ni auto-mise à jour locales. Désactivé par défaut ; redémarrage nécessaire. Pour un nouveau hub, conservez un volume de données dédié et ne montez ni socket Docker ni dossiers de stacks de l’hôte. Utilisez une instance séparée : ne basculez pas pendant une opération. Les fichiers locaux existants restent intacts mais masqués ; désactiver ce mode rétablit le fonctionnement normal.
+
 **2026-11-07 — Catalogue chargé automatiquement** — Tous les dépôts sont activés par défaut et chargés progressivement à l’ouverture d’Applications. Désactivez ceux de votre choix dans Gérer les dépôts. Les catégories disposent d’une recherche dédiée et d’une liste à hauteur limitée avec défilement, distincte de la recherche d’applications. Choix enregistrés par compte sur cette instance.
 
 **2026-11-07 — Menu supérieur personnalisable** — Paramètres → Apparence permet d’afficher ou masquer les liens de navigation sur ordinateur et mobile. Accueil et Enhanced restent visibles ; l’accès aux paramètres du compte est conservé. Choix enregistrés par compte sur cette instance, entre navigateurs. L’ancien choix pour Console est préservé ; permissions et accès directs inchangés.

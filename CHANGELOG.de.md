@@ -7,6 +7,8 @@ Vollständige Projekthistorie, neueste Einträge zuerst. Jedes Datum ist der Tag
 
 Die [README](README.de.md) stellt die wichtigsten aktuellen Neuerungen und den Funktionskatalog vor.
 
+**2026-11-08 — Reiner Hub-Modus** — DOCKGE_HUB_ONLY=1 macht diese Instanz zur zentralen Oberfläche für verbundene Server, ohne lokale Docker-Aktionen, Überwachung, Zeitpläne oder Selbstaktualisierungen. Standardmäßig deaktiviert; Neustart erforderlich. Verwenden Sie für einen neuen Hub ein eigenes Datenvolume ohne Docker-Socket und Stack-Verzeichnisse des Hosts. Nutzen Sie eine separate Instanz und wechseln Sie nicht während eines Vorgangs. Vorhandene lokale Dateien bleiben unverändert, werden aber ausgeblendet; nach Deaktivierung läuft die Instanz wieder normal.
+
 **2026-11-07 — Automatisch geladene Anwendungskataloge** — Alle Quellen sind standardmäßig aktiviert und werden beim Öffnen von Anwendungen schrittweise geladen. Deaktivieren Sie einzelne Quellen unter Quellen verwalten. Kategorien haben eine eigene Suche und eine höhenbegrenzte Liste mit Bildlauf, getrennt von der Anwendungssuche. Die Auswahl wird pro Konto auf dieser Instanz gespeichert.
 
 **2026-11-07 — Anpassbare obere Navigation** — Einstellungen → Darstellung ermöglicht das Ein- und Ausblenden von Navigationslinks auf Desktop und Mobilgeräten. Startseite und Enhanced bleiben sichtbar; der Zugang zu den Kontoeinstellungen bleibt erhalten. Die Auswahl wird pro Konto auf dieser Instanz browserübergreifend gespeichert. Die bisherige Konsoleneinstellung bleibt erhalten; Berechtigungen und direkte Zugriffe ändern sich nicht.

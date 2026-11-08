@@ -94,6 +94,11 @@ jobs:
         if: steps.docs.outputs.docs_only != 'true'
         run: npx tsx --test backend/terminal-env.test.ts backend/container-shell.test.ts frontend/src/terminal-focus.test.ts frontend/src/console-navigation.test.ts
 
+      - name: Tests du mode hub et de la fédération isolée
+        if: steps.docs.outputs.docs_only != 'true'
+        run: |
+          npx tsx --test backend/hub-mode.test.ts backend/socket-handlers/agent-proxy-socket-handler.test.ts
+
       - name: Tests des fichiers des conteneurs
         if: steps.docs.outputs.docs_only != 'true'
         run: npx tsx --test backend/container-files.test.ts backend/container-instances.test.ts
@@ -283,6 +288,10 @@ jobs:
       - name: Build frontend (Vite)
         if: steps.docs.outputs.docs_only != 'true'
         run: npm run build:frontend
+
+      - name: Tester deux instances isolées sans accès Docker
+        if: steps.docs.outputs.docs_only != 'true'
+        run: node extra/test-hub-live.mjs
 
       - name: Tester la comparaison des audits npm
         if: steps.docs.outputs.docs_only != 'true' && github.event_name == 'pull_request'
