@@ -65,6 +65,8 @@ Les évolutions majeures récentes sont regroupées ici afin de comprendre rapid
 
 ### 🆕 Novembre 2026
 
+**Onglets de logs par conteneur :** Le panneau Logs propose Tous et un onglet par conteneur réel, y compris les réplicas des instances liées. Chaque onglet conserve recherche, pause et position tant que cette page reste ouverte (20 vues mémorisées au maximum). Les onglets individuels actualisent les 200 dernières lignes toutes les 10 secondes ; Tous conserve le flux en direct et les filtres par service existants.
+
 **Créer des stacks par API :** POST /api/v1/stacks enregistre un nouveau Compose, un override et un .env facultatifs, sans déployer. La permission distincte stack:create exige l’accès à toutes les stacks et une confirmation du risque : fournir un Compose arbitraire est un privilège d’administration, pas une isolation entre clients. Aucune stack existante n’est écrasée ; le déploiement reste autorisé séparément. [API](docs/AUTOMATION.fr.md).
 
 **Catalogue chargé automatiquement :** Tous les dépôts sont activés par défaut et chargés progressivement à l’ouverture d’Applications. Désactivez ceux de votre choix dans Gérer les dépôts. Les catégories disposent d’une recherche dédiée et d’une liste à hauteur limitée avec défilement, distincte de la recherche d’applications. Choix enregistrés par compte sur cette instance.
@@ -653,7 +655,7 @@ La navigation des stacks, l'espace Logs/Compose, les indicateurs de ressources, 
 - Détails du système hôte, températures et partitions disque surveillées
 - Historique CPU/RAM facultatif toutes les 5 minutes pour l’hôte et par service Compose, avec interruptions visibles
 - Cartes de santé du tableau de bord, détection des crash loops et auto-heal des healthchecks
-- Logs en direct responsives et plein écran avec filtre par service, recherche, périodes, **depuis le dernier redémarrage**, copie des 50 / 100 / 150 dernières lignes ou de tout le chargé, pause du défilement, gestion des lignes longues et horodatage par défaut facultatif
+- Logs en direct responsives et plein écran avec filtre par service, recherche, périodes, **depuis le dernier redémarrage**, copie des 50 / 100 / 150 dernières lignes ou de tout le chargé, pause du défilement, gestion des lignes longues et horodatage par défaut facultatif ; onglets par conteneur avec recherche et pause indépendantes
 - Mode basse consommation pour les NAS et petits hôtes
 - Intégrations facultatives Kula, Dozzle, PowerWatch et PowerWatch Hub, avec la puissance PowerWatch affichée sur les instances liées
 

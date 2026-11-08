@@ -7,6 +7,8 @@ Vollständige Projekthistorie, neueste Einträge zuerst. Jedes Datum ist der Tag
 
 Die [README](README.de.md) stellt die wichtigsten aktuellen Neuerungen und den Funktionskatalog vor.
 
+**2026-11-08 — Protokoll-Tabs pro Container** — Das Protokollfeld bietet Alle und einen Tab pro tatsächlichem Container, einschließlich Replikas verknüpfter Instanzen. Jeder Tab behält Suche, Pause und Bildlaufposition solange diese Seite geöffnet bleibt (höchstens 20 gespeicherte Ansichten). Einzelne Tabs aktualisieren alle 10 Sekunden die letzten 200 Zeilen; Alle behält den bestehenden Live-Stream und die Dienstfilter.
+
 **2026-11-08 — Stacks per API erstellen** — POST /api/v1/stacks speichert eine neue Compose-Datei sowie optional Override und .env, ohne Bereitstellung. Die separate Berechtigung stack:create erfordert Zugriff auf alle Stacks und eine ausdrückliche Risikobestätigung: beliebige Compose-Dateien sind ein Administratorrecht, keine Mandantentrennung. Bestehende Stacks werden nicht überschrieben; die Bereitstellung benötigt eine separate Berechtigung.
 
 **2026-11-07 — Automatisch geladene Anwendungskataloge** — Alle Quellen sind standardmäßig aktiviert und werden beim Öffnen von Anwendungen schrittweise geladen. Deaktivieren Sie einzelne Quellen unter Quellen verwalten. Kategorien haben eine eigene Suche und eine höhenbegrenzte Liste mit Bildlauf, getrennt von der Anwendungssuche. Die Auswahl wird pro Konto auf dieser Instanz gespeichert.

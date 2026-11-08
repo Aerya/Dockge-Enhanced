@@ -64,6 +64,8 @@ Die wichtigsten kürzlichen Änderungen sind hier gruppiert, damit Sie schnell s
 
 ### 🆕 November 2026
 
+**Protokoll-Tabs pro Container :** Das Protokollfeld bietet Alle und einen Tab pro tatsächlichem Container, einschließlich Replikas verknüpfter Instanzen. Jeder Tab behält Suche, Pause und Bildlaufposition solange diese Seite geöffnet bleibt (höchstens 20 gespeicherte Ansichten). Einzelne Tabs aktualisieren alle 10 Sekunden die letzten 200 Zeilen; Alle behält den bestehenden Live-Stream und die Dienstfilter.
+
 **Stacks per API erstellen :** POST /api/v1/stacks speichert eine neue Compose-Datei sowie optional Override und .env, ohne Bereitstellung. Die separate Berechtigung stack:create erfordert Zugriff auf alle Stacks und eine ausdrückliche Risikobestätigung: beliebige Compose-Dateien sind ein Administratorrecht, keine Mandantentrennung. Bestehende Stacks werden nicht überschrieben; die Bereitstellung benötigt eine separate Berechtigung. [API](docs/AUTOMATION.de.md).
 
 **Automatisch geladene Anwendungskataloge :** Alle Quellen sind standardmäßig aktiviert und werden beim Öffnen von Anwendungen schrittweise geladen. Deaktivieren Sie einzelne Quellen unter Quellen verwalten. Kategorien haben eine eigene Suche und eine höhenbegrenzte Liste mit Bildlauf, getrennt von der Anwendungssuche. Die Auswahl wird pro Konto auf dieser Instanz gespeichert.
@@ -652,7 +654,7 @@ Die Stack-Navigation, der Logs/Compose-Arbeitsbereich, Ressourcenindikatoren, St
 - Host-Systemdetails, Temperaturen und überwachte Partitionen
 - Optionaler 5-Minuten-CPU/RAM-Verlauf für den Host und pro Compose-Dienst, mit sichtbaren Lücken
 - Health-Cards im Dashboard, Crash-Loop-Erkennung und Healthcheck-Auto-Heal
-- Responsive Live- und Vollbild-Logs mit Dienstfilter, Suche, Zeitbereichen, **seit dem letzten Neustart**, Kopieren der letzten 50 / 100 / 150 oder aller geladenen Zeilen, pausierbarem Autoscroll, Umgang mit langen Zeilen und optionalen Standard-Zeitstempeln
+- Responsive Live- und Vollbild-Logs mit Dienstfilter, Suche, Zeitbereichen, **seit dem letzten Neustart**, Kopieren der letzten 50 / 100 / 150 oder aller geladenen Zeilen, pausierbarem Autoscroll, Umgang mit langen Zeilen und optionalen Standard-Zeitstempeln; Container-Tabs mit unabhängiger Suche und Pause
 - Energiesparmodus für NAS und kleine Hosts
 - Optionale Integrationen für Kula, Dozzle, PowerWatch und PowerWatch Hub, mit aktueller PowerWatch-Leistung auf verknüpften Instanzen
 

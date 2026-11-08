@@ -510,7 +510,8 @@
 
                     <!-- Combined Terminal Output -->
                     <div v-show="!isEditMode" class="logs-panel" :class="{ 'logs-fullscreen': logsFullscreen }">
-                        <div class="terminal-toolbar mb-3 compose-tight">
+                        <ContainerLogTabs :key="`${endpoint}:${stack.name}`" :stack-name="stack.name || ''" :endpoint="endpoint" :containers="containerInstances" :enabled="!isEditMode" @selection="containerLogSelected = $event" />
+                        <div v-show="!containerLogSelected" class="terminal-toolbar mb-3 compose-tight">
                             <h4 class="mb-0">{{ $t("stackLogs") }}</h4>
                             <div class="terminal-toolbar-right">
                                 <div class="terminal-log-filters">
@@ -633,6 +634,7 @@
                             </div>
                         </div>
                         <Terminal
+                            v-show="!containerLogSelected"
                             :key="selectedLogTerminalName"
                             ref="combinedTerminal"
                             class="mb-3 compose-tight terminal combined-terminal"
@@ -936,6 +938,7 @@ import StackURLsInput from "../components/StackURLsInput.vue";
 import { stackURLLinks } from "../../../common/stack-urls";
 import { applyComposeTemplates, DEFAULT_COMPOSE_ENV } from "../../../common/compose-templates";
 import CodeMirror from "vue-codemirror6";
+import ContainerLogTabs from "../components/ContainerLogTabs.vue";
 import { prepareComposeTimezone } from "../../../common/compose-timezone";
 import { yaml } from "@codemirror/lang-yaml";
 import { python } from "@codemirror/lang-python";
@@ -1004,6 +1007,7 @@ let serviceStatusTimeout = null;
 
 export default {
     components: {
+        ContainerLogTabs,
         DeploymentProgress,
         NetworkRestartDialog,
         PostUpdateOptions,
@@ -1104,6 +1108,7 @@ export default {
             },
             serviceStatusList: {},
             containerInstances: [],
+            containerLogSelected: false,
             lastContainerInstancesFetchAt: 0,
             containerInstancesLoading: false,
             containerInstancesRequestTimeout: null,
