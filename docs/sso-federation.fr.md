@@ -2,13 +2,13 @@
 
 [English](sso-federation.md) · [Français](sso-federation.fr.md) · [Deutsch](sso-federation.de.md) · [Español](sso-federation.es.md) · [简体中文](sso-federation.zh-CN.md)
 
-Une liaison facultative à sens unique permet de gérer un serveur distant sans connexion retour ni propagation dans le maillage. Utilisez un jeton de fédération Enhanced et, si nécessaire, des identifiants HTTP Basic distincts pour le proxy, en HTTPS/WebSocket. Authentik exige un compte technique autorisé, un mot de passe d’application et l’authentification par en-tête ; Enhanced ne configure pas le proxy. Le SSO public reste actif. Configurez la liaison séparément sur chaque instance locale.
+Une liaison facultative à sens unique permet de gérer un serveur distant sans connexion retour ni propagation dans le maillage. Utilisez un jeton de fédération Enhanced et, si nécessaire, des identifiants HTTP Basic distincts pour le proxy, en HTTPS/WebSocket. Authentik exige un compte autorisé (existant ou dédié recommandé), un mot de passe d’application et l’authentification par en-tête ; Enhanced ne configure pas le proxy. Le SSO public reste actif. Configurez la liaison séparément sur chaque instance locale.
 
 ## Configuration
 1. Mettez à jour les deux instances Enhanced. Sur l’instance distante, connectez-vous par SSO comme administrateur. Dans Accueil, choisissez **Créer un jeton de fédération** et copiez-le de manière privée.
-2. Dans l’administration du proxy/SSO, créez un compte technique dédié, autorisez-le pour cette application et générez un mot de passe d’application. Avec Authentik, activez **Intercept header authentication** sur le fournisseur proxy et assurez-vous que le reverse proxy transmet l’en-tête Authorization à l’outpost. Cette opération relève de l’administrateur : Enhanced ne modifie pas le proxy.
+2. Dans l’administration du proxy/SSO, utilisez votre compte existant ou, de préférence, un compte dédié autorisé pour cette application, puis générez un mot de passe d’application associé à ce compte (pas votre mot de passe SSO habituel). Avec Authentik, activez **Intercept header authentication** sur le fournisseur proxy et assurez-vous que le reverse proxy transmet l’en-tête Authorization à l’outpost. Cette opération relève de l’administrateur : Enhanced ne modifie pas le proxy.
 3. Sur l’instance Enhanced locale, choisissez **Ajouter un agent**, saisissez l’origine HTTPS distante (sans chemin), choisissez **Jeton de fédération** et collez le jeton Enhanced.
-4. Activez **Connexion depuis cette instance uniquement**. Renseignez le nom du compte technique du proxy et son mot de passe d’application dans les champs HTTP Basic séparés, puis connectez. Laissez-les vides si aucune authentification proxy n’est nécessaire.
+4. Activez **Connexion depuis cette instance uniquement**. Renseignez le nom d’utilisateur Authentik du compte choisi et son mot de passe d’application dans les champs HTTP Basic séparés, puis connectez. Laissez-les vides si aucune authentification proxy n’est nécessaire.
 5. Répétez sur chaque instance locale devant gérer ce serveur. Aucune connexion retour du serveur distant vers votre LAN privé n’est nécessaire.
 
 ## Sécurité et fonctionnement

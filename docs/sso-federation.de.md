@@ -2,13 +2,13 @@
 
 [English](sso-federation.md) · [Français](sso-federation.fr.md) · [Deutsch](sso-federation.de.md) · [Español](sso-federation.es.md) · [简体中文](sso-federation.zh-CN.md)
 
-Optionale einseitige Verbindungen erlauben die Verwaltung eines entfernten Servers ohne Rückverbindung oder Weitergabe im Mesh. Verwenden Sie ein Enhanced-Föderationstoken und bei Bedarf separate HTTP-Basic-Zugangsdaten für den Proxy über HTTPS/WebSocket. Authentik benötigt ein berechtigtes Dienstkonto, ein App-Passwort und Header-Authentifizierung; Enhanced konfiguriert den Proxy nicht. Das öffentliche SSO bleibt aktiv. Richten Sie die Verbindung auf jeder lokalen Instanz separat ein.
+Optionale einseitige Verbindungen erlauben die Verwaltung eines entfernten Servers ohne Rückverbindung oder Weitergabe im Mesh. Verwenden Sie ein Enhanced-Föderationstoken und bei Bedarf separate HTTP-Basic-Zugangsdaten für den Proxy über HTTPS/WebSocket. Authentik benötigt ein berechtigtes Konto (vorhanden oder vorzugsweise dediziert), ein App-Passwort und Header-Authentifizierung; Enhanced konfiguriert den Proxy nicht. Das öffentliche SSO bleibt aktiv. Richten Sie die Verbindung auf jeder lokalen Instanz separat ein.
 
 ## Einrichtung
 1. Beide Enhanced-Instanzen aktualisieren. Auf der entfernten Instanz per SSO als Administrator anmelden. Unter Startseite **Föderationstoken erstellen** wählen und das Token vertraulich kopieren.
-2. In der Proxy-/SSO-Verwaltung ein eigenes Dienstkonto anlegen, für die Anwendung berechtigen und ein App-Passwort erzeugen. In Authentik **Intercept header authentication** beim Proxy-Provider aktivieren. Der Reverse-Proxy muss den Authorization-Header an den Outpost weiterreichen. Enhanced ändert die Proxy-Konfiguration nicht.
+2. In der Proxy-/SSO-Verwaltung ein vorhandenes oder vorzugsweise dediziertes Konto mit Berechtigung für diese Anwendung verwenden und dafür ein App-Passwort erzeugen (nicht das normale SSO-Passwort). In Authentik **Intercept header authentication** beim Proxy-Provider aktivieren. Der Reverse-Proxy muss den Authorization-Header an den Outpost weiterreichen. Enhanced ändert die Proxy-Konfiguration nicht.
 3. Lokal **Agent Hinzufügen** wählen, die entfernte HTTPS-Origin ohne Pfad eingeben, **Föderationstoken** wählen und das Enhanced-Token einfügen.
-4. **Nur von dieser Instanz aus verbinden** aktivieren. Dienstkontoname und App-Passwort des Proxys in die getrennten HTTP-Basic-Felder eingeben und verbinden. Ohne Proxy-Authentifizierung beide Felder leer lassen.
+4. **Nur von dieser Instanz aus verbinden** aktivieren. Authentik-Benutzername des gewählten Kontos und App-Passwort des Proxys in die getrennten HTTP-Basic-Felder eingeben und verbinden. Ohne Proxy-Authentifizierung beide Felder leer lassen.
 5. Auf jeder gewünschten lokalen Instanz wiederholen. Eine Rückverbindung des entfernten Servers ins private LAN ist nicht erforderlich.
 
 ## Sicherheit und Betrieb

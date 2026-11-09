@@ -2,13 +2,13 @@
 
 [English](sso-federation.md) · [Français](sso-federation.fr.md) · [Deutsch](sso-federation.de.md) · [Español](sso-federation.es.md) · [简体中文](sso-federation.zh-CN.md)
 
-Las conexiones unidireccionales opcionales permiten gestionar un servidor remoto sin conexión de retorno ni propagación en la malla. Utilice un token de federación Enhanced y, si hace falta, credenciales HTTP Basic separadas para el proxy mediante HTTPS/WebSocket. Authentik requiere una cuenta de servicio autorizada, una contraseña de aplicación y autenticación por cabeceras; Enhanced no configura el proxy. El SSO público permanece activo. Configure la conexión por separado en cada instancia local.
+Las conexiones unidireccionales opcionales permiten gestionar un servidor remoto sin conexión de retorno ni propagación en la malla. Utilice un token de federación Enhanced y, si hace falta, credenciales HTTP Basic separadas para el proxy mediante HTTPS/WebSocket. Authentik requiere una cuenta autorizada (existente o preferiblemente dedicada), una contraseña de aplicación y autenticación por cabeceras; Enhanced no configura el proxy. El SSO público permanece activo. Configure la conexión por separado en cada instancia local.
 
 ## Configuración
 1. Actualice ambas instancias Enhanced. En la remota, inicie sesión por SSO como administrador. En Inicio, elija **Crear token de federación** y cópielo de forma privada.
-2. En la administración del proxy/SSO, cree una cuenta de servicio dedicada, autorícela para la aplicación y genere una contraseña de aplicación. En Authentik, active **Intercept header authentication** en el proveedor proxy y asegúrese de transmitir la cabecera Authorization al outpost. Enhanced no cambia la configuración del proxy.
+2. En la administración del proxy/SSO, utilice su cuenta existente o, preferiblemente, una cuenta dedicada autorizada para la aplicación y genere una contraseña de aplicación para esa cuenta (no su contraseña SSO habitual). En Authentik, active **Intercept header authentication** en el proveedor proxy y asegúrese de transmitir la cabecera Authorization al outpost. Enhanced no cambia la configuración del proxy.
 3. En la instancia local, elija **Añadir Agente**, introduzca el origen HTTPS remoto sin ruta, seleccione **Token de federación** y pegue el token Enhanced.
-4. Active **Conectar solo desde esta instancia**. Introduzca el usuario técnico del proxy y su contraseña de aplicación en los campos HTTP Basic separados y conecte. Déjelos vacíos si no necesita autenticación del proxy.
+4. Active **Conectar solo desde esta instancia**. Introduzca el nombre de usuario Authentik de la cuenta elegida y su contraseña de aplicación en los campos HTTP Basic separados y conecte. Déjelos vacíos si no necesita autenticación del proxy.
 5. Repita en cada instancia local deseada. No se necesita conexión de retorno desde el servidor remoto a su LAN privada.
 
 ## Seguridad y funcionamiento

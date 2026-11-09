@@ -2,13 +2,13 @@
 
 [English](sso-federation.md) · [Français](sso-federation.fr.md) · [Deutsch](sso-federation.de.md) · [Español](sso-federation.es.md) · [简体中文](sso-federation.zh-CN.md)
 
-Optional one-way connections let a local instance manage a remote server without a return connection or mesh propagation. Use an Enhanced federation token and, when required, separate proxy HTTP Basic credentials over HTTPS/WebSocket. Authentik requires an authorized service account, an app password and header authentication; Enhanced does not configure the proxy. The public SSO stays enabled. Configure the connection separately on each local instance.
+Optional one-way connections let a local instance manage a remote server without a return connection or mesh propagation. Use an Enhanced federation token and, when required, separate proxy HTTP Basic credentials over HTTPS/WebSocket. Authentik requires an authorized account (existing or preferably dedicated), an app password and header authentication; Enhanced does not configure the proxy. The public SSO stays enabled. Configure the connection separately on each local instance.
 
 ## Setup
 1. Update both Enhanced instances. On the remote instance, sign in through SSO as an administrator. In Home, select **Create federation token** and copy it privately.
-2. In the proxy/SSO administration, create a dedicated service account, authorize it for this application and issue an app password. For Authentik, enable **Intercept header authentication** on the proxy provider and ensure the reverse proxy forwards the Authorization header to the outpost. This is an administrator operation: Enhanced does not change your proxy.
+2. In the proxy/SSO administration, use your existing account or, preferably, a dedicated account authorized for this application, and issue an app password for that account (not your regular SSO password). For Authentik, enable **Intercept header authentication** on the proxy provider and ensure the reverse proxy forwards the Authorization header to the outpost. This is an administrator operation: Enhanced does not change your proxy.
 3. On the local Enhanced instance, choose **Add Agent**, enter the remote HTTPS origin (no path), select **Federation token** and paste the Enhanced token.
-4. Enable **Connect from this instance only**. Enter the proxy service-account name and app password in the separate HTTP Basic fields, then connect. Leave those fields empty if no proxy authentication is required.
+4. Enable **Connect from this instance only**. Enter the chosen account's Authentik username and app password in the separate HTTP Basic fields, then connect. Leave those fields empty if no proxy authentication is required.
 5. Repeat on each local instance that must manage this server. No return connection from the remote server to your private LAN is required.
 
 ## Security and operation
