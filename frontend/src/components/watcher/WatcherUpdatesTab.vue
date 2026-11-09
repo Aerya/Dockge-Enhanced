@@ -105,7 +105,7 @@
                 <span v-if="activeStep" class="ms-2">{{ $t("updates.status.step", { current: activeStep, total: updateStageDefinitions.length }) }}</span>
             </div>
             <p v-if="status.error && !operationActive" class="alert alert-danger py-2 mb-3">
-                {{ $t("updates.status.checkUnavailable") }}
+                {{ $t(/\b(EAI_AGAIN|ENOTFOUND)\b/.test(status.error) ? "updates.status.checkDnsError" : "updates.status.checkUnavailable") }}
             </p>
 
             <template v-if="operationActive || showStageTimeline">

@@ -65,7 +65,11 @@ Les évolutions majeures récentes sont regroupées ici afin de comprendre rapid
 
 ### 🆕 Novembre 2026
 
-**Instances liées derrière un SSO :** Une liaison facultative à sens unique permet de gérer un serveur distant sans connexion retour ni propagation dans le maillage. Utilisez un jeton de fédération Enhanced et, si nécessaire, des identifiants HTTP Basic distincts pour le proxy, en HTTPS/WebSocket. Authentik exige un compte autorisé (existant ou dédié recommandé), un mot de passe d’application et l’authentification par en-tête ; Enhanced ne configure pas le proxy. Le SSO public reste actif. Configurez la liaison séparément sur chaque instance locale. [Instances liées derrière un SSO](docs/sso-federation.fr.md).
+**Partager les connexions SSO :** Ajoutez le serveur distant une fois, puis utilisez Partager cette connexion pour choisir les instances liées de confiance et autoriser explicitement l’envoi du jeton Enhanced et des identifiants du proxy. Chaque destinataire est testé séparément ; aucune connexion existante n’est écrasée. Mettez les destinataires à jour. Les copies restent indépendantes : modifiez les identifiants ou supprimez la connexion sur chaque destinataire. Aucune connexion retour n’est nécessaire.
+
+**Vérification des mises à jour et boutons des instances :** Une panne de connexion au registre ne masque plus le build installé et n’est plus présentée comme une image locale inconnue. Les erreurs DNS disposent d’un message dédié ; les mises à jour automatiques restent bloquées tant que la vérification échoue. Les boutons des agents inversés sont alignés et reviennent à la ligne sur petit écran.
+
+**Instances liées derrière un SSO :** Une liaison facultative à sens unique permet de gérer un serveur distant sans connexion retour ni propagation dans le maillage. Utilisez un jeton de fédération Enhanced et, si nécessaire, des identifiants HTTP Basic distincts pour le proxy, en HTTPS/WebSocket. Authentik exige un compte autorisé (existant ou dédié recommandé), un mot de passe d’application et l’authentification par en-tête ; Enhanced ne configure pas le proxy. Le SSO public reste actif. [Instances liées derrière un SSO](docs/sso-federation.fr.md).
 
 **Agent sans interface Web :** L’option DOCKGE_AGENT_ONLY=1 désactive la WebUI locale ; l’image dédiée dockge-enhanced-agent n’embarque pas les fichiers frontend. Le transport HTTP/Socket.IO authentifié et le backend restent nécessaires : aucune baisse de RAM n’est promise. Utilisez l’authentification locale et initialisez un nouvel agent avec DOCKGE_BOOTSTRAP_USERNAME et DOCKGE_BOOTSTRAP_PASSWORD_FILE, puis ajoutez son adresse depuis l’instance centrale ou configurez la connexion inversée existante. Protégez son accès par réseau de confiance/pare-feu ou TLS. Mettez l’agent à jour depuis son Compose hôte, pas par l’auto-mise à jour interne ; stacks et planifications gardent leur fonctionnement.
 
@@ -534,7 +538,7 @@ La navigation des stacks, l'espace Logs/Compose, les indicateurs de ressources, 
 
 ### Multi-serveurs & fédération
 
-- Liaisons à sens unique et authentification proxy pour les instances protégées par SSO ([Instances liées derrière un SSO](docs/sso-federation.fr.md))
+- Liaisons à sens unique et authentification proxy pour les instances protégées par SSO ; Partage explicite vers les instances de confiance sélectionnées ([Instances liées derrière un SSO](docs/sso-federation.fr.md))
 
 - **Agent sans interface Web** — `DOCKGE_AGENT_ONLY=1`, `ghcr.io/aerya/dockge-enhanced-agent:latest`.
 

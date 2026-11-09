@@ -10,9 +10,11 @@
         </form>
         <template v-else>
             <p class="form-text">{{ $t('reverseAgent.tokenHelp') }}</p>
-            <button type="button" class="btn btn-normal btn-sm mb-2" @click="visible = !visible">{{ $t(visible ? 'reverseAgent.hide' : 'reverseAgent.show') }}</button>
-            <textarea v-if="visible" class="form-control font-monospace small" :aria-label="$t('reverseAgent.configuration')" :value="configuration" rows="6" readonly spellcheck="false" @focus="$event.target.select()" />
-            <button type="button" class="btn btn-normal btn-sm mt-2" @click="token = ''; visible = false">{{ $t('reverseAgent.done') }}</button>
+            <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+                <button type="button" class="btn btn-normal btn-sm" @click="visible = !visible">{{ $t(visible ? 'reverseAgent.hide' : 'reverseAgent.show') }}</button>
+                <button type="button" class="btn btn-normal btn-sm" @click="token = ''; visible = false">{{ $t('reverseAgent.done') }}</button>
+            </div>
+            <textarea v-if="visible" class="form-control font-monospace small mb-3" :aria-label="$t('reverseAgent.configuration')" :value="configuration" rows="6" readonly spellcheck="false" @focus="$event.target.select()" />
         </template>
         <p v-if="error" role="alert" class="text-danger">{{ error }}</p>
     </details>

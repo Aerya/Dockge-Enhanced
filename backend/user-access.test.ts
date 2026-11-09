@@ -264,6 +264,7 @@ test("real Socket.IO default-deny blocks sensitive and future events, emissions 
     let dispatched = 0;
     const sensitive = [ "agent", "networkRestartPreview", "networkRestartExecute", "getSettings", "setSettings", "usersSave", "usersList", "createAgentFederationToken", "createReverseAgent", "terminalInput", "fileRead", "unknownFutureHandler", "changePassword", "setUILocale", "interactiveTerminalV2", "containerShellOptions" ];
     sensitive.push("containerFilesRead");
+    sensitive.push("shareAgentConnection", "receiveAgentConnection", "getAgentConnectionShareCapabilities");
     sensitive.push("uiPreferences:get", "uiPreferences:save");
     sensitive.push("deploymentStatus", "deploymentRetry");
     sensitive.push("appCatalogList", "appCatalogDraft", "appCatalogSources", "appCatalogBrowse", "appCatalogSourceDraft");

@@ -12,10 +12,12 @@ import { Settings } from "../settings";
 import { R } from "redbean-node";
 import { User } from "../models/user";
 import { AgentManager } from "../agent-manager";
+import { sharedConnection, shareAgentConnection } from "../agent-connection-share";
 
 const AGENT_MESH_REPAIR_REVISION_KEY = "agentMeshRepairRevision";
 const AGENT_MESH_REPAIR_REVISION = 2;
 let meshRepairInFlight : Promise<string[]> | null = null;
+const receivingConnections = new Set<string>();
 
 async function federationSelfForSocket(socket: DockgeSocket, server: DockgeServer, value: unknown) {
     const user = await R.findOne("user", " id = ? AND active = 1 ", [ socket.userID ]) as User | null;
@@ -55,6 +57,70 @@ export function normalizeAgentDisplayName(value: unknown): string {
 export class ManageAgentSocketHandler extends SocketHandler {
 
     create(socket : DockgeSocket, server : DockgeServer) {
+        socket.on("getAgentConnectionShareCapabilities", (_data: unknown, callback: unknown) => {
+            try {
+                checkLogin(socket);
+                callbackResult({ ok: true,
+                    version: 1 }, callback);
+            } catch (error) {
+                callbackError(error, callback);
+            }
+        });
+
+        socket.on("shareAgentConnection", async (data: unknown, callback: unknown) => {
+            try {
+                checkLogin(socket);
+                const request = data as LooseObject;
+                const results = await shareAgentConnection(request?.endpoint, request?.targets, request?.confirmed);
+                callbackResult({ ok: true,
+                    results }, callback);
+            } catch (error) {
+                callbackError(error, callback);
+            }
+        });
+
+        socket.on("receiveAgentConnection", async (data: unknown, callback: unknown) => {
+            let receivingEndpoint = "";
+            try {
+                checkLogin(socket);
+                const peer = sharedConnection(data);
+                const endpoint = new URL(peer.url).host;
+                if (endpoint === socket.endpoint) {
+                    throw new Error("agentShare.invalidTarget");
+                }
+                if (receivingConnections.has(endpoint)) {
+                    throw new Error("agentShare.conflict");
+                }
+                receivingConnections.add(endpoint);
+                receivingEndpoint = endpoint;
+                const existing = (await Agent.getAgentList())[endpoint];
+                if (existing) {
+                    // Retrying a timed-out copy is safe, but never overwrite an
+                    // independently configured connection or newer credentials.
+                    if (!existing.oneWay || existing.url !== peer.url || existing.username !== peer.username
+                        || existing.password !== peer.password
+                        || JSON.stringify(agentConnectionOptions(existing.url, existing.connection_options)) !== peer.connectionOptions) {
+                        throw new Error("agentShare.conflict");
+                    }
+                } else {
+                    await socket.instanceManager.test(peer.url, peer.username, peer.password, false, peer.connectionOptions);
+                    await socket.instanceManager.add(peer.url, peer.username, peer.password, peer.displayName, peer.connectionOptions);
+                }
+                await AgentManager.refreshFromDatabase();
+                await socket.instanceManager.sendAgentList();
+                callbackResult({ ok: true }, callback);
+                server.refreshBrowserSocketClients(socket.id);
+            } catch {
+                callbackResult({ ok: false,
+                    msg: "agentShare.failed",
+                    msgi18n: true }, callback);
+            } finally {
+                if (receivingEndpoint) {
+                    receivingConnections.delete(receivingEndpoint);
+                }
+            }
+        });
+
         socket.on("createReverseAgent", async (data: unknown, callback: unknown) => {
             try {
                 checkLogin(socket);

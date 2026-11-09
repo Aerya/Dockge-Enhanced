@@ -2,14 +2,14 @@
 
 [English](sso-federation.md) · [Français](sso-federation.fr.md) · [Deutsch](sso-federation.de.md) · [Español](sso-federation.es.md) · [简体中文](sso-federation.zh-CN.md)
 
-可选的单向连接允许本地实例管理远程服务器，无需反向连接，也不会传播到网状联邦。使用 Enhanced 联邦令牌；如有需要，通过 HTTPS/WebSocket 提供独立的代理 HTTP Basic 凭据。Authentik 需要已授权的账户（可使用现有账户，建议使用专用账户）、应用密码（不是日常 SSO 密码）以及请求头身份验证；Enhanced 不会配置代理。公开的 SSO 仍保持启用。请在每个本地实例上分别配置连接。
+可选的单向连接允许本地实例管理远程服务器，无需反向连接，也不会传播到网状联邦。使用 Enhanced 联邦令牌；如有需要，通过 HTTPS/WebSocket 提供独立的代理 HTTP Basic 凭据。Authentik 需要已授权的账户（可使用现有账户，建议使用专用账户）、应用密码（不是日常 SSO 密码）以及请求头身份验证；Enhanced 不会配置代理。公开的 SSO 仍保持启用。
 
 ## 配置
 1. 更新两个 Enhanced 实例。在远程实例通过 SSO 以管理员身份登录，在首页选择 **创建联邦令牌**，并安全复制。
 2. 在代理/SSO 管理中使用现有账户或建议使用的专用账户，授权其访问此应用，并为该账户生成应用密码（不是日常 SSO 密码）。在 Authentik 的代理提供程序中启用 **Intercept header authentication**，确保反向代理将 Authorization 请求头转发到 outpost。Enhanced 不会修改代理配置。
 3. 在本地实例选择 **添加代理**，输入不带路径的远程 HTTPS 源地址，选择 **联邦令牌** 并粘贴 Enhanced 令牌。
-4. 启用 **仅从本实例发起连接**，在独立的 HTTP Basic 字段中填写所选账户的 Authentik 用户名和应用密码，然后连接。如果不需要代理身份验证，将两个字段留空。
-5. 在每个需要的本地实例上重复此步骤。远程服务器无需反向连接到您的私有局域网。
+4. 启用 **无需反向连接（SSO / 远程服务器）**，在独立的 HTTP Basic 字段中填写所选账户的 Authentik 用户名和应用密码，然后连接。如果不需要代理身份验证，将两个字段留空。
+5. 添加连接后，使用 **共享此连接**，确认发送凭据后将连接复制到所选可信实例。各接收实例必须已更新并能访问远程服务器。到接收实例的 HTTP 连接不加密：仅使用可信网络或 HTTPS。界面分别显示各接收实例的结果。副本相互独立，后续凭据变更和删除需要逐一处理。重试不会覆盖现有连接；请检查失败或超时的接收实例。
 
 ## 安全与运行
 代理凭据只允许通过代理；trusted-proxy 模式仍需要 Enhanced 令牌。单独的 endpoint 请求头不能验证代理实例身份。浏览器 SSO 不变。HTTPS 证书验证保持启用；代理身份验证使用 WebSocket 且不跟随重定向。代理必须支持 WebSocket 升级。这并非自动兼容所有 SSO 提供程序。

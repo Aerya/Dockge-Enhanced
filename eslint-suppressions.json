@@ -405,20 +405,8 @@
     }
   },
   "backend/watchers/self-update-checker.ts": {
-    "@stylistic/indent": {
-      "count": 535
-    },
-    "@stylistic/object-property-newline": {
-      "count": 21
-    },
-    "@stylistic/quotes": {
-      "count": 1
-    },
     "@typescript-eslint/no-explicit-any": {
       "count": 5
-    },
-    "curly": {
-      "count": 18
     }
   },
   "backend/watchers/stack-move-manager.test.ts": {

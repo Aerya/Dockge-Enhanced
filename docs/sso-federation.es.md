@@ -2,14 +2,14 @@
 
 [English](sso-federation.md) · [Français](sso-federation.fr.md) · [Deutsch](sso-federation.de.md) · [Español](sso-federation.es.md) · [简体中文](sso-federation.zh-CN.md)
 
-Las conexiones unidireccionales opcionales permiten gestionar un servidor remoto sin conexión de retorno ni propagación en la malla. Utilice un token de federación Enhanced y, si hace falta, credenciales HTTP Basic separadas para el proxy mediante HTTPS/WebSocket. Authentik requiere una cuenta autorizada (existente o preferiblemente dedicada), una contraseña de aplicación y autenticación por cabeceras; Enhanced no configura el proxy. El SSO público permanece activo. Configure la conexión por separado en cada instancia local.
+Las conexiones unidireccionales opcionales permiten gestionar un servidor remoto sin conexión de retorno ni propagación en la malla. Utilice un token de federación Enhanced y, si hace falta, credenciales HTTP Basic separadas para el proxy mediante HTTPS/WebSocket. Authentik requiere una cuenta autorizada (existente o preferiblemente dedicada), una contraseña de aplicación y autenticación por cabeceras; Enhanced no configura el proxy. El SSO público permanece activo.
 
 ## Configuración
 1. Actualice ambas instancias Enhanced. En la remota, inicie sesión por SSO como administrador. En Inicio, elija **Crear token de federación** y cópielo de forma privada.
 2. En la administración del proxy/SSO, utilice su cuenta existente o, preferiblemente, una cuenta dedicada autorizada para la aplicación y genere una contraseña de aplicación para esa cuenta (no su contraseña SSO habitual). En Authentik, active **Intercept header authentication** en el proveedor proxy y asegúrese de transmitir la cabecera Authorization al outpost. Enhanced no cambia la configuración del proxy.
 3. En la instancia local, elija **Añadir Agente**, introduzca el origen HTTPS remoto sin ruta, seleccione **Token de federación** y pegue el token Enhanced.
-4. Active **Conectar solo desde esta instancia**. Introduzca el nombre de usuario Authentik de la cuenta elegida y su contraseña de aplicación en los campos HTTP Basic separados y conecte. Déjelos vacíos si no necesita autenticación del proxy.
-5. Repita en cada instancia local deseada. No se necesita conexión de retorno desde el servidor remoto a su LAN privada.
+4. Active **Conexión sin retorno (SSO / servidor remoto)**. Introduzca el nombre de usuario Authentik de la cuenta elegida y su contraseña de aplicación en los campos HTTP Basic separados y conecte. Déjelos vacíos si no necesita autenticación del proxy.
+5. Tras añadir la conexión, use **Compartir esta conexión** para copiarla a las instancias de confianza elegidas, confirmando el envío de credenciales. Cada destinatario debe estar actualizado y poder acceder al servidor remoto. HTTP hacia los destinatarios no está cifrado: use una red de confianza o HTTPS. Los resultados se muestran por destinatario. Las copias son independientes: gestione los cambios posteriores de credenciales y la eliminación en cada destinatario. Reintentar no sobrescribe una conexión existente; revise los destinatarios con errores o tiempos agotados.
 
 ## Seguridad y funcionamiento
 Las credenciales del proxy solo permiten atravesarlo; el token Enhanced sigue siendo obligatorio en modo trusted-proxy. Una cabecera endpoint no autentica al agente. El SSO del navegador no cambia. La validación de certificados HTTPS permanece activa; se usa WebSocket sin seguir redirecciones. El proxy debe admitir WebSocket. No es compatibilidad automática con todos los proveedores SSO.

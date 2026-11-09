@@ -96,7 +96,7 @@ jobs:
 
       - name: Tests des connexions SSO et des jetons de fédération
         if: steps.docs.outputs.docs_only != 'true'
-        run: npx tsx --test backend/agent-connection-options.test.ts backend/two-factor-socket.test.ts backend/agent-mesh.test.ts
+        run: npx tsx --test backend/agent-connection-options.test.ts backend/agent-connection-share.test.ts backend/two-factor-socket.test.ts backend/agent-mesh.test.ts
 
       - name: Tests de l’agent sans interface
         if: steps.docs.outputs.docs_only != 'true'
