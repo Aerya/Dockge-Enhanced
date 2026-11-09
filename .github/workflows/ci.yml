@@ -269,6 +269,7 @@ jobs:
         run: |
           npx tsx --test backend/anonymous-install-count.test.ts
           node --test .github/scripts/usage-count.test.cjs
+          node --test .github/scripts/image-scope.test.cjs
 
       - name: Tests des ressources et de l’historique par stack
         if: steps.docs.outputs.docs_only != 'true'

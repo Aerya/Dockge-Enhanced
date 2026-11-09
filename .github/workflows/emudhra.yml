@@ -1,6 +1,13 @@
 name: Régression TLS eMudhra
 on:
   pull_request:
+    paths-ignore:
+      - "**/*.md"
+      - "docs/**"
+      - "screens/**"
+      - ".github/workflows/usage-count-asset.yml"
+      - ".github/scripts/usage-count.cjs"
+      - ".github/scripts/usage-count.test.cjs"
   workflow_dispatch:
 permissions:
   contents: read
