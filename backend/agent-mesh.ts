@@ -140,7 +140,7 @@ export async function upsertMeshPeers(peers: AgentMeshPeer[], ownEndpoint: strin
     }
 }
 
-function callPeer<T>(peer: AgentMeshPeer, event: string, payload: unknown): Promise<T> {
+export function callPeer<T>(peer: AgentMeshPeer, event: string, payload: unknown): Promise<T> {
     return new Promise((resolve, reject) => {
         let settled = false;
         const endpoint = meshEndpoint(peer);

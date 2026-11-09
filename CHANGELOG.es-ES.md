@@ -7,6 +7,8 @@ Historial completo del proyecto, de lo más reciente a lo más antiguo. Cada fec
 
 El [README](README.es-ES.md) presenta las principales novedades recientes y el catálogo de funcionalidades.
 
+**2026-11-09 — Compartir conexiones SSO** — Añada el servidor remoto una vez y use Compartir esta conexión para elegir instancias de confianza y autorizar el envío del token Enhanced y las credenciales del proxy. Cada destinatario se prueba por separado; no se sobrescriben conexiones existentes. Actualice los destinatarios primero. Las copias son independientes: gestione cambios de credenciales y eliminación en cada destinatario. No requiere conexión de retorno.
+
 **2026-11-09 — Verificación de actualizaciones y botones de instancias** — Un fallo de conexión al registro ya no oculta la compilación instalada ni se presenta como una imagen local desconocida. Los errores DNS tienen un mensaje específico; las actualizaciones automáticas siguen bloqueadas mientras falle la verificación. Los botones de agentes inversos quedan alineados y se adaptan a pantallas estrechas.
 
 **2026-11-09 — Instancias vinculadas detrás de SSO** — Las conexiones unidireccionales opcionales permiten gestionar un servidor remoto sin conexión de retorno ni propagación en la malla. Utilice un token de federación Enhanced y, si hace falta, credenciales HTTP Basic separadas para el proxy mediante HTTPS/WebSocket. Authentik requiere una cuenta autorizada (existente o preferiblemente dedicada), una contraseña de aplicación y autenticación por cabeceras; Enhanced no configura el proxy. El SSO público permanece activo. Configure la conexión por separado en cada instancia local.

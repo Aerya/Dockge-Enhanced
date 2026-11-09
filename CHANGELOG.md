@@ -7,6 +7,8 @@ Complete project history, newest first. Each date is the day the change was merg
 
 The [README](README.md) presents the main recent updates and the feature catalogue.
 
+**2026-11-09 — Shared SSO connections** — Add the remote server once, then use Share this connection to select trusted linked instances and explicitly authorize sending the Enhanced token and proxy credentials. Each recipient is tested independently; existing connections are not overwritten. Update all recipients first. Copies remain independent: change credentials or remove the connection on each recipient. No return connection is required.
+
 **2026-11-09 — Update checks and linked-instance buttons** — A registry connection failure no longer hides the installed build or implies that the local image is unknown. DNS failures have a specific message; automatic updates remain blocked while verification fails. Reverse-agent buttons are aligned and wrap on narrow screens.
 
 **2026-11-09 — SSO-protected linked instances** — Optional one-way connections let a local instance manage a remote server without a return connection or mesh propagation. Use an Enhanced federation token and, when required, separate proxy HTTP Basic credentials over HTTPS/WebSocket. Authentik requires an authorized account (existing or preferably dedicated), an app password and header authentication; Enhanced does not configure the proxy. The public SSO stays enabled. Configure the connection separately on each local instance.

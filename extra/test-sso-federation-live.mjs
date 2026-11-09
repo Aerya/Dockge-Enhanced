@@ -43,7 +43,7 @@ async function start(name, trusted, existingToken) {
     const child = spawn(process.execPath, [ "--import", "tsx", "backend/index.ts" ], { env: {
         ...process.env, NODE_ENV: "production", NODE_EXTRA_CA_CERTS: path.join(root, "cert.pem"),
         DOCKGE_DATA_DIR: path.join(dir, "data"), DOCKGE_STACKS_DIR: path.join(dir, "stacks"),
-        DOCKGE_PORT: String(port), DOCKGE_HOSTNAME: "127.0.0.1", DOCKGE_HUB_ONLY: "0", DOCKGE_AGENT_ONLY: "0",
+        DOCKGE_PORT: String(port), DOCKGE_HOSTNAME: "127.0.0.1", DOCKGE_HUB_ONLY: name === "central" ? "1" : "0", DOCKGE_AGENT_ONLY: "0",
         DOCKGE_AUTH_MODE: trusted ? "trusted-proxy" : "local", DOCKGE_AUTH_PROXY_TRUSTED_NETWORKS: "127.0.0.1/32",
         DOCKGE_AUTH_PROXY_ADMIN_USERS: "fixture-admin", DOCKGE_REVERSE_HUB_URL: "",
         DOCKER_HOST: `unix://${root}/nonexistent-docker.sock`,
@@ -55,19 +55,21 @@ async function start(name, trusted, existingToken) {
     const url = `http://127.0.0.1:${port}`;
     const socket = io(url, { reconnection: true, timeout: 1000, transports: [ "websocket" ], extraHeaders: trusted ? { "x-forwarded-user": "fixture-admin" } : { endpoint: "isolated-test-controller" } });
     sockets.push(socket);
+    let agentList = {};
+    socket.on("agentList", data => { agentList = data.agentList; });
     await Promise.race([ once(socket, "connect"), new Promise((_, reject) => setTimeout(() => reject(Error(`Startup failed: ${name}\n${logs}`)), 20000).unref()) ]);
-    let token;
+    let token, password;
     if (existingToken) {
         assert.equal((await rpc(socket, "loginByToken", existingToken)).ok, true);
         token = existingToken;
     } else if (!trusted) {
-        const password = randomBytes(24).toString("hex") + "Aa!";
+        password = randomBytes(24).toString("hex") + "Aa!";
         assert.equal((await rpc(socket, "setup", "fixture-admin", password)).ok, true);
         const login = await rpc(socket, "login", { username: "fixture-admin", password });
         assert.equal(login.ok, true);
         token = login.token;
     }
-    return { socket, dir, url, port, token, child, logs: () => logs };
+    return { socket, dir, url, port, token, password, child, logs: () => logs, agentList: () => agentList };
 }
 try {
     execFileSync("openssl", [ "req", "-x509", "-newkey", "rsa:2048", "-nodes", "-keyout", path.join(root, "key.pem"), "-out", path.join(root, "cert.pem"), "-days", "1", "-subj", "/CN=localhost", "-addext", "subjectAltName=IP:127.0.0.1" ], { stdio: "ignore" });
@@ -106,7 +108,41 @@ try {
     console.log("Added isolated SSO agent");
     assert.equal(add.ok, true, JSON.stringify(add));
     const endpoint = new URL(url).host;
+    const recipients = [ await start("recipient-a", false), await start("recipient-b", false) ];
+    for (const recipient of recipients) {
+        const token = await rpc(recipient.socket, "createAgentFederationToken", {});
+        assert.equal((await rpc(hub.socket, "addAgent", {
+            url: recipient.url, username: "__dockge_federation_token__", password: token.token,
+            self: { url: hub.url, displayName: "Test hub" },
+        })).ok, true);
+    }
+    const targets = recipients.map(recipient => new URL(recipient.url).host);
+    assert.equal((await rpc(hub.socket, "shareAgentConnection", { endpoint, targets, confirmed: false })).ok, false);
+    assert.equal((await rpc(hub.socket, "shareAgentConnection", { endpoint, targets: [ endpoint ], confirmed: true })).ok, false);
+    const firstOnly = await rpc(hub.socket, "shareAgentConnection", { endpoint, targets: [ targets[0] ], confirmed: true });
+    assert.deepEqual(firstOnly.results.map(result => result.endpoint), [ targets[0] ]);
+    assert.ok(!Object.hasOwn(recipients[1].agentList(), endpoint), "unselected recipient must not receive the connection");
+    const shared = await rpc(hub.socket, "shareAgentConnection", { endpoint, targets, confirmed: true });
+    assert.equal(shared.ok, true, JSON.stringify(shared));
+    assert.deepEqual(shared.results.map(result => result.ok), [ true, true ], JSON.stringify(shared));
+    const repeated = await rpc(hub.socket, "shareAgentConnection", { endpoint, targets, confirmed: true });
+    assert.deepEqual(repeated.results.map(result => result.ok), [ true, true ]);
+    const conflict = await rpc(recipients[0].socket, "receiveAgentConnection", { ...request, password: "different" });
+    assert.equal(conflict.ok, false);
     const compose = "services:\n  fixture:\n    image: busybox:stable\n";
+    for (const [ index, recipient ] of recipients.entries()) {
+        await retry(() => rpc(recipient.socket, "agent", endpoint, "saveStack", `shared-${index}`, compose, "", true, ""));
+        assert.equal(await readFile(path.join(remote.dir, "stacks", `shared-${index}`, "compose.yaml"), "utf8"), compose);
+        assert.deepEqual(await readdir(path.join(recipient.dir, "stacks")), []);
+        assert.ok(!recipient.logs().includes("fixture-app-password"));
+        assert.ok(!recipient.logs().includes(credential.token));
+    }
+    console.log("Shared SSO connection to two real recipients; consent, retries, conflict refusal and remote operations passed");
+    if (process.env.MANUAL_BROWSER === "1") {
+        console.log("Isolated browser fixture:", JSON.stringify({ url: hub.url, username: "fixture-admin", password: hub.password }));
+        console.log("Send SIGUSR1 to continue and remove all temporary fixture data. PID:", process.pid);
+        await once(process, "SIGUSR1");
+    }
     await retry(() => rpc(hub.socket, "agent", endpoint, "saveStack", "sso-fixture", compose, "", true, ""));
     assert.equal(await readFile(path.join(remote.dir, "stacks", "sso-fixture", "compose.yaml"), "utf8"), compose);
     assert.deepEqual(await readdir(path.join(hub.dir, "stacks")), []);

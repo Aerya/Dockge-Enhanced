@@ -224,6 +224,7 @@
                             </div>
 
                             <!-- Remoe Agent Dialog -->
+                            <button v-if="agent.oneWay && !agent.reverse" class="btn btn-normal btn-sm mt-2" @click="openConnectionShare(endpoint)">{{ $t('agentShare.open') }}</button>
                             <BModal v-model="showRemoveAgentDialog[agent.url]" :okTitle="$t('removeAgent')" okVariant="danger" @ok="removeAgent(agent.url)">
                                 <p>{{ agent.url }}</p>
                                 {{ $t("removeAgentMsg") }}
@@ -255,7 +256,7 @@
 
                             <div class="mb-3">
                                 <label for="agentCredentialMode" class="form-label">{{ $t("agentSso.authentication") }}</label>
-                                <select id="agentCredentialMode" v-model="useFederationToken" class="form-select">
+                                <select id="agentCredentialMode" v-model="useFederationToken" class="form-select" @change="agent.connectionOptions.oneWay = useFederationToken || agent.connectionOptions.oneWay">
                                     <option :value="false">{{ $t("Username") }} / {{ $t("Password") }}</option>
                                     <option :value="true">{{ $t("agentSso.token") }}</option>
                                 </select>
@@ -271,8 +272,8 @@
 
                             <div class="form-check my-3">
                                 <input id="agentOneWay" v-model="agent.connectionOptions.oneWay" type="checkbox" class="form-check-input">
-                                <label for="agentOneWay" class="form-check-label">{{ $t("agentSso.oneWay") }}</label>
-                                <p class="small text-muted">{{ $t("agentSso.oneWayHint") }}</p>
+                                <label for="agentOneWay" class="form-check-label">{{ $t("agentShare.noReturn") }}</label>
+                                <p class="small text-muted">{{ $t("agentShare.afterAdd") }}</p>
                             </div>
                             <fieldset v-if="agent.connectionOptions.oneWay" class="mb-3">
                                 <legend class="fs-6">{{ $t("agentSso.proxy") }}</legend>
@@ -292,6 +293,29 @@
                     </div>
                 </div>
             </div>
+
+            <BModal
+                v-model="showConnectionShare" :title="$t('agentShare.open')"
+                :cancelTitle="$t('cancel')"
+                :okTitle="$t('agentShare.send')" :okDisabled="sharingConnection || !shareConfirmed || !shareTargets.length"
+                @ok.prevent="shareConnection"
+            >
+                <p>{{ shareEndpoint }}</p>
+                <p>{{ $t('agentShare.help') }}</p>
+                <div v-for="recipient in connectionShareRecipients" :key="recipient.endpoint" class="form-check">
+                    <input :id="'share-' + recipient.endpoint" v-model="shareTargets" type="checkbox" :value="recipient.endpoint" class="form-check-input" :disabled="sharingConnection">
+                    <label :for="'share-' + recipient.endpoint" class="form-check-label">{{ recipient.displayName || recipient.endpoint }}</label>
+                </div>
+                <p v-if="!connectionShareRecipients.length">{{ $t('agentShare.empty') }}</p>
+                <div class="form-check mt-3">
+                    <input id="shareConfirmed" v-model="shareConfirmed" type="checkbox" class="form-check-input" :disabled="sharingConnection">
+                    <label for="shareConfirmed" class="form-check-label">{{ $t('agentShare.confirm') }}</label>
+                </div>
+                <p v-if="sharingConnection" role="status">{{ $t('connecting') }}</p>
+                <ul v-if="shareResults.length" class="mt-3">
+                    <li v-for="result in shareResults" :key="result.endpoint" :class="result.ok ? 'text-success' : 'text-danger'">{{ $root.agentList[result.endpoint]?.displayName || result.endpoint }} : {{ $t(result.message) }}</li>
+                </ul>
+            </BModal>
 
             <BModal
                 v-model="showReauthenticateAgentDialog" :title="$t('reauthenticateAgent')"
@@ -404,6 +428,12 @@ export default {
                     title: "home.summary.trivy.title" },
             ],
             federationToken: "",
+            showConnectionShare: false,
+            shareEndpoint: "",
+            shareTargets: [],
+            shareConfirmed: false,
+            shareResults: [],
+            sharingConnection: false,
             useFederationToken: false,
             reauthUseToken: false,
             agent: {
@@ -419,6 +449,11 @@ export default {
     },
 
     computed: {
+        connectionShareRecipients() {
+            return Object.entries(this.$root.agentList).filter(([ endpoint, agent ]) => endpoint && endpoint !== this.shareEndpoint && !agent.reverse && !agent.oneWay)
+                .map(([ endpoint, agent ]) => ({ ...agent,
+                    endpoint }));
+        },
         activeNum() {
             return this.getStatusNum("active", "");
         },
@@ -748,6 +783,34 @@ export default {
             }
         },
 
+        openConnectionShare(endpoint) {
+            this.shareEndpoint = endpoint;
+            this.shareTargets = [];
+            this.shareConfirmed = false;
+            this.shareResults = [];
+            this.showConnectionShare = true;
+        },
+
+        shareConnection() {
+            if (this.sharingConnection || !this.shareConfirmed || !this.shareTargets.length) {
+                return;
+            }
+            this.sharingConnection = true;
+            this.$root.getSocket().timeout(600000).emit("shareAgentConnection", {
+                endpoint: this.shareEndpoint,
+                targets: this.shareTargets,
+                confirmed: this.shareConfirmed,
+            }, (error, res) => {
+                this.sharingConnection = false;
+                if (error || !res?.ok) {
+                    this.$root.toastRes({ ok: false,
+                        msg: this.$t("agentShare.failed") });
+                    return;
+                }
+                this.shareResults = res.results;
+            });
+        },
+
         addAgent() {
             this.connectingAgent = true;
             this.$root.getSocket().emit("addAgent", {
@@ -759,6 +822,9 @@ export default {
                 this.$root.toastRes(res);
 
                 if (res.ok) {
+                    if (this.agent.connectionOptions.oneWay) {
+                        this.openConnectionShare(new URL(this.agent.url).host);
+                    }
                     this.showAgentForm = false;
                     this.agent = {
                         connectionOptions: { oneWay: false,

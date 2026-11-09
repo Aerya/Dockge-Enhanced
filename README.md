@@ -64,9 +64,11 @@ The most important recent changes are grouped here so you can quickly see what h
 
 ### 🆕 November 2026
 
+**Shared SSO connections :** Add the remote server once, then use Share this connection to select trusted linked instances and explicitly authorize sending the Enhanced token and proxy credentials. Each recipient is tested independently; existing connections are not overwritten. Update all recipients first. Copies remain independent: change credentials or remove the connection on each recipient. No return connection is required.
+
 **Update checks and linked-instance buttons :** A registry connection failure no longer hides the installed build or implies that the local image is unknown. DNS failures have a specific message; automatic updates remain blocked while verification fails. Reverse-agent buttons are aligned and wrap on narrow screens.
 
-**SSO-protected linked instances :** Optional one-way connections let a local instance manage a remote server without a return connection or mesh propagation. Use an Enhanced federation token and, when required, separate proxy HTTP Basic credentials over HTTPS/WebSocket. Authentik requires an authorized account (existing or preferably dedicated), an app password and header authentication; Enhanced does not configure the proxy. The public SSO stays enabled. Configure the connection separately on each local instance. [SSO-protected linked instances](docs/sso-federation.md).
+**SSO-protected linked instances :** Optional one-way connections let a local instance manage a remote server without a return connection or mesh propagation. Use an Enhanced federation token and, when required, separate proxy HTTP Basic credentials over HTTPS/WebSocket. Authentik requires an authorized account (existing or preferably dedicated), an app password and header authentication; Enhanced does not configure the proxy. The public SSO stays enabled. [SSO-protected linked instances](docs/sso-federation.md).
 
 **Agent without WebUI :** Optional DOCKGE_AGENT_ONLY=1 disables the local WebUI; the dedicated dockge-enhanced-agent image omits frontend assets. The authenticated HTTP/Socket.IO transport and backend remain necessary: this is not a promise of reduced RAM. Use local authentication and initialize a new agent with DOCKGE_BOOTSTRAP_USERNAME and DOCKGE_BOOTSTRAP_PASSWORD_FILE, then add its address from the central instance or configure the existing reverse connection. Never expose it without trusted-network/firewall or TLS protection. Update the agent through its hosting Compose, not internal self-update; stacks and schedules keep their existing behavior.
 
@@ -535,7 +537,7 @@ Stack navigation, the Logs/Compose workspace, resource indicators, health cards,
 
 ### Multi-server & federation
 
-- One-way connections and proxy authentication for SSO-protected instances ([SSO-protected linked instances](docs/sso-federation.md))
+- One-way connections and proxy authentication for SSO-protected instances ; Explicit sharing with selected trusted instances ([SSO-protected linked instances](docs/sso-federation.md))
 
 - **Agent without WebUI** — `DOCKGE_AGENT_ONLY=1`, `ghcr.io/aerya/dockge-enhanced-agent:latest`.
 

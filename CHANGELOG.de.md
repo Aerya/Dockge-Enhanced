@@ -7,6 +7,8 @@ Vollständige Projekthistorie, neueste Einträge zuerst. Jedes Datum ist der Tag
 
 Die [README](README.de.md) stellt die wichtigsten aktuellen Neuerungen und den Funktionskatalog vor.
 
+**2026-11-09 — SSO-Verbindungen teilen** — Fügen Sie den entfernten Server einmal hinzu und wählen Sie über Diese Verbindung teilen vertrauenswürdige Instanzen aus. Bestätigen Sie ausdrücklich die Übertragung des Enhanced-Tokens und der Proxy-Zugangsdaten. Jeder Empfänger wird einzeln geprüft; bestehende Verbindungen werden nicht überschrieben. Empfänger vorher aktualisieren. Kopien bleiben unabhängig: Zugangsdaten und Löschung auf jedem Empfänger separat verwalten. Keine Rückverbindung erforderlich.
+
 **2026-11-09 — Update-Prüfung und Instanz-Schaltflächen** — Ein Verbindungsfehler zur Registry blendet den installierten Build nicht mehr aus und wird nicht mehr als unbekanntes lokales Image dargestellt. DNS-Fehler erhalten eine eigene Meldung; automatische Updates bleiben bei fehlgeschlagener Prüfung blockiert. Die Schaltflächen für Reverse-Agenten sind ausgerichtet und umbrechen auf kleinen Bildschirmen.
 
 **2026-11-09 — Verknüpfte Instanzen hinter SSO** — Optionale einseitige Verbindungen erlauben die Verwaltung eines entfernten Servers ohne Rückverbindung oder Weitergabe im Mesh. Verwenden Sie ein Enhanced-Föderationstoken und bei Bedarf separate HTTP-Basic-Zugangsdaten für den Proxy über HTTPS/WebSocket. Authentik benötigt ein berechtigtes Konto (vorhanden oder vorzugsweise dediziert), ein App-Passwort und Header-Authentifizierung; Enhanced konfiguriert den Proxy nicht. Das öffentliche SSO bleibt aktiv. Richten Sie die Verbindung auf jeder lokalen Instanz separat ein.
