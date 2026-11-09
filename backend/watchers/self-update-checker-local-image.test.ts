@@ -1,9 +1,35 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { fetchLocalImageInfo } from "./self-update-checker";
+import { fetchLocalImageInfo, SelfUpdateChecker } from "./self-update-checker";
 
 const imageId = `sha256:${"a".repeat(64)}`;
 const indexDigest = `sha256:${"b".repeat(64)}`;
+
+test("conserve l'identité locale si le registre échoue, sans proposer de mise à jour", async () => {
+    const checker = new SelfUpdateChecker();
+    const local = await fetchLocalImageInfo(
+        async () => ({ Image: imageId }),
+        async () => ({ RepoDigests: [ `ghcr.io/aerya/dockge-enhanced@${indexDigest}` ],
+            Config: { Labels: { "org.opencontainers.image.revision": "installed-revision" } } }),
+    );
+    for (const error of [ "getaddrinfo EAI_AGAIN ghcr.io", "getaddrinfo ENOTFOUND ghcr.io", "HTTP 503" ]) {
+        await checker.check({
+            fetchLocalImageInfo: async () => local,
+            fetchContainerName: async () => "test-enhanced",
+            fetchRemoteDigest: async () => {
+                throw new Error(error);
+            },
+        });
+        const status = checker.getStatus();
+        assert.equal(status.localDigest, indexDigest);
+        assert.equal(status.localBuild.revision, "installed-revision");
+        assert.equal(status.containerName, "test-enhanced");
+        assert.equal(status.updateAvailable, false);
+        assert.equal(status.remoteDigest, "");
+        assert.equal(status.error, error);
+        assert.ok(status.checkedAt);
+    }
+});
 
 test("lit le digest local via l'inspection Docker compatible DOCKER_HOST", async () => {
     const inspectedIds: string[] = [];

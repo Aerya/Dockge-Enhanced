@@ -7,6 +7,8 @@ Complete project history, newest first. Each date is the day the change was merg
 
 The [README](README.md) presents the main recent updates and the feature catalogue.
 
+**2026-11-09 — Update checks and linked-instance buttons** — A registry connection failure no longer hides the installed build or implies that the local image is unknown. DNS failures have a specific message; automatic updates remain blocked while verification fails. Reverse-agent buttons are aligned and wrap on narrow screens.
+
 **2026-11-09 — SSO-protected linked instances** — Optional one-way connections let a local instance manage a remote server without a return connection or mesh propagation. Use an Enhanced federation token and, when required, separate proxy HTTP Basic credentials over HTTPS/WebSocket. Authentik requires an authorized account (existing or preferably dedicated), an app password and header authentication; Enhanced does not configure the proxy. The public SSO stays enabled. Configure the connection separately on each local instance.
 
 **2026-11-08 — Agent without WebUI** — Optional DOCKGE_AGENT_ONLY=1 disables the local WebUI; the dedicated dockge-enhanced-agent image omits frontend assets. The authenticated HTTP/Socket.IO transport and backend remain necessary: this is not a promise of reduced RAM. Use local authentication and initialize a new agent with DOCKGE_BOOTSTRAP_USERNAME and DOCKGE_BOOTSTRAP_PASSWORD_FILE, then add its address from the central instance or configure the existing reverse connection. Never expose it without trusted-network/firewall or TLS protection. Update the agent through its hosting Compose, not internal self-update; stacks and schedules keep their existing behavior.
