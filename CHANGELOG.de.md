@@ -7,6 +7,8 @@ Vollständige Projekthistorie, neueste Einträge zuerst. Jedes Datum ist der Tag
 
 Die [README](README.de.md) stellt die wichtigsten aktuellen Neuerungen und den Funktionskatalog vor.
 
+**2026-11-09 — Geplante Discord-Berichte** — Installationsschätzungen werden montags, mittwochs und samstags um 20:00 Uhr Europe/Paris gesendet, einschließlich Zeitumstellung. Die tägliche Vorbereitung bleibt still; ein fehlender Webhook führt nun zu einem sichtbaren Fehler.
+
 **2026-11-09 — SSO-Verbindungen teilen** — Fügen Sie den entfernten Server einmal hinzu und wählen Sie über Diese Verbindung teilen vertrauenswürdige Instanzen aus. Bestätigen Sie ausdrücklich die Übertragung des Enhanced-Tokens und der Proxy-Zugangsdaten. Jeder Empfänger wird einzeln geprüft; bestehende Verbindungen werden nicht überschrieben. Empfänger vorher aktualisieren. Kopien bleiben unabhängig: Zugangsdaten und Löschung auf jedem Empfänger separat verwalten. Keine Rückverbindung erforderlich.
 
 **2026-11-09 — Update-Prüfung und Instanz-Schaltflächen** — Ein Verbindungsfehler zur Registry blendet den installierten Build nicht mehr aus und wird nicht mehr als unbekanntes lokales Image dargestellt. DNS-Fehler erhalten eine eigene Meldung; automatische Updates bleiben bei fehlgeschlagener Prüfung blockiert. Die Schaltflächen für Reverse-Agenten sind ausgerichtet und umbrechen auf kleinen Bildschirmen.

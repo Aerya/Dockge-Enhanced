@@ -4,6 +4,9 @@ on:
   schedule:
     # Prepare current AND upcoming periods before their first download.
     - cron: "17 8 * * *"
+    # Reports follow French local time, including daylight-saving changes.
+    - cron: "0 20 * * 1,3,6"
+      timezone: "Europe/Paris"
   workflow_dispatch:
 
 permissions:
@@ -26,9 +29,10 @@ jobs:
         id: report
         env:
           EVENT_NAME: ${{ github.event_name }}
+          EVENT_SCHEDULE: ${{ github.event.schedule }}
         run: |
           send=false
-          if [[ "$EVENT_NAME" == "workflow_dispatch" || "$(date -u +%u)" == "1" || "$(date -u +%d)" == "01" ]]; then
+          if [[ "$EVENT_NAME" == "workflow_dispatch" || "$EVENT_SCHEDULE" == "0 20 * * 1,3,6" ]]; then
             send=true
           fi
           echo "send=$send" >> "$GITHUB_OUTPUT"
@@ -41,6 +45,7 @@ jobs:
         run: node .github/scripts/usage-count.cjs
 
       - name: Conserver le relevé sans secret
+        if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v7
         with:
           name: usage-count-report

@@ -7,6 +7,8 @@ Complete project history, newest first. Each date is the day the change was merg
 
 The [README](README.md) presents the main recent updates and the feature catalogue.
 
+**2026-11-09 — Scheduled Discord reports** — Installation estimates are sent on Monday, Wednesday and Saturday at 20:00 Europe/Paris, including daylight-saving changes. Daily counter preparation stays silent; missing webhook configuration now fails visibly.
+
 **2026-11-09 — Shared SSO connections** — Add the remote server once, then use Share this connection to select trusted linked instances and explicitly authorize sending the Enhanced token and proxy credentials. Each recipient is tested independently; existing connections are not overwritten. Update all recipients first. Copies remain independent: change credentials or remove the connection on each recipient. No return connection is required.
 
 **2026-11-09 — Update checks and linked-instance buttons** — A registry connection failure no longer hides the installed build or implies that the local image is unknown. DNS failures have a specific message; automatic updates remain blocked while verification fails. Reverse-agent buttons are aligned and wrap on narrow screens.

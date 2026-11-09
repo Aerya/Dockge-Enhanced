@@ -425,7 +425,7 @@ Enhanced 通过三个独立下载估算参与统计的实例：每周一次（UT
 
 机制公开可查：[Enhanced 代码](./backend/anonymous-install-count.ts)、[周期准备 workflow](./.github/workflows/usage-count-asset.yml) 和[汇总计数](https://github.com/Aerya/Dockge-Enhanced/releases/tag/usage-count)。提前准备后续周期；错误日志不包含标识符或机密，每个周期最多每 12 小时重试一次。
 
-Actions Secret `USAGE_COUNT_DISCORD_WEBHOOK` 可在每周一及每月第一天发送报告，包括上一完整自然周、当月、所有历史月份及独立统计的当年。日期重合时仅发送一份报告，也支持手动运行。报告标明不完整或缺失的周期；旧版本仅计入月度，因此迁移期间周度和年度会偏低。报告作为 Actions 构件保留 90 天。Webhook 保持保密。
+Actions Secret `USAGE_COUNT_DISCORD_WEBHOOK` 可在每周一、周三和周六巴黎时间 20:00（自动切换夏令时和冬令时）发送报告，包括上一完整自然周、当月、所有历史月份及独立统计的当年。GitHub 可能延迟计划任务，也支持手动运行。报告标明不完整或缺失的周期；旧版本仅计入月度，因此迁移期间周度和年度会偏低。报告作为 Actions 构件保留 90 天。Webhook 保持保密。
 
 **多实例全局搜索 V2（`Ctrl+K`）**
 
@@ -722,7 +722,7 @@ Stack 导航、Logs/Compose、资源指标、健康卡片、主题和移动端�
 - Discord 和 Apprise 通知，支持 EN / FR / ES / zh-CN
 - 通知中包含实例名称，并可通过 `DOCKGE_PUBLIC_URL` 添加链接
 - 远程运维公告和持久化的未读更新日志
-- 可选通过 GitHub Actions Discord Webhook 发送每周和每月匿名安装计数报告
+- 可选通过 GitHub Actions Discord Webhook 每周三个晚上发送匿名安装计数报告
 - 第三方移动客户端
 
 </details>

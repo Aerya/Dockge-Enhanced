@@ -426,7 +426,7 @@ Bereits gezählte Zeiträume werden lokal gespeichert. Mit `DOCKGE_USAGE_COUNT=f
 
 Der Mechanismus ist öffentlich: [Enhanced-Code](./backend/anonymous-install-count.ts), [Workflow zur Vorbereitung der Zeiträume](./.github/workflows/usage-count-asset.yml) und [aggregierte Zähler](https://github.com/Aerya/Dockge-Enhanced/releases/tag/usage-count). Kommende Zeiträume werden vorab vorbereitet; Fehler werden ohne Kennungen oder Geheimnisse protokolliert. Pro Zeitraum erfolgt höchstens alle 12 Stunden ein neuer Versuch.
 
-Das Actions-Geheimnis `USAGE_COUNT_DISCORD_WEBHOOK` aktiviert Berichte montags und am Monatsersten: vergangene Kalenderwoche, laufender Monat, alle früheren Monate und separat gezähltes laufendes Jahr. Zusammenfallende Termine erzeugen nur einen Bericht. Manuelle Ausführung ist möglich. Unvollständige oder fehlende Zeiträume werden gekennzeichnet; alte Versionen zählen nur monatlich, wodurch Wochen und Jahre während der Migration unterschätzt werden. Berichte bleiben 90 Tage als Actions-Artefakte erhalten. Der Webhook bleibt geheim.
+Das Actions-Geheimnis `USAGE_COUNT_DISCORD_WEBHOOK` aktiviert Berichte montags, mittwochs und samstags um 20:00 Uhr Europe/Paris (automatische Sommer-/Winterzeit): vergangene Kalenderwoche, laufender Monat, alle früheren Monate und separat gezähltes laufendes Jahr. GitHub kann geplante Ausführungen verzögern. Manuelle Ausführung ist möglich. Unvollständige oder fehlende Zeiträume werden gekennzeichnet; alte Versionen zählen nur monatlich, wodurch Wochen und Jahre während der Migration unterschätzt werden. Berichte bleiben 90 Tage als Actions-Artefakte erhalten. Der Webhook bleibt geheim.
 
 **Globale instanzenübergreifende Suche V2 (`Ctrl+K`)**
 
@@ -721,7 +721,7 @@ Die Stack-Navigation, der Logs/Compose-Arbeitsbereich, Ressourcenindikatoren, St
 - Discord- und Apprise-Benachrichtigungen, lokalisiert in EN / FR / ES / zh-CN
 - Instanzname in Benachrichtigungen und Links über `DOCKGE_PUBLIC_URL`
 - Remote-Betriebsankündigungen und persistentes Journal ungelesener Neuigkeiten
-- Optionale wöchentliche und monatliche Berichte zur anonymen Installationszählung über einen Discord-Webhook in GitHub Actions
+- Optionale Berichte zur anonymen Installationszählung an drei Abenden pro Woche über einen Discord-Webhook in GitHub Actions
 - Mobile Clients von Drittanbietern
 
 </details>

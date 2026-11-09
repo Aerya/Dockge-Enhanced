@@ -7,6 +7,8 @@ Historique complet du projet, du plus récent au plus ancien. Chaque date corres
 
 Le [README](README.fr.md) présente les principales nouveautés récentes et le catalogue des fonctionnalités.
 
+**2026-11-09 — Rapports Discord planifiés** — Les estimations d’installations sont envoyées les lundi, mercredi et samedi à 20 h, heure de Paris, avec changement d’heure automatique. La préparation quotidienne reste silencieuse ; un webhook absent provoque désormais un échec explicite.
+
 **2026-11-09 — Partager les connexions SSO** — Ajoutez le serveur distant une fois, puis utilisez Partager cette connexion pour choisir les instances liées de confiance et autoriser explicitement l’envoi du jeton Enhanced et des identifiants du proxy. Chaque destinataire est testé séparément ; aucune connexion existante n’est écrasée. Mettez les destinataires à jour. Les copies restent indépendantes : modifiez les identifiants ou supprimez la connexion sur chaque destinataire. Aucune connexion retour n’est nécessaire.
 
 **2026-11-09 — Vérification des mises à jour et boutons des instances** — Une panne de connexion au registre ne masque plus le build installé et n’est plus présentée comme une image locale inconnue. Les erreurs DNS disposent d’un message dédié ; les mises à jour automatiques restent bloquées tant que la vérification échoue. Les boutons des agents inversés sont alignés et reviennent à la ligne sur petit écran.
