@@ -426,7 +426,7 @@ Counted periods are remembered in local data. Set `DOCKGE_USAGE_COUNT=false` to 
 
 The mechanism is public: [Enhanced code](./backend/anonymous-install-count.ts), [period preparation workflow](./.github/workflows/usage-count-asset.yml) and [aggregate counters](https://github.com/Aerya/Dockge-Enhanced/releases/tag/usage-count). Upcoming periods are prepared in advance; failures are logged without identifiers or secrets, with at most one retry every 12 hours per period.
 
-The Actions secret `USAGE_COUNT_DISCORD_WEBHOOK` enables reports every Monday and on the first of each month: the previous calendar week, current month, all past months and the independently counted current year. Coinciding dates generate one report. Manual runs are supported. Partial or missing periods are labelled; old versions only contribute to monthly counts, undercounting weeks and years during migration. Reports are retained as Actions artifacts for 90 days. The webhook remains secret.
+The Actions secret `USAGE_COUNT_DISCORD_WEBHOOK` enables reports on Monday, Wednesday and Saturday at 20:00 Europe/Paris (automatic summer/winter time): the previous calendar week, current month, all past months and the independently counted current year. GitHub may delay scheduled runs. Manual runs are supported. Partial or missing periods are labelled; old versions only contribute to monthly counts, undercounting weeks and years during migration. Reports are retained as Actions artifacts for 90 days. The webhook remains secret.
 
 **Global multi-instance search V2 (`Ctrl+K`)**
 
@@ -721,7 +721,7 @@ Stack navigation, the Logs/Compose workspace, resource indicators, health cards,
 - Discord and Apprise notifications, localized in EN / FR / ES / zh-CN
 - Instance name in notifications and `DOCKGE_PUBLIC_URL` links
 - Remote operational announcements and a persistent unread release-news journal
-- Optional weekly and monthly anonymous installation-count reports via a GitHub Actions Discord webhook
+- Optional anonymous installation-count reports three evenings a week via a GitHub Actions Discord webhook
 - Third-party mobile clients
 
 </details>

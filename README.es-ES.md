@@ -428,7 +428,7 @@ Los períodos contabilizados se guardan localmente. El conteo puede desactivarse
 
 El mecanismo es público: [código Enhanced](./backend/anonymous-install-count.ts), [workflow de preparación de períodos](./.github/workflows/usage-count-asset.yml) y [contadores agregados](https://github.com/Aerya/Dockge-Enhanced/releases/tag/usage-count). Los períodos siguientes se preparan por adelantado; se registran errores sin identificadores ni secretos, con un reintento como máximo cada 12 horas por período.
 
-El secreto Actions `USAGE_COUNT_DISCORD_WEBHOOK` permite recibir informes cada lunes y el primer día del mes: semana natural anterior, mes actual, todos los meses anteriores y año actual contado por separado. Si coinciden las fechas se envía un solo informe. También admite ejecución manual. Los períodos parciales o ausentes se indican; las versiones antiguas solo contribuyen al mes, infravalorando semanas y años durante la migración. Los informes se conservan 90 días como artefactos Actions. El webhook permanece secreto.
+El secreto Actions `USAGE_COUNT_DISCORD_WEBHOOK` permite recibir informes los lunes, miércoles y sábados a las 20:00 Europe/Paris (horario de verano/invierno automático): semana natural anterior, mes actual, todos los meses anteriores y año actual contado por separado. GitHub puede retrasar las ejecuciones programadas. También admite ejecución manual. Los períodos parciales o ausentes se indican; las versiones antiguas solo contribuyen al mes, infravalorando semanas y años durante la migración. Los informes se conservan 90 días como artefactos Actions. El webhook permanece secreto.
 
 **Búsqueda global multi-instancia V2 (`Ctrl+K`)**
 
@@ -723,7 +723,7 @@ La navegación, Logs/Compose, indicadores de recursos, tarjetas de salud, temas 
 - Notificaciones de Discord y Apprise, localizadas en EN / FR / ES / zh-CN
 - Nombre de la instancia en las notificaciones y enlaces `DOCKGE_PUBLIC_URL`
 - Anuncios operativos remotos y registro persistente de novedades no leídas
-- Informes semanales y mensuales opcionales del conteo anónimo de instalaciones mediante un webhook de Discord en GitHub Actions
+- Informes opcionales del conteo anónimo de instalaciones tres noches por semana mediante un webhook de Discord en GitHub Actions
 - Clientes móviles de terceros
 
 </details>

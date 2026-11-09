@@ -59,8 +59,7 @@ async function main() {
     if (process.env.SEND_REPORT !== "true") return;
     const webhook = process.env.DISCORD_WEBHOOK;
     if (!webhook) {
-        console.log("Secret Discord absent : rapport conservé dans l’artefact Actions.");
-        return;
+        throw new Error("Secret Discord absent : envoi impossible, rapport conservé dans l’artefact Actions.");
     }
     if (!/^https:\/\/(discord\.com|discordapp\.com)\/api\/webhooks\//.test(webhook)) throw new Error("Invalid Discord webhook");
     for (const payload of payloads) {
@@ -71,6 +70,7 @@ async function main() {
             throw new Error("Discord delivery failed; webhook and response omitted for privacy");
         }
     }
+    console.log(`Rapport accepté par Discord (${payloads.length} message(s)).`);
 }
 
 module.exports = { assetsToPrepare, report };

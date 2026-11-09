@@ -427,7 +427,7 @@ Les périodes déjà comptées sont mémorisées dans les données locales. Le c
 
 Le mécanisme est public : [code Enhanced](./backend/anonymous-install-count.ts), [workflow de préparation des périodes](./.github/workflows/usage-count-asset.yml) et [compteurs agrégés](https://github.com/Aerya/Dockge-Enhanced/releases/tag/usage-count). Les périodes suivantes sont préparées à l’avance ; les erreurs de comptage sont signalées sans identifiant ni secret, avec une nouvelle tentative limitée à une toutes les 12 heures par période.
 
-Le secret Actions `USAGE_COUNT_DISCORD_WEBHOOK` permet de recevoir chaque lundi et chaque premier du mois un rapport : semaine civile écoulée, mois en cours, tous les mois précédents et année en cours comptée séparément. Un seul rapport est envoyé si ces dates coïncident. Le lancement manuel est possible. Les périodes partielles ou absentes sont indiquées ; les anciennes versions ne contribuent qu’au mois, ce qui sous-estime semaine et année pendant la migration. Les relevés sont conservés 90 jours dans les artefacts Actions. Le webhook reste secret.
+Le secret Actions `USAGE_COUNT_DISCORD_WEBHOOK` permet de recevoir les lundi, mercredi et samedi à 20 h, heure de Paris (heure d’été/hiver automatique) un rapport : semaine civile écoulée, mois en cours, tous les mois précédents et année en cours comptée séparément. GitHub peut retarder les exécutions planifiées. Le lancement manuel est possible. Les périodes partielles ou absentes sont indiquées ; les anciennes versions ne contribuent qu’au mois, ce qui sous-estime semaine et année pendant la migration. Les relevés sont conservés 90 jours dans les artefacts Actions. Le webhook reste secret.
 
 **Recherche globale multi-instance V2 (`Ctrl+K`)**
 
@@ -722,7 +722,7 @@ La navigation des stacks, l'espace Logs/Compose, les indicateurs de ressources, 
 - Notifications Discord et Apprise, localisées en EN / FR / ES / zh-CN
 - Nom de l’instance dans les notifications et liens `DOCKGE_PUBLIC_URL`
 - Annonces opérationnelles distantes et journal persistant des nouveautés non lues
-- Rapports hebdomadaires et mensuels facultatifs du comptage anonyme des installations via un webhook Discord GitHub Actions
+- Rapports facultatifs du comptage anonyme des installations trois soirs par semaine via un webhook Discord GitHub Actions
 - Clients mobiles tiers
 
 </details>

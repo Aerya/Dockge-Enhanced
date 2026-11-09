@@ -38,6 +38,41 @@ else if (args[1] === 'upload') {
     assert.equal(saved.find(a => a.name === `${month}.txt`).downloadCount, 753);
     assert.equal(saved.length, assetsToPrepare(now).length);
     assert.match(fs.readFileSync(path.join(dir, "usage-count-report.json"), "utf8"), /753/);
+    const missingSecret = spawnSync(process.execPath, [path.join(__dirname, "usage-count.cjs")], {
+        encoding: "utf8",
+        env: { ...process.env, PATH: `${dir}:${process.env.PATH}`, RUNNER_TEMP: dir, GITHUB_REPOSITORY: "fixture/repository", SEND_REPORT: "true", DISCORD_WEBHOOK: "" },
+    });
+    assert.equal(missingSecret.status, 1);
+    assert.match(missingSecret.stderr, /Secret Discord absent/);
+    assert.ok(fs.existsSync(path.join(dir, "usage-count-report.json")));
+});
+
+test("workflow separates daily preparation and Paris evening reports without execution-date gating", t => {
+    const workflow = require("yaml").parse(fs.readFileSync(path.join(__dirname, "../workflows/usage-count-asset.yml"), "utf8"));
+    assert.deepEqual(workflow.on.schedule, [
+        { cron: "17 8 * * *" },
+        { cron: "0 20 * * 1,3,6", timezone: "Europe/Paris" },
+    ]);
+    const step = workflow.jobs["usage-count"].steps.find(s => s.id === "report");
+    assert.equal(step.env.EVENT_SCHEDULE, "${{ github.event.schedule }}");
+    assert.doesNotMatch(step.run, /date /);
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "usage-schedule-"));
+    t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+    for (const [event, schedule, expected] of [
+        ["schedule", "17 8 * * *", false],
+        ["schedule", "0 20 * * 1,3,6", true],
+        ["workflow_dispatch", "", true],
+        ["push", "", false],
+    ]) {
+        const output = path.join(dir, "output");
+        fs.writeFileSync(output, "");
+        const run = spawnSync("bash", ["-e", "-c", step.run], { encoding: "utf8", env: { ...process.env, EVENT_NAME: event, EVENT_SCHEDULE: schedule, GITHUB_OUTPUT: output } });
+        assert.equal(run.status, 0, run.stderr);
+        assert.equal(fs.readFileSync(output, "utf8").trim(), `send=${expected}`);
+    }
+    for (const [instant, hour] of [["2026-01-05T19:00:00Z", "20"], ["2026-07-06T18:00:00Z", "20"]]) {
+        assert.equal(new Intl.DateTimeFormat("fr-FR", { timeZone: workflow.on.schedule[1].timezone, hour: "2-digit" }).format(new Date(instant)), `${hour} h`);
+    }
 });
 
 test("prepare next UTC week, month and year before boundaries", () => {
