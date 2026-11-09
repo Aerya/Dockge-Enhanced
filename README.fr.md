@@ -135,7 +135,7 @@ Les évolutions majeures récentes sont regroupées ici afin de comprendre rapid
 
 **Outils de configuration :** Historique chiffré des fichiers (20 versions), aperçu du Compose final enregistré, formulaire `.env` et diagnostic des instances liées. Restauration sans redéploiement automatique. [Outils de configuration](docs/configuration-tools.fr.md).
 
-**Comptage anonyme par période :** Estimations indépendantes par semaine, mois et année ; Discord affiche la semaine écoulée, le mois en cours, tous les mois passés et l’année sans additionner les mois. L’historique mensuel est conservé ; périodes incomplètes et limites de migration sont explicites.
+**Comptage anonyme par période :** Estimations par semaine et par mois, avec un cumul annuel égal à la somme des mois mesurés, mois en cours inclus. Discord affiche uniquement les statistiques ; l’historique mensuel est conservé.
 
 **Auto-mise à jour avec dossiers communs :** L’updater réutilise le montage existant lorsque les dossiers de données et du Compose sont identiques, évitant l’échec Docker « Duplicate mount point » avant le remplacement. Les données de récupération restent accessibles en écriture et l’alias du chemin hôte en lecture seule.
 
@@ -419,7 +419,7 @@ Un cas explicitement pris en charge est [Gluetun-Companion](https://github.com/A
 
 **Comptage anonyme des installations**
 
-Enhanced estime les instances participantes grâce à trois téléchargements indépendants : un par semaine (lundi–dimanche UTC), un par mois et un par année civile UTC. Les `download_count` publics des petits fichiers de la release GitHub sont utilisés ; les pulls Docker ne sont pas convertis en installations. Le total annuel n’est jamais la somme des mois.
+Le rapport utilise les `download_count` publics des fichiers hebdomadaires et mensuels de la release GitHub. Son cumul annuel additionne les mois mesurés de l’année en cours, mois actuel inclus. Une installation peut donc contribuer plusieurs mois : ce n’est pas un nombre annuel d’installations distinctes. L’ancien compteur annuel indépendant est conservé pour compatibilité, mais n’est plus utilisé dans les rapports. Les pulls Docker ne sont pas convertis en installations.
 
 Aucun identifiant d’installation n’est généré ni transmis pour ce comptage. La requête ne contient aucun hostname, nom d’instance, stack, conteneur, image Docker, configuration, chemin, compte GitHub, e-mail, architecture ou identifiant de build. Comme pour tout téléchargement d’asset GitHub, la connexion elle-même est traitée par GitHub ; Dockge-Enhanced ne reçoit ni ne stocke l’adresse IP des installations.
 
@@ -427,7 +427,7 @@ Les périodes déjà comptées sont mémorisées dans les données locales. Le c
 
 Le mécanisme est public : [code Enhanced](./backend/anonymous-install-count.ts), [workflow de préparation des périodes](./.github/workflows/usage-count-asset.yml) et [compteurs agrégés](https://github.com/Aerya/Dockge-Enhanced/releases/tag/usage-count). Les périodes suivantes sont préparées à l’avance ; les erreurs de comptage sont signalées sans identifiant ni secret, avec une nouvelle tentative limitée à une toutes les 12 heures par période.
 
-Le secret Actions `USAGE_COUNT_DISCORD_WEBHOOK` permet de recevoir les lundi, mercredi et samedi à 20 h, heure de Paris (heure d’été/hiver automatique) un rapport : semaine civile écoulée, mois en cours, tous les mois précédents et année en cours comptée séparément. GitHub peut retarder les exécutions planifiées. Le lancement manuel est possible. Les périodes partielles ou absentes sont indiquées ; les anciennes versions ne contribuent qu’au mois, ce qui sous-estime semaine et année pendant la migration. Les relevés sont conservés 90 jours dans les artefacts Actions. Le webhook reste secret.
+Le secret Actions `USAGE_COUNT_DISCORD_WEBHOOK` permet de recevoir les lundi, mercredi et samedi à 20 h, heure de Paris (heure d’été/hiver automatique), la semaine civile écoulée, le mois en cours, tous les mois précédents et le cumul annuel des mois. Le message ne contient que les statistiques ; une mesure absente affiche N/D. Les mesures peuvent être partielles, notamment pendant la migration. GitHub peut retarder les tâches planifiées. Le lancement manuel reste possible ; les artefacts sont conservés 90 jours. Le webhook reste secret.
 
 **Recherche globale multi-instance V2 (`Ctrl+K`)**
 

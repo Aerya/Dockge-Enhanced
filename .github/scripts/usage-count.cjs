@@ -16,27 +16,25 @@ function report(assets, now = new Date()) {
     const lookup = new Map(assets.map(asset => [asset.name.replace(/\.txt$/, ""), asset]));
     const describe = key => {
         const asset = lookup.get(key);
-        if (!asset) return "non disponible (aucune mesure historique reconstituée)";
-        const partial = Date.parse(asset.createdAt) > Date.parse(periodStart(key));
-        return `**${asset.downloadCount}**${partial ? ` — période partielle, mesure depuis le ${asset.createdAt.slice(0, 10)}` : ""}`;
+        return asset ? `**${asset.downloadCount}**` : "N/D";
     };
+    const months = assets.filter(asset => /^\d{4}-(0[1-9]|1[0-2])\.txt$/.test(asset.name) && asset.name.slice(0, 7) <= current.month);
+    const yearMonths = months.filter(asset => asset.name.startsWith(`${now.getUTCFullYear()}-`));
+    const annualTotal = yearMonths.length ? `**${yearMonths.reduce((sum, asset) => sum + asset.downloadCount, 0)}**` : "N/D";
     const end = new Date(Date.parse(periodStart(week)) + 6 * 86400000).toISOString().slice(0, 10);
     const lines = [
         `Semaine écoulée (${week.slice(5)} → ${end}, UTC) : ${describe(week)}`,
         `Mois en cours (${current.month}) : ${describe(current.month)}`,
-        `Année en cours (${current.year.slice(5)}) : ${describe(current.year)}`,
+        `Cumul ${now.getUTCFullYear()} (somme des mois) : ${annualTotal}`,
         "",
         "**Mois précédents**",
-        ...assets.filter(asset => /^\d{4}-\d{2}\.txt$/.test(asset.name) && asset.name.slice(0, 7) < current.month)
+        ...months.filter(asset => asset.name.slice(0, 7) < current.month)
             .sort((a, b) => b.name.localeCompare(a.name)).map(asset => `${asset.name.slice(0, 7)} : ${describe(asset.name.slice(0, 7))}`),
-        "",
-        "Estimations des instances participantes, pas de nouvelles installations ni d’utilisateurs uniques. L’année est comptée séparément, jamais par addition des mois. Les anciennes versions ne participent qu’au compteur mensuel ; semaine et année sont sous-estimées pendant la migration.",
-        "Déduplication locale dans les données Enhanced, sans identifiant transmis. Données réinitialisées et téléchargements externes peuvent surcompter ; versions anciennes, désactivation et erreurs réseau peuvent sous-compter. Les pulls Docker ne sont pas des installations uniques.",
     ];
     const pages = [""];
     for (const line of lines) {
         if (pages[pages.length - 1].length + line.length > 3500) pages.push("");
-        pages[pages.length - 1] += `${line}\n`;
+        pages[pages.length - 1] += `${line}\n\n`;
     }
     return pages.map(description => ({ username: "Dockge Enhanced", embeds: [{ title: "Dockge-Enhanced — installations estimées par période", description, color: 5793266, timestamp: now.toISOString() }] }));
 }

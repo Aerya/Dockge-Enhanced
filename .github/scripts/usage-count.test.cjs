@@ -89,11 +89,25 @@ test("report does not confuse previous week, months or annual sum", () => {
     ];
     const text = JSON.stringify(report(assets, new Date("2026-11-02T12:00:00Z")));
     assert.match(text, /2026-10-26 → 2026-11-01/);
-    assert.match(text, /Année en cours \(2026\) : \*\*600\*\*/);
+    assert.match(text, /Cumul 2026 \(somme des mois\) : \*\*1317\*\*/);
     assert.match(text, /2026-10 : \*\*753\*\*/);
-    assert.match(text, /période partielle/);
-    assert.doesNotMatch(text, /1317/);
-    assert.match(JSON.stringify(report([], new Date("2026-11-02"))), /non disponible/);
+    assert.doesNotMatch(text, /période partielle|Déduplication|anciennes versions|\*\*600\*\*/);
+    assert.match(JSON.stringify(report([], new Date("2026-11-02"))), /N\/D/);
+});
+
+test("annual cumulative includes current month but excludes other years, future months and legacy annual counter", () => {
+    const assets = [
+        ["2026-09", 275], ["2026-10", 753], ["2026-11", 643],
+        ["2025-12", 900], ["2026-12", 100], ["year-2026", 379],
+    ].map(([key, count]) => ({ name: `${key}.txt`, downloadCount: count, createdAt: "2026-11-03T00:00:00Z" }));
+    const text = JSON.stringify(report(assets, new Date("2026-11-09")));
+    assert.match(text, /Cumul 2026 \(somme des mois\) : \*\*1671\*\*/);
+    assert.match(text, /2025-12 : \*\*900\*\*/);
+    assert.doesNotMatch(text, /379|2026-12/);
+    const january = JSON.stringify(report(assets, new Date("2027-01-01")));
+    assert.match(january, /Cumul 2027 \(somme des mois\) : N\/D/);
+    const zero = JSON.stringify(report([{ name: "2027-01.txt", downloadCount: 0 }], new Date("2027-01-01")));
+    assert.match(zero, /Cumul 2027 \(somme des mois\) : \*\*0\*\*/);
 });
 
 test("every past month remains listed within Discord size limits", () => {

@@ -7,6 +7,8 @@ Complete project history, newest first. Each date is the day the change was merg
 
 The [README](README.md) presents the main recent updates and the feature catalogue.
 
+**2026-11-09 — Concise Discord statistics** — The annual cumulative now adds the measured months of the current year, including the current month, instead of using the independent annual counter. Discord reports only statistics; historical counts remain unchanged.
+
 **2026-11-09 — Scheduled Discord reports** — Installation estimates are sent on Monday, Wednesday and Saturday at 20:00 Europe/Paris, including daylight-saving changes. Daily counter preparation stays silent; missing webhook configuration now fails visibly.
 
 **2026-11-09 — Shared SSO connections** — Add the remote server once, then use Share this connection to select trusted linked instances and explicitly authorize sending the Enhanced token and proxy credentials. Each recipient is tested independently; existing connections are not overwritten. Update all recipients first. Copies remain independent: change credentials or remove the connection on each recipient. No return connection is required.
