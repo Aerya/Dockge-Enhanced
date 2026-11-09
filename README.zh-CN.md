@@ -63,6 +63,8 @@ Dockge Enhanced 是 [Dockge](https://github.com/louislam/dockge) 的分支，通
 
 ### 🆕 2026 年 11 月
 
+**连接受 SSO 保护的实例 :** 可选的单向连接允许本地实例管理远程服务器，无需反向连接，也不会传播到网状联邦。使用 Enhanced 联邦令牌；如有需要，通过 HTTPS/WebSocket 提供独立的代理 HTTP Basic 凭据。Authentik 需要已授权的账户（可使用现有账户，建议使用专用账户）、应用密码（不是日常 SSO 密码）以及请求头身份验证；Enhanced 不会配置代理。公开的 SSO 仍保持启用。请在每个本地实例上分别配置连接。 [连接受 SSO 保护的实例](docs/sso-federation.zh-CN.md).
+
 **无 WebUI 的代理 :** 可选的 DOCKGE_AGENT_ONLY=1 禁用本地 WebUI；专用 dockge-enhanced-agent 镜像不包含前端文件。仍需经过身份验证的 HTTP/Socket.IO 传输及后端，因此不承诺降低内存用量。使用本地认证，通过 DOCKGE_BOOTSTRAP_USERNAME 和 DOCKGE_BOOTSTRAP_PASSWORD_FILE 初始化新代理，然后在中心实例添加其地址或配置现有反向连接。请通过可信网络/防火墙或 TLS 保护访问。通过代理所在的 Compose 更新代理，不使用内部自动更新；Stack 和计划任务的行为不变。
 
 **仅中心模式 :** DOCKGE_HUB_ONLY=1 将此实例用作关联服务器的中央界面，不运行本地 Docker 操作、监控、计划或自动更新。默认禁用，修改后需要重启。新建中心实例时，请使用独立数据卷，不挂载 Docker 套接字或主机 Stack 目录。请使用独立实例，不要在操作期间切换。现有本地文件保持不变但被隐藏；禁用此模式即可恢复正常运行。
@@ -531,6 +533,8 @@ Stack 导航、Logs/Compose、资源指标、健康卡片、主题和移动端�
 <summary>查看全部功能</summary>
 
 ### 多服务器与联邦
+
+- 为受 SSO 保护的实例提供单向连接和代理身份验证 ([连接受 SSO 保护的实例](docs/sso-federation.zh-CN.md))
 
 - **无 WebUI 的代理** — `DOCKGE_AGENT_ONLY=1`, `ghcr.io/aerya/dockge-enhanced-agent:latest`.
 

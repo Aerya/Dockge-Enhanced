@@ -476,16 +476,20 @@ export class DockgeServer {
             log.debug("auth", "check authentication mode");
             const authMode = await getAuthMode();
             if (authMode === "trusted-proxy") {
-                try {
-                    const username = getTrustedProxyIdentity(socket.request);
-                    const user = await ensureTrustedProxyUser(username);
-                    this.needSetup = false;
-                    await this.afterLogin(dockgeSocket, user);
-                    dockgeSocket.emit("autoLogin", username);
-                } catch (error) {
-                    const message = error instanceof Error ? error.message : String(error);
-                    log.warn("auth", `Trusted proxy authentication failed: ${message}`);
-                    dockgeSocket.emit("authProxyError", message);
+                // Federation must prove its Enhanced token. Never let a proxy's
+                // service-account identity authenticate an agent implicitly.
+                if (!dockgeSocket.endpoint) {
+                    try {
+                        const username = getTrustedProxyIdentity(socket.request);
+                        const user = await ensureTrustedProxyUser(username);
+                        this.needSetup = false;
+                        await this.afterLogin(dockgeSocket, user);
+                        dockgeSocket.emit("autoLogin", username);
+                    } catch (error) {
+                        const message = error instanceof Error ? error.message : String(error);
+                        log.warn("auth", `Trusted proxy authentication failed: ${message}`);
+                        dockgeSocket.emit("authProxyError", message);
+                    }
                 }
             } else if (this.needSetup) {
                 log.info("server", "Redirect to setup page");

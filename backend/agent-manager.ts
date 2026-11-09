@@ -1,4 +1,5 @@
 import type { Socket as ServerSocket } from "socket.io";
+import { agentConnectionOptions, agentTransportOptions } from "./agent-connection-options";
 import type { DockgeSocket } from "./util-server";
 import { io, type Socket as SocketClient } from "socket.io-client";
 import { log } from "./log";
@@ -46,6 +47,7 @@ interface SharedAgentConfig {
     username: string;
     password: string;
     suppressOfflineAlerts: boolean;
+    connectionOptions?: string;
 }
 
 type SharedAgentStatus = "connecting" | "online" | "offline";
@@ -165,6 +167,7 @@ export class AgentManager {
                 username: agent.username,
                 password: agent.password,
                 suppressOfflineAlerts: Boolean(Number(agent.suppress_offline_alerts)),
+                connectionOptions: agent.connection_options || undefined,
             };
             const previous = AgentManager.sharedConfigs[endpoint];
 
@@ -172,6 +175,7 @@ export class AgentManager {
                 previous.url !== next.url
                 || previous.username !== next.username
                 || previous.password !== next.password
+                || previous.connectionOptions !== next.connectionOptions
             )) {
                 manager.disconnect(endpoint);
             }
@@ -181,6 +185,7 @@ export class AgentManager {
                 next.username,
                 next.password,
                 next.suppressOfflineAlerts,
+                next.connectionOptions,
             );
         }
     }
@@ -323,6 +328,7 @@ export class AgentManager {
                 latest.username,
                 latest.password,
                 latest.suppressOfflineAlerts,
+                latest.connectionOptions,
             );
         }, delay);
 
@@ -330,7 +336,7 @@ export class AgentManager {
         AgentManager.sharedCircuitRetryTimerList[endpoint] = timer;
     }
 
-    test(url : string, username : string, password : string, allowExisting = false) : Promise<void> {
+    test(url : string, username : string, password : string, allowExisting = false, connectionOptions?: string) : Promise<void> {
         return new Promise((resolve, reject) => {
             const endpoint = new URL(url).host;
 
@@ -350,9 +356,7 @@ export class AgentManager {
             const client = io(url, {
                 reconnection: false,
                 timeout: 10_000,
-                extraHeaders: {
-                    endpoint,
-                },
+                ...agentTransportOptions(url, connectionOptions),
             });
 
             client.on("connect", () => {
@@ -375,12 +379,13 @@ export class AgentManager {
         });
     }
 
-    async add(url : string, username : string, password : string, displayName = "") : Promise<Agent> {
+    async add(url : string, username : string, password : string, displayName = "", connectionOptions?: string) : Promise<Agent> {
         const bean = R.dispense("agent") as Agent;
         bean.url = url;
         bean.username = username;
         bean.password = password;
         bean.display_name = displayName;
+        bean.connection_options = JSON.stringify(agentConnectionOptions(url, connectionOptions));
         await R.store(bean);
         return bean;
     }
@@ -412,7 +417,7 @@ export class AgentManager {
         await R.store(bean);
     }
 
-    async updateCredentials(url: string, username: string, password: string): Promise<void> {
+    async updateCredentials(url: string, username: string, password: string, connectionOptions?: string): Promise<void> {
         const bean = await R.findOne("agent", " url = ? ", [ url ]) as Agent | null;
 
         if (!bean) {
@@ -421,6 +426,9 @@ export class AgentManager {
 
         bean.username = username;
         bean.password = password;
+        if (connectionOptions !== undefined) {
+            bean.connection_options = JSON.stringify(agentConnectionOptions(url, connectionOptions));
+        }
         await R.store(bean);
 
         const endpoint = new URL(url).host;
@@ -430,6 +438,7 @@ export class AgentManager {
             username,
             password,
             Boolean(Number(bean.suppress_offline_alerts)),
+            bean.connection_options || undefined,
         );
     }
 
@@ -450,6 +459,7 @@ export class AgentManager {
         username : string,
         password : string,
         suppressOfflineAlerts = false,
+        connectionOptions?: string,
     ): void {
         const endpoint = new URL(url).host;
 
@@ -463,6 +473,7 @@ export class AgentManager {
             username,
             password,
             suppressOfflineAlerts,
+            connectionOptions,
         };
         const previous = AgentManager.sharedConfigs[endpoint];
 
@@ -470,6 +481,7 @@ export class AgentManager {
             previous.url !== next.url
             || previous.username !== next.username
             || previous.password !== next.password
+            || previous.connectionOptions !== next.connectionOptions
         )) {
             this.disconnect(endpoint);
         }
@@ -495,9 +507,7 @@ export class AgentManager {
             reconnectionDelayMax: FEDERATION_RECONNECT_DELAY_MAX_MS,
             randomizationFactor: FEDERATION_RECONNECT_RANDOMIZATION,
             timeout: 10_000,
-            extraHeaders: {
-                endpoint,
-            },
+            ...agentTransportOptions(url, connectionOptions),
         });
 
         AgentManager.sharedAgentSocketList[endpoint] = client;

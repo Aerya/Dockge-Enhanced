@@ -1,4 +1,5 @@
 import { issueReverseAgent } from "../reverse-agent";
+import { agentConnectionOptions } from "../agent-connection-options";
 import { normalizeAgentTags } from "../../common/agent-tags";
 import { Agent } from "../models/agent";
 import { SocketHandler } from "../socket-handler.js";
@@ -178,13 +179,17 @@ export class ManageAgentSocketHandler extends SocketHandler {
 
                 let data = requestData as LooseObject;
                 const displayName = normalizeAgentDisplayName(data.displayName);
-                const self = await federationSelfForSocket(socket, server, data.self);
+                const options = agentConnectionOptions(data.url, data.connectionOptions);
+                const serialized = JSON.stringify(options);
+                const self = options.oneWay ? null : await federationSelfForSocket(socket, server, data.self);
                 let manager = socket.instanceManager;
-                await manager.test(data.url, data.username, data.password);
-                await manager.add(data.url, data.username, data.password, displayName);
+                await manager.test(data.url, data.username, data.password, false, serialized);
+                await manager.add(data.url, data.username, data.password, displayName, serialized);
 
                 try {
-                    await synchronizeAgentMesh(self);
+                    if (self) {
+                        await synchronizeAgentMesh(self);
+                    }
                     await AgentManager.refreshFromDatabase();
                     await Settings.set(AGENT_MESH_REPAIR_REVISION_KEY, AGENT_MESH_REPAIR_REVISION, "general");
                 } catch (error) {
@@ -199,7 +204,7 @@ export class ManageAgentSocketHandler extends SocketHandler {
 
                 callbackResult({
                     ok: true,
-                    msg: "agentAddedAndFederated",
+                    msg: options.oneWay ? "agentSso.added" : "agentAddedAndFederated",
                     msgi18n: true,
                 }, callback);
 
@@ -270,13 +275,24 @@ export class ManageAgentSocketHandler extends SocketHandler {
                 }
 
                 const manager = socket.instanceManager;
-                await manager.test(data.url, data.username, data.password, true);
-                await manager.updateCredentials(data.url, data.username, data.password);
+                const existing = await R.findOne("agent", " url = ? ", [ data.url ]) as Agent | null;
+                if (!existing) {
+                    throw new Error("Agent not found");
+                }
+                const options = agentConnectionOptions(data.url, data.connectionOptions ?? existing.connection_options);
+                if (options.oneWay !== existing.oneWay) {
+                    throw new Error("Remove and add the agent to change its connection direction");
+                }
+                const serialized = JSON.stringify(options);
+                await manager.test(data.url, data.username, data.password, true, serialized);
+                await manager.updateCredentials(data.url, data.username, data.password, serialized);
 
                 let federated = false;
                 try {
-                    const self = await federationSelfForSocket(socket, server, data.self);
-                    await synchronizeAgentMesh(self);
+                    if (!options.oneWay) {
+                        const self = await federationSelfForSocket(socket, server, data.self);
+                        await synchronizeAgentMesh(self);
+                    }
                     await AgentManager.refreshFromDatabase();
                     await Settings.set(AGENT_MESH_REPAIR_REVISION_KEY, AGENT_MESH_REPAIR_REVISION, "general");
                     federated = true;
@@ -289,7 +305,7 @@ export class ManageAgentSocketHandler extends SocketHandler {
                 callbackResult({
                     ok: true,
                     federated,
-                    msg: federated ? "agentReauthenticatedAndFederated" : "agentReauthenticatedMeshPending",
+                    msg: options.oneWay ? "agentSso.updated" : federated ? "agentReauthenticatedAndFederated" : "agentReauthenticatedMeshPending",
                     msgi18n: true,
                 }, callback);
             } catch (e) {
@@ -311,7 +327,8 @@ export class ManageAgentSocketHandler extends SocketHandler {
                     throw new Error("URL must be a string");
                 }
                 let manager = socket.instanceManager;
-                if (!data.url.startsWith("reverse://")) {
+                const existing = await R.findOne("agent", " url = ? ", [ data.url ]) as Agent | null;
+                if (!data.url.startsWith("reverse://") && !existing?.oneWay) {
                     const self = await federationSelfForSocket(socket, server, data.self);
                     await synchronizeAgentMesh(self, meshEndpoint({ url: data.url,
                         username: "removed",

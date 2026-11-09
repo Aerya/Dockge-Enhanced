@@ -65,6 +65,8 @@ Les évolutions majeures récentes sont regroupées ici afin de comprendre rapid
 
 ### 🆕 Novembre 2026
 
+**Instances liées derrière un SSO :** Une liaison facultative à sens unique permet de gérer un serveur distant sans connexion retour ni propagation dans le maillage. Utilisez un jeton de fédération Enhanced et, si nécessaire, des identifiants HTTP Basic distincts pour le proxy, en HTTPS/WebSocket. Authentik exige un compte autorisé (existant ou dédié recommandé), un mot de passe d’application et l’authentification par en-tête ; Enhanced ne configure pas le proxy. Le SSO public reste actif. Configurez la liaison séparément sur chaque instance locale. [Instances liées derrière un SSO](docs/sso-federation.fr.md).
+
 **Agent sans interface Web :** L’option DOCKGE_AGENT_ONLY=1 désactive la WebUI locale ; l’image dédiée dockge-enhanced-agent n’embarque pas les fichiers frontend. Le transport HTTP/Socket.IO authentifié et le backend restent nécessaires : aucune baisse de RAM n’est promise. Utilisez l’authentification locale et initialisez un nouvel agent avec DOCKGE_BOOTSTRAP_USERNAME et DOCKGE_BOOTSTRAP_PASSWORD_FILE, puis ajoutez son adresse depuis l’instance centrale ou configurez la connexion inversée existante. Protégez son accès par réseau de confiance/pare-feu ou TLS. Mettez l’agent à jour depuis son Compose hôte, pas par l’auto-mise à jour interne ; stacks et planifications gardent leur fonctionnement.
 
 **Mode hub uniquement :** DOCKGE_HUB_ONLY=1 transforme cette instance en interface centrale pour les serveurs liés, sans actions Docker, surveillance, planifications ni auto-mise à jour locales. Désactivé par défaut ; redémarrage nécessaire. Pour un nouveau hub, conservez un volume de données dédié et ne montez ni socket Docker ni dossiers de stacks de l’hôte. Utilisez une instance séparée : ne basculez pas pendant une opération. Les fichiers locaux existants restent intacts mais masqués ; désactiver ce mode rétablit le fonctionnement normal.
@@ -531,6 +533,8 @@ La navigation des stacks, l'espace Logs/Compose, les indicateurs de ressources, 
 <summary>Afficher toutes les fonctionnalités</summary>
 
 ### Multi-serveurs & fédération
+
+- Liaisons à sens unique et authentification proxy pour les instances protégées par SSO ([Instances liées derrière un SSO](docs/sso-federation.fr.md))
 
 - **Agent sans interface Web** — `DOCKGE_AGENT_ONLY=1`, `ghcr.io/aerya/dockge-enhanced-agent:latest`.
 
