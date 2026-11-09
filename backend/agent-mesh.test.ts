@@ -78,7 +78,11 @@ test("mesh synchronization neither exports nor deletes reverse agents", async ()
         password: "private-hash",
         display_name: "Remote" };
     mock.method(Agent, "getAgentList", async () => ({ direct,
-        reverse }));
+        reverse,
+        oneWay: { url: "https://remote.example",
+            endpoint: "remote.example",
+            oneWay: true,
+            password: "private-proxy-secret" } }));
     const removed: unknown[] = [];
     mock.method(R, "trash", async (value: unknown) => {
         removed.push(value);
@@ -87,6 +91,7 @@ test("mesh synchronization neither exports nor deletes reverse agents", async ()
         const catalogue = await localMeshPeers(peers[0]);
         assert.equal(catalogue.length, 2);
         assert.equal(JSON.stringify(catalogue).includes("private-hash"), false);
+        assert.equal(JSON.stringify(catalogue).includes("private-proxy-secret"), false);
         await upsertMeshPeers([], "enhanced-a:5001");
         assert.deepEqual(removed, [ direct ]);
     } finally {

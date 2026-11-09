@@ -154,6 +154,22 @@ test("actual Socket.IO enrollment, login, recovery and session revocation", { ti
     const scopedToken = jwt.sign({ scope: "federation",
         userId: 1,
         username: "fixture" }, server.jwtSecret);
+    process.env.DOCKGE_AUTH_MODE = "trusted-proxy";
+    const proxyAgent = await connect();
+    assert.equal((await request(proxyAgent, "loginByToken", scopedToken)).ok, false);
+    (sockets.sockets.sockets.get(proxyAgent.id!) as DockgeSocket).endpoint = "fixture-agent";
+    assert.equal((await request(proxyAgent, "loginByToken", login.token)).ok, false);
+    assert.equal((await request(proxyAgent, "loginByToken", `${scopedToken}invalid`)).ok, false);
+    assert.equal((await request(proxyAgent, "loginByToken", jwt.sign({ scope: "federation",
+        userId: 1 }, server.jwtSecret, { expiresIn: -1 }))).ok, false);
+    assert.equal((await request(proxyAgent, "loginByToken", scopedToken)).ok, true);
+    await db("user").where("id", 1).update({ active: 0 });
+    assert.equal((await request(proxyAgent, "loginByToken", scopedToken)).ok, false);
+    await db("user").where("id", 1).update({ active: 1 });
+    proxyAgent.disconnect();
+    process.env.DOCKGE_AUTH_MODE = "disabled";
+    assert.equal((await request(existingFederation, "loginByToken", scopedToken)).ok, false);
+    process.env.DOCKGE_AUTH_MODE = "local";
     const releaseSecurity = reserveAccountSecurity(1);
     try {
         assert.equal((await request(existingFederation, "loginByToken", scopedToken)).ok, true);

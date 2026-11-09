@@ -27,6 +27,6 @@ test("adding an agent keeps the federation credentials installed by the mesh ref
     const addAgent = handler.split("socket.on(\"addAgent\",")[1]?.split("socket.on(\"setAgentOfflineAlertSuppressed\",")[0];
 
     assert.ok(addAgent);
-    assert.match(addAgent, /await synchronizeAgentMesh\(self\);\s*await AgentManager\.refreshFromDatabase\(\);/);
+    assert.match(addAgent, /await synchronizeAgentMesh\(self\);\s*}\s*await AgentManager\.refreshFromDatabase\(\);/);
     assert.doesNotMatch(addAgent, /manager\.connect\(data\.url,\s*data\.username,\s*data\.password\)/);
 });

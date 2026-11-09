@@ -1,6 +1,7 @@
 import { BeanModel } from "redbean-node/dist/bean-model";
 import { R } from "redbean-node";
 import { LooseObject } from "../../common/util-common";
+import { agentConnectionOptions } from "../agent-connection-options";
 
 export class Agent extends BeanModel {
 
@@ -18,10 +19,15 @@ export class Agent extends BeanModel {
         return obj.host;
     }
 
+    get oneWay(): boolean {
+        return agentConnectionOptions(this.url, this.connection_options).oneWay;
+    }
+
     toJSON() : LooseObject {
         return {
             url: this.url,
             reverse: this.url.startsWith("reverse://"),
+            oneWay: this.oneWay,
             username: this.username,
             endpoint: this.endpoint,
             displayName: this.display_name || "",

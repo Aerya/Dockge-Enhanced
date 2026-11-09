@@ -231,6 +231,13 @@
                         </div>
 
                         <button v-if="!showAgentForm" class="btn btn-normal" @click="showAgentForm = !showAgentForm">{{ $t("addAgent") }}</button>
+                        <button class="btn btn-normal ms-2" @click="createFederationToken">{{ $t("agentSso.createToken") }}</button>
+                        <div v-if="federationToken" class="mt-2">
+                            <p class="small">{{ $t("agentSso.tokenWarning") }}</p>
+                            <input :value="federationToken" class="form-control" type="password" readonly @focus="$event.target.select()">
+                            <button class="btn btn-normal mt-1" @click="copyFederationToken">{{ $t("Copy") }}</button>
+                            <button class="btn btn-normal mt-1" @click="federationToken = ''">{{ $t("Close") }}</button>
+                        </div>
 
                         <!-- Add Agent Form -->
                         <form v-if="showAgentForm" @submit.prevent="addAgent">
@@ -247,15 +254,34 @@
                             </div>
 
                             <div class="mb-3">
-                                <label for="username" class="form-label">{{ $t("Username") }}</label>
-                                <input id="username" v-model="agent.username" type="text" class="form-control" required>
+                                <label for="agentCredentialMode" class="form-label">{{ $t("agentSso.authentication") }}</label>
+                                <select id="agentCredentialMode" v-model="useFederationToken" class="form-select">
+                                    <option :value="false">{{ $t("Username") }} / {{ $t("Password") }}</option>
+                                    <option :value="true">{{ $t("agentSso.token") }}</option>
+                                </select>
+                                <label v-if="!useFederationToken" for="username" class="form-label">{{ $t("Username") }}</label>
+                                <input v-if="!useFederationToken" id="username" v-model="agent.username" type="text" class="form-control" required>
+                                <p class="small text-muted">{{ $t("agentSso.tokenHint") }}</p>
                             </div>
 
                             <div class="mb-3">
-                                <label for="password" class="form-label">{{ $t("Password") }}</label>
+                                <label for="password" class="form-label">{{ $t(useFederationToken ? "agentSso.token" : "Password") }}</label>
                                 <input id="password" v-model="agent.password" type="password" class="form-control" required autocomplete="new-password">
                             </div>
 
+                            <div class="form-check my-3">
+                                <input id="agentOneWay" v-model="agent.connectionOptions.oneWay" type="checkbox" class="form-check-input">
+                                <label for="agentOneWay" class="form-check-label">{{ $t("agentSso.oneWay") }}</label>
+                                <p class="small text-muted">{{ $t("agentSso.oneWayHint") }}</p>
+                            </div>
+                            <fieldset v-if="agent.connectionOptions.oneWay" class="mb-3">
+                                <legend class="fs-6">{{ $t("agentSso.proxy") }}</legend>
+                                <label for="proxyUsername">{{ $t("Username") }}</label>
+                                <input id="proxyUsername" v-model="agent.connectionOptions.proxyUsername" class="form-control" autocomplete="off">
+                                <label for="proxyPassword">{{ $t("Password") }}</label>
+                                <input id="proxyPassword" v-model="agent.connectionOptions.proxyPassword" class="form-control" type="password" autocomplete="new-password">
+                                <p class="small text-muted">{{ $t("agentSso.proxyHint") }}</p>
+                            </fieldset>
                             <button type="submit" class="btn btn-primary" :disabled="connectingAgent">
                                 <template v-if="connectingAgent">{{ $t("connecting") }}</template>
                                 <template v-else>{{ $t("connect") }}</template>
@@ -274,19 +300,33 @@
             >
                 <p class="small text-muted">{{ reauthenticateAgentForm.url }}</p>
                 <div class="mb-3">
-                    <label for="reauthAgentUsername" class="form-label">{{ $t("Username") }}</label>
+                    <label for="reauthCredentialMode" class="form-label">{{ $t("agentSso.authentication") }}</label>
+                    <select id="reauthCredentialMode" v-model="reauthUseToken" class="form-select">
+                        <option :value="false">{{ $t("Username") }} / {{ $t("Password") }}</option>
+                        <option :value="true">{{ $t("agentSso.token") }}</option>
+                    </select>
+                    <label v-if="!reauthUseToken" for="reauthAgentUsername" class="form-label">{{ $t("Username") }}</label>
                     <input
+                        v-if="!reauthUseToken"
                         id="reauthAgentUsername" v-model="reauthenticateAgentForm.username" type="text"
                         class="form-control" required autocomplete="username"
                     >
                 </div>
                 <div class="mb-3">
-                    <label for="reauthAgentPassword" class="form-label">{{ $t("Password") }}</label>
+                    <label for="reauthAgentPassword" class="form-label">{{ $t(reauthUseToken ? "agentSso.token" : "Password") }}</label>
                     <input
                         id="reauthAgentPassword" v-model="reauthenticateAgentForm.password" type="password"
                         class="form-control" required autocomplete="current-password"
                     >
                 </div>
+                <fieldset v-if="reauthenticateAgentForm.connectionOptions?.oneWay">
+                    <legend class="fs-6">{{ $t("agentSso.proxy") }}</legend>
+                    <label for="reauthProxyUsername">{{ $t("Username") }}</label>
+                    <input id="reauthProxyUsername" v-model="reauthenticateAgentForm.connectionOptions.proxyUsername" class="form-control" autocomplete="off">
+                    <label for="reauthProxyPassword">{{ $t("Password") }}</label>
+                    <input id="reauthProxyPassword" v-model="reauthenticateAgentForm.connectionOptions.proxyPassword" class="form-control" type="password" autocomplete="new-password">
+                    <p class="small">{{ $t("agentSso.replaceProxy") }}</p>
+                </fieldset>
                 <p class="small text-muted mb-0">{{ $t("reauthenticateAgentHint") }}</p>
             </BModal>
         </div>
@@ -363,7 +403,13 @@ export default {
                     icon: "shield-alt",
                     title: "home.summary.trivy.title" },
             ],
+            federationToken: "",
+            useFederationToken: false,
+            reauthUseToken: false,
             agent: {
+                connectionOptions: { oneWay: false,
+                    proxyUsername: "",
+                    proxyPassword: "" },
                 url: "http://",
                 username: "",
                 password: "",
@@ -448,6 +494,7 @@ export default {
     },
 
     beforeUnmount() {
+        this.federationToken = "";
         window.removeEventListener("resize", this.updatePerPage);
         if (this.instanceOverviewTimer) {
             window.clearInterval(this.instanceOverviewTimer);
@@ -682,10 +729,31 @@ export default {
             });
         },
 
+        createFederationToken() {
+            this.$root.getSocket().emit("createAgentFederationToken", {}, res => {
+                if (res.ok) {
+                    this.federationToken = res.token;
+                } else {
+                    this.$root.toastRes(res);
+                }
+            });
+        },
+
+        async copyFederationToken() {
+            try {
+                await navigator.clipboard.writeText(this.federationToken);
+            } catch {
+                this.$root.toastRes({ ok: false,
+                    msg: this.$t("agentSso.copyFailed") });
+            }
+        },
+
         addAgent() {
             this.connectingAgent = true;
             this.$root.getSocket().emit("addAgent", {
                 ...this.agent,
+                username: this.useFederationToken ? "__dockge_federation_token__" : this.agent.username,
+                connectionOptions: this.agent.connectionOptions.oneWay ? this.agent.connectionOptions : undefined,
                 self: this.federationSelf(),
             }, (res) => {
                 this.$root.toastRes(res);
@@ -693,6 +761,9 @@ export default {
                 if (res.ok) {
                     this.showAgentForm = false;
                     this.agent = {
+                        connectionOptions: { oneWay: false,
+                            proxyUsername: "",
+                            proxyPassword: "" },
                         url: "http://",
                         username: "",
                         password: "",
@@ -712,7 +783,11 @@ export default {
         },
 
         startReauthenticateAgent(agent) {
+            this.reauthUseToken = agent.username === "__dockge_federation_token__";
             this.reauthenticateAgentForm = {
+                connectionOptions: agent.oneWay ? { oneWay: true,
+                    proxyUsername: "",
+                    proxyPassword: "" } : undefined,
                 url: agent.url,
                 username: "",
                 password: "",
@@ -722,12 +797,13 @@ export default {
 
         reauthenticateAgent(event) {
             event?.preventDefault?.();
-            if (!this.reauthenticateAgentForm.username || !this.reauthenticateAgentForm.password) {
+            if ((!this.reauthUseToken && !this.reauthenticateAgentForm.username) || !this.reauthenticateAgentForm.password) {
                 return;
             }
             this.reauthenticatingAgent = true;
             this.$root.getSocket().emit("reauthenticateAgent", {
                 ...this.reauthenticateAgentForm,
+                username: this.reauthUseToken ? "__dockge_federation_token__" : this.reauthenticateAgentForm.username,
                 self: this.federationSelf(),
             }, (res) => {
                 this.$root.toastRes(res);

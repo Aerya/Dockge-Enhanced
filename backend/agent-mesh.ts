@@ -99,7 +99,7 @@ export async function localMeshPeers(self: AgentMeshPeer): Promise<AgentMeshPeer
     const agents = await Agent.getAgentList();
     const peers = validateMeshPeers([
         self,
-        ...Object.values(agents).filter(agent => !agent.url.startsWith("reverse://")).map((agent) => ({
+        ...Object.values(agents).filter(agent => !agent.url.startsWith("reverse://") && !agent.oneWay).map((agent) => ({
             url: agent.url,
             username: agent.username,
             password: agent.password,
@@ -116,6 +116,11 @@ export async function upsertMeshPeers(peers: AgentMeshPeer[], ownEndpoint: strin
     const existingAgents = Object.values(await Agent.getAgentList());
     const existingByEndpoint = new Map(existingAgents.map((agent) => [ agent.endpoint, agent ]));
     const desiredEndpoints = new Set(peers.map(meshEndpoint).filter((endpoint) => endpoint !== ownEndpoint));
+    for (const endpoint of desiredEndpoints) {
+        if (existingByEndpoint.get(endpoint)?.oneWay) {
+            throw new Error("A one-way agent cannot be overwritten by the mesh");
+        }
+    }
     for (const peer of peers) {
         const endpoint = meshEndpoint(peer);
         if (endpoint === ownEndpoint) {
@@ -129,7 +134,7 @@ export async function upsertMeshPeers(peers: AgentMeshPeer[], ownEndpoint: strin
         await R.store(bean);
     }
     for (const agent of existingAgents) {
-        if (!agent.url.startsWith("reverse://") && !desiredEndpoints.has(agent.endpoint)) {
+        if (!agent.url.startsWith("reverse://") && !agent.oneWay && !desiredEndpoints.has(agent.endpoint)) {
             await R.trash(agent);
         }
     }

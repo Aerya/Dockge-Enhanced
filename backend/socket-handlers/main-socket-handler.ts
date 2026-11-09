@@ -166,10 +166,13 @@ export class MainSocketHandler extends SocketHandler {
             log.info("auth", `Login by token. IP=${clientIP}`);
 
             try {
-                if (await getAuthMode() !== "local") {
+                const decoded = jwt.verify(token, server.jwtSecret) as JWTDecoded;
+
+                const mode = await getAuthMode();
+                if (mode !== "local" && !(mode === "trusted-proxy" && socket.endpoint
+                    && decoded.scope === "federation" && Number.isInteger(decoded.userId))) {
                     throw new Error("Local authentication is disabled.");
                 }
-                const decoded = jwt.verify(token, server.jwtSecret) as JWTDecoded;
 
                 log.info("auth", "Username from JWT: " + decoded.username);
 

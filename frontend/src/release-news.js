@@ -1,5 +1,9 @@
 export const RELEASE_NEWS = [
     {
+        id: "2026-11-09-sso-federation",
+        items: [ "releaseNews.item.ssoFederation" ],
+    },
+    {
         id: "2026-11-08-agent-only",
         items: [ "releaseNews.item.agentOnly" ],
     },
