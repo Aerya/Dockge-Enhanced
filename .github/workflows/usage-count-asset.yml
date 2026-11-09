@@ -22,8 +22,6 @@ jobs:
     steps:
       - name: Récupérer le dépôt
         uses: actions/checkout@v7
-        with:
-          ref: main
 
       - name: Déterminer si un rapport est nécessaire
         id: report

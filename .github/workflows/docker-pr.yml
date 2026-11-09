@@ -26,13 +26,13 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Détecter une PR documentaire
+      - name: Détecter les changements sans effet sur les images
         id: docs
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
-          if [[ "${{ github.event_name }}" == "pull_request" ]] && .github/scripts/is-docs-only.sh "$BASE_SHA" "$HEAD_SHA"; then
+          if [[ "${{ github.event_name }}" == "pull_request" ]] && bash .github/scripts/is-image-independent.sh "$BASE_SHA" "$HEAD_SHA"; then
             echo "docs_only=true" >> "$GITHUB_OUTPUT"
           else
             echo "docs_only=false" >> "$GITHUB_OUTPUT"
@@ -144,12 +144,17 @@ jobs:
     needs: [changes, build-platform]
     runs-on: ubuntu-latest
     steps:
-      - name: PR documentaire — validation légère
-        if: needs.changes.outputs.docs_only == 'true'
-        run: echo "Aucun build Docker nécessaire."
-
-      - name: Vérifier les deux architectures
-        if: needs.changes.outputs.docs_only != 'true'
+      - name: Vérifier la décision et le résultat des builds
         env:
+          CHANGES_RESULT: ${{ needs.changes.result }}
+          IMAGE_INDEPENDENT: ${{ needs.changes.outputs.docs_only }}
           BUILD_RESULT: ${{ needs.build-platform.result }}
-        run: test "$BUILD_RESULT" = "success"
+        run: |
+          test "$CHANGES_RESULT" = "success"
+          if [[ "$IMAGE_INDEPENDENT" == "true" ]]; then
+            test "$BUILD_RESULT" = "skipped"
+            echo "Documentation ou rapport Discord uniquement : aucun build Docker nécessaire."
+          else
+            test "$IMAGE_INDEPENDENT" = "false"
+            test "$BUILD_RESULT" = "success"
+          fi

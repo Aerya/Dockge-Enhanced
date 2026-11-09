@@ -134,7 +134,7 @@ The most important recent changes are grouped here so you can quickly see what h
 
 **Configuration tools :** Encrypted file history (20 revisions), saved merged Compose preview, `.env` form and linked-instance diagnostics. Restoring files never redeploys containers automatically. [Configuration tools](docs/configuration-tools.md).
 
-**Anonymous counts by period :** Independent weekly, monthly and yearly estimates; Discord reports the previous week, current month, every past month and the current year without adding monthly totals. Existing monthly history is preserved; incomplete periods and migration limits are explicit.
+**Anonymous counts by period :** Weekly and monthly estimates, with a yearly cumulative sum of the measured months, including the current month. Discord displays statistics only; monthly history is preserved.
 
 **Self-update with a shared data/Compose directory :** The updater reuses the existing mount when its data and Compose directories coincide, avoiding a Docker “Duplicate mount point” failure before replacement. Recovery data stays writable and the host-path alias stays read-only.
 
@@ -418,7 +418,7 @@ A supported example is [Gluetun-Companion](https://github.com/Aerya/Gluetun-Comp
 
 **Anonymous installation count**
 
-Enhanced estimates participating instances through three independent downloads: one per week (Monday–Sunday UTC), one per month and one per UTC calendar year. The public `download_count` of tiny GitHub release assets is used; Docker pulls are not converted into installations. The annual total is never the sum of monthly totals.
+The report uses the public `download_count` of weekly and monthly GitHub release assets. Its yearly cumulative is the sum of measured months in the current year, including the current month. The same installation may therefore contribute in several months: this is not a yearly count of distinct installations. The legacy independent yearly counter is preserved for compatibility but is no longer used in reports. Docker pulls are not converted into installations.
 
 No installation identifier is generated or sent for this count. The request contains no hostname, instance name, stack, container, Docker image, configuration, path, GitHub account, email, architecture or build identifier. As with any GitHub asset download, the connection itself is handled by GitHub; Dockge-Enhanced does not receive or store installation IP addresses.
 
@@ -426,7 +426,7 @@ Counted periods are remembered in local data. Set `DOCKGE_USAGE_COUNT=false` to 
 
 The mechanism is public: [Enhanced code](./backend/anonymous-install-count.ts), [period preparation workflow](./.github/workflows/usage-count-asset.yml) and [aggregate counters](https://github.com/Aerya/Dockge-Enhanced/releases/tag/usage-count). Upcoming periods are prepared in advance; failures are logged without identifiers or secrets, with at most one retry every 12 hours per period.
 
-The Actions secret `USAGE_COUNT_DISCORD_WEBHOOK` enables reports on Monday, Wednesday and Saturday at 20:00 Europe/Paris (automatic summer/winter time): the previous calendar week, current month, all past months and the independently counted current year. GitHub may delay scheduled runs. Manual runs are supported. Partial or missing periods are labelled; old versions only contribute to monthly counts, undercounting weeks and years during migration. Reports are retained as Actions artifacts for 90 days. The webhook remains secret.
+The Actions secret `USAGE_COUNT_DISCORD_WEBHOOK` enables reports on Monday, Wednesday and Saturday at 20:00 Europe/Paris (automatic summer/winter time): previous calendar week, current month, all past months and yearly cumulative sum of months. Reports contain statistics only; missing measurements display N/D. Measurements may be partial, especially during migration. GitHub may delay scheduled runs. Manual runs are supported; artifacts are retained for 90 days. The webhook remains secret.
 
 **Global multi-instance search V2 (`Ctrl+K`)**
 

@@ -11,6 +11,9 @@ on:
       - "*.md"
       - "*.sh"
       - ".github/workflows/sync-upstream.yml"
+      - ".github/workflows/usage-count-asset.yml"
+      - ".github/scripts/usage-count.cjs"
+      - ".github/scripts/usage-count.test.cjs"
   workflow_dispatch:
 
 env:

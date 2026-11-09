@@ -133,7 +133,7 @@ Dockge Enhanced 是 [Dockge](https://github.com/louislam/dockge) 的分支，通
 
 **配置工具 :** 加密文件历史（20 个版本）、已保存的合并 Compose 预览、`.env` 表单和关联实例诊断。恢复文件不会自动重新部署容器。 [配置工具](docs/configuration-tools.zh-CN.md).
 
-**按周期匿名统计 :** 独立估算周度、月度和年度数据；Discord 显示上一完整周、当月、所有历史月份及当年，不累加月度数据。保留月度历史，明确标注不完整周期及迁移限制。
+**按周期匿名统计 :** 提供周度和月度估算，年度累计为本年度已测月份之和，包含当月。Discord 仅显示统计数字；保留月度历史。
 
 **数据与 Compose 共用目录时的自更新 :** 当数据和 Compose 位于同一目录时，更新器复用现有挂载，避免在替换前发生 Docker“Duplicate mount point”错误。恢复数据仍可写，主机路径别名保持只读。
 
@@ -417,7 +417,7 @@ Enhanced 现在可以检测现有 Docker Compose 项目，并在**不移动 Comp
 
 **匿名安装计数**
 
-Enhanced 通过三个独立下载估算参与统计的实例：每周一次（UTC 周一至周日）、每月一次、每个 UTC 日历年一次。统计使用 GitHub release 小文件的公开 `download_count`，不将 Docker 拉取次数换算为安装数。年度总数绝不是各月总数相加。
+报告使用 GitHub release 周度和月度文件的公开 `download_count`。年度累计为本年度已测月份之和，包含当月。同一安装可以在多个月份计入，因此这不是年度去重安装数。旧的独立年度计数器为兼容性保留，但不再用于报告。不将 Docker 拉取次数换算为安装数。
 
 此计数不会生成或发送任何安装标识符。请求中不包含 hostname、实例名称、Stack、容器、Docker 镜像、配置、路径、GitHub 账户、电子邮件、架构或 build 标识。与任何 GitHub asset 下载一样，连接本身由 GitHub 处理；Dockge-Enhanced 不会接收或存储安装实例的 IP 地址。
 
@@ -425,7 +425,7 @@ Enhanced 通过三个独立下载估算参与统计的实例：每周一次（UT
 
 机制公开可查：[Enhanced 代码](./backend/anonymous-install-count.ts)、[周期准备 workflow](./.github/workflows/usage-count-asset.yml) 和[汇总计数](https://github.com/Aerya/Dockge-Enhanced/releases/tag/usage-count)。提前准备后续周期；错误日志不包含标识符或机密，每个周期最多每 12 小时重试一次。
 
-Actions Secret `USAGE_COUNT_DISCORD_WEBHOOK` 可在每周一、周三和周六巴黎时间 20:00（自动切换夏令时和冬令时）发送报告，包括上一完整自然周、当月、所有历史月份及独立统计的当年。GitHub 可能延迟计划任务，也支持手动运行。报告标明不完整或缺失的周期；旧版本仅计入月度，因此迁移期间周度和年度会偏低。报告作为 Actions 构件保留 90 天。Webhook 保持保密。
+Actions Secret `USAGE_COUNT_DISCORD_WEBHOOK` 在每周一、周三和周六巴黎时间 20:00（自动切换夏令时和冬令时）发送上一完整自然周、当月、所有历史月份以及各月相加的年度累计。消息仅包含统计数字；缺失的测量显示 N/D。测量可能不完整，尤其是在迁移期间。GitHub 可能延迟计划任务。支持手动运行；构件保留 90 天。Webhook 保持保密。
 
 **多实例全局搜索 V2（`Ctrl+K`）**
 

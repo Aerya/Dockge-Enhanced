@@ -134,7 +134,7 @@ Die wichtigsten kürzlichen Änderungen sind hier gruppiert, damit Sie schnell s
 
 **Konfigurationswerkzeuge :** Verschlüsselter Dateiverlauf (20 Versionen), gespeicherte zusammengeführte Compose-Konfiguration, `.env`-Formular und Diagnose verbundener Instanzen. Wiederherstellung ohne automatische Bereitstellung. [Konfigurationswerkzeuge](docs/configuration-tools.de.md).
 
-**Anonyme Zählung nach Zeitraum :** Unabhängige Schätzungen für Woche, Monat und Jahr; Discord zeigt vergangene Woche, laufenden Monat, alle früheren Monate und das Jahr ohne Addition der Monatswerte. Monatshistorie bleibt erhalten; unvollständige Zeiträume und Migrationsgrenzen werden gekennzeichnet.
+**Anonyme Zählung nach Zeitraum :** Wöchentliche und monatliche Schätzungen mit einer Jahressumme der gemessenen Monate einschließlich des laufenden Monats. Discord zeigt nur Statistiken; die Monatshistorie bleibt erhalten.
 
 **Selbst-Update mit gemeinsamem Daten-/Compose-Verzeichnis :** Der Updater verwendet den vorhandenen Mount, wenn Daten und Compose im selben Verzeichnis liegen. So entfällt der Docker-Fehler „Duplicate mount point“ vor dem Austausch. Wiederherstellungsdaten bleiben beschreibbar, der Hostpfad-Alias schreibgeschützt.
 
@@ -418,7 +418,7 @@ Ein unterstütztes Beispiel ist [Gluetun-Companion](https://github.com/Aerya/Glu
 
 **Anonyme Installationsanzahl**
 
-Enhanced schätzt teilnehmende Instanzen durch drei unabhängige Downloads: einen pro Woche (Montag–Sonntag UTC), einen pro Monat und einen pro UTC-Kalenderjahr. Verwendet wird der öffentliche `download_count` kleiner GitHub-Release-Dateien; Docker-Pulls werden nicht in Installationen umgerechnet. Die Jahreszahl ist niemals die Summe der Monatszahlen.
+Der Bericht nutzt den öffentlichen `download_count` wöchentlicher und monatlicher GitHub-Release-Dateien. Die Jahressumme addiert die gemessenen Monate des laufenden Jahres einschließlich des aktuellen Monats. Dieselbe Installation kann in mehreren Monaten beitragen: Dies ist keine jährliche Zahl unterschiedlicher Installationen. Der alte unabhängige Jahreszähler bleibt aus Kompatibilitätsgründen erhalten, wird aber nicht mehr für Berichte verwendet. Docker-Pulls werden nicht in Installationen umgerechnet.
 
 Für diese Zählung wird keine Installationskennung generiert oder gesendet. Die Anfrage enthält keinen Hostnamen, Instanznamen, Stack, Container, Docker-Image, Konfiguration, Pfad, GitHub-Konto, E-Mail-Adresse, Architektur oder Build-Kennung. Wie bei jedem Download von GitHub-Assets wird die Verbindung selbst von GitHub abgewickelt; Dockge-Enhanced empfängt oder speichert keine IP-Adressen der Installation.
 
@@ -426,7 +426,7 @@ Bereits gezählte Zeiträume werden lokal gespeichert. Mit `DOCKGE_USAGE_COUNT=f
 
 Der Mechanismus ist öffentlich: [Enhanced-Code](./backend/anonymous-install-count.ts), [Workflow zur Vorbereitung der Zeiträume](./.github/workflows/usage-count-asset.yml) und [aggregierte Zähler](https://github.com/Aerya/Dockge-Enhanced/releases/tag/usage-count). Kommende Zeiträume werden vorab vorbereitet; Fehler werden ohne Kennungen oder Geheimnisse protokolliert. Pro Zeitraum erfolgt höchstens alle 12 Stunden ein neuer Versuch.
 
-Das Actions-Geheimnis `USAGE_COUNT_DISCORD_WEBHOOK` aktiviert Berichte montags, mittwochs und samstags um 20:00 Uhr Europe/Paris (automatische Sommer-/Winterzeit): vergangene Kalenderwoche, laufender Monat, alle früheren Monate und separat gezähltes laufendes Jahr. GitHub kann geplante Ausführungen verzögern. Manuelle Ausführung ist möglich. Unvollständige oder fehlende Zeiträume werden gekennzeichnet; alte Versionen zählen nur monatlich, wodurch Wochen und Jahre während der Migration unterschätzt werden. Berichte bleiben 90 Tage als Actions-Artefakte erhalten. Der Webhook bleibt geheim.
+Das Actions-Geheimnis `USAGE_COUNT_DISCORD_WEBHOOK` aktiviert Berichte montags, mittwochs und samstags um 20:00 Uhr Europe/Paris (automatische Sommer-/Winterzeit): vergangene Kalenderwoche, laufender Monat, alle früheren Monate und Jahressumme der Monate. Nachrichten enthalten nur Statistiken; fehlende Messungen erscheinen als N/D. Messungen können insbesondere während der Migration unvollständig sein. GitHub kann geplante Aufgaben verzögern. Manuelle Ausführung bleibt möglich; Artefakte bleiben 90 Tage erhalten. Der Webhook bleibt geheim.
 
 **Globale instanzenübergreifende Suche V2 (`Ctrl+K`)**
 

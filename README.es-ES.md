@@ -134,7 +134,7 @@ Los cambios recientes más importantes se agrupan aquí para entender rápidamen
 
 **Herramientas de configuración :** Historial cifrado (20 versiones), vista de Compose combinado guardado, formulario `.env` y diagnóstico de instancias vinculadas. Restaurar archivos no redespliega contenedores automáticamente. [Herramientas de configuración](docs/configuration-tools.es.md).
 
-**Conteo anónimo por período :** Estimaciones independientes por semana, mes y año; Discord muestra la semana anterior, mes actual, todos los meses pasados y año sin sumar los meses. Se conserva el historial mensual y se indican períodos incompletos y límites de migración.
+**Conteo anónimo por período :** Estimaciones semanales y mensuales, con un acumulado anual que suma los meses medidos, incluido el mes actual. Discord muestra solo estadísticas; se conserva el historial mensual.
 
 **Autoactualización con directorio compartido :** El updater reutiliza el montaje existente cuando los directorios de datos y Compose coinciden, evitando el error Docker «Duplicate mount point» antes del reemplazo. Los datos de recuperación mantienen la escritura y el alias de la ruta del host sigue en solo lectura.
 
@@ -420,7 +420,7 @@ Un caso admitido explícitamente es [Gluetun-Companion](https://github.com/Aerya
 
 **Conteo anónimo de instalaciones**
 
-Enhanced estima las instancias participantes mediante tres descargas independientes: una por semana (lunes–domingo UTC), una por mes y una por año natural UTC. Se utiliza el `download_count` público de pequeños archivos de una release de GitHub; los pulls Docker no se convierten en instalaciones. El total anual nunca es la suma de los meses.
+El informe utiliza el `download_count` público de los archivos semanales y mensuales de la release de GitHub. El acumulado anual suma los meses medidos del año actual, incluido el mes en curso. Una instalación puede contribuir en varios meses: no es un número anual de instalaciones distintas. El antiguo contador anual independiente se conserva por compatibilidad, pero ya no se utiliza en los informes. Los pulls Docker no se convierten en instalaciones.
 
 No se genera ni se transmite ningún identificador de instalación. La solicitud no contiene hostname, nombre de instancia, stack, contenedor, imagen Docker, configuración, ruta, cuenta de GitHub, correo electrónico, arquitectura ni identificador de build. Como con cualquier descarga de un asset de GitHub, la conexión es procesada por GitHub; Dockge-Enhanced no recibe ni almacena las direcciones IP de las instalaciones.
 
@@ -428,7 +428,7 @@ Los períodos contabilizados se guardan localmente. El conteo puede desactivarse
 
 El mecanismo es público: [código Enhanced](./backend/anonymous-install-count.ts), [workflow de preparación de períodos](./.github/workflows/usage-count-asset.yml) y [contadores agregados](https://github.com/Aerya/Dockge-Enhanced/releases/tag/usage-count). Los períodos siguientes se preparan por adelantado; se registran errores sin identificadores ni secretos, con un reintento como máximo cada 12 horas por período.
 
-El secreto Actions `USAGE_COUNT_DISCORD_WEBHOOK` permite recibir informes los lunes, miércoles y sábados a las 20:00 Europe/Paris (horario de verano/invierno automático): semana natural anterior, mes actual, todos los meses anteriores y año actual contado por separado. GitHub puede retrasar las ejecuciones programadas. También admite ejecución manual. Los períodos parciales o ausentes se indican; las versiones antiguas solo contribuyen al mes, infravalorando semanas y años durante la migración. Los informes se conservan 90 días como artefactos Actions. El webhook permanece secreto.
+El secreto Actions `USAGE_COUNT_DISCORD_WEBHOOK` permite recibir informes los lunes, miércoles y sábados a las 20:00 Europe/Paris (horario de verano/invierno automático): semana natural anterior, mes actual, todos los meses anteriores y acumulado anual de los meses. El mensaje solo contiene estadísticas; las mediciones ausentes muestran N/D. Las mediciones pueden ser parciales, especialmente durante la migración. GitHub puede retrasar las tareas programadas. Se mantiene la ejecución manual; los artefactos se conservan 90 días. El webhook permanece secreto.
 
 **Búsqueda global multi-instancia V2 (`Ctrl+K`)**
 
