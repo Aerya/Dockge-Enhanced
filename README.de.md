@@ -1131,6 +1131,8 @@ Kommerzielle Drittanbieter-Clients sind durch die Lizenz gestattet, dürfen jedo
 
 ## Mitwirkende
 
+- Danke an **yodadl**.
+
 - [**QFgood**](https://github.com/QFgood) / [**Dockge #1013**](https://github.com/louislam/dockge/pull/1013) — Inspiration für die Übersicht der Dienstlinks.
 
 - [**Apprise**](https://github.com/caronc/apprise-api) – plattformübergreifendes Benachrichtigung-Gateway

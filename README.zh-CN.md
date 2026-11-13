@@ -1135,6 +1135,8 @@ MIT 许可证允许商业第三方客户端，但未经许可不得暗示其与 
 
 ## 致谢
 
+- 感谢 **yodadl**。
+
 - [**QFgood**](https://github.com/QFgood) / [**Dockge #1013**](https://github.com/louislam/dockge/pull/1013) — 服务链接面板的灵感来源.
 
 - [**Apprise**](https://github.com/caronc/apprise-api) — 多平台通知网关

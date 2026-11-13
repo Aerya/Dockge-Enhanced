@@ -1,4 +1,14 @@
 {
+    "imageVersionPreview": {
+        "open": "Aperçu des versions",
+        "error": "Aperçu indisponible (registre, image épinglée ou autre requête en cours).",
+        "warning": "Indications en lecture seule, pas des recommandations de déploiement. Même sans changer de version majeure, des migrations peuvent casser la compatibilité. Les tags peuvent changer ; cet aperçu ne modifie ni le Compose ni les mises à jour automatiques. Un tiret signifie inconnu ou aucun tag correspondant dans la liste reçue, pas que l’image est à jour.",
+        "current": "Dernier digest local observé",
+        "target": "Cible du tag actuel",
+        "sameMajor": "Même majeure / même variante d’image",
+        "nextMajor": "Majeure suivante / même variante d’image",
+        "partial": "Liste du registre partielle : d’autres versions peuvent exister."
+    },
     "releaseNews.item.sharedSso": "Ajoutez le serveur distant une fois, puis utilisez Partager cette connexion pour choisir les instances liées de confiance et autoriser explicitement l’envoi du jeton Enhanced et des identifiants du proxy. Chaque destinataire est testé séparément ; aucune connexion existante n’est écrasée. Mettez les destinataires à jour. Les copies restent indépendantes : modifiez les identifiants ou supprimez la connexion sur chaque destinataire. Aucune connexion retour n’est nécessaire.",
     "agentShare.open": "Partager cette connexion",
     "agentShare.noReturn": "Connexion sans retour (SSO / serveur distant)",

@@ -21,6 +21,7 @@ import { buildStackBulkPlan, StackBulkRequest, validateStackBulkRequest } from "
 import { DEFAULT_SCHEDULED_TIME, isScheduledTime, resolveScheduledTime } from "../../common/image-update-time";
 import * as yaml from "js-yaml";
 import axios from "axios";
+import { nextRegistryTagsPage, selectVersionCandidates } from "./image-version-preview";
 import { registryDnsAxiosOptions } from "../registry-dns-fallback";
 import { EventEmitter } from "events";
 import { parse as parseDotenv } from "dotenv";
@@ -818,7 +819,7 @@ export async function requestRegistryWithRetry<T>(
  * Fonctionne avec Docker Hub, ghcr.io, lscr.io, quay.io, etc.
  * N'effectue AUCUN téléchargement de layer — HEAD/GET sur /manifests/ uniquement.
  */
-async function getRemoteDigest(
+export async function getRemoteDigest(
     image: string,
     credentials: RegistryCredential[],
     preferredPlatform = "",
@@ -917,6 +918,60 @@ async function getRemoteDigest(
         indexDigest,
         platform,
     };
+}
+
+/** Bounded, on-demand discovery using the same registry authentication as the watcher. */
+export async function previewImageVersions(image: string, credentials: RegistryCredential[]) {
+    if (image.includes("@")) {
+        throw new Error("Digest-pinned images do not have a version channel");
+    }
+    const { registry, name, tag } = normalizeImage(image);
+    const first = new URL(buildManifestUrl(registry, name, tag).replace(/\/manifests\/[^/]+$/, "/tags/list?n=100"));
+    let url: URL | null = first;
+    let auth = await getInitialAuth(registry, name, credentials);
+    const tags: string[] = [];
+    const visited = new Set<string>();
+    for (let page = 0; url && page < 10; page++) {
+        if (visited.has(url.href)) {
+            throw new Error("Registry pagination loop");
+        }
+        visited.add(url.href);
+        const target = url.href;
+        const request = async () => axios.get(target, {
+            ...await registryDnsAxiosOptions(),
+            headers: auth ? { Authorization: auth } : {},
+            timeout: 10000,
+            maxRedirects: 0,
+            maxContentLength: 1024 * 1024,
+        });
+        let response;
+        try {
+            response = await request();
+        } catch (error: unknown) {
+            if (!axios.isAxiosError(error) || error.response?.status !== 401 || !error.response.headers?.["www-authenticate"]) {
+                throw error;
+            }
+            auth = await resolveChallenge(String(error.response.headers["www-authenticate"]), credentials, registry);
+            response = await request();
+        }
+        if (!Array.isArray(response.data?.tags) && response.data?.tags !== null) {
+            throw new Error("Invalid registry tag listing");
+        }
+        tags.push(...(response.data.tags ?? []).filter((value: unknown): value is string => typeof value === "string" && /^[\w][\w.-]{0,127}$/.test(value)).slice(0, 1000 - tags.length));
+        url = nextRegistryTagsPage(String(response.headers.link ?? ""), url, first);
+        if (tags.length >= 1000) {
+            break;
+        }
+    }
+    const candidates = selectVersionCandidates(tag, tags);
+    const target = await getRemoteDigest(image, credentials);
+    return { image,
+        configuredTag: tag,
+        targetDigest: target.platformDigest,
+        platform: platformToString(target.platform),
+        checkedAt: new Date().toISOString(),
+        partial: url !== null || tags.length >= 1000,
+        ...candidates };
 }
 
 /** Retourne l'image avec tag explicite (ajoute :latest si aucun tag ni digest) */

@@ -1133,6 +1133,8 @@ Los clientes de terceros comerciales están permitidos por la licencia, pero no 
 
 ## Créditos
 
+- Gracias a **yodadl**.
+
 - [**QFgood**](https://github.com/QFgood) / [**Dockge #1013**](https://github.com/louislam/dockge/pull/1013) — inspiración para el panel de enlaces de servicios.
 
 - [**Apprise**](https://github.com/caronc/apprise-api) — gateway de notificación multiplataforma

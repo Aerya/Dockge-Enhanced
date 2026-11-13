@@ -1131,6 +1131,8 @@ Commercial third-party clients are allowed by the license, but must not imply of
 
 ## Credits
 
+- Thanks to **yodadl**.
+
 - [**QFgood**](https://github.com/QFgood) / [**Dockge #1013**](https://github.com/louislam/dockge/pull/1013) — inspiration for the service links dashboard.
 
 - [**Apprise**](https://github.com/caronc/apprise-api) — multi-platform notification gateway

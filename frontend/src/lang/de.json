@@ -1,4 +1,14 @@
 {
+    "imageVersionPreview": {
+        "open": "Versionsvorschau",
+        "error": "Vorschau nicht verfügbar (Registry, festgelegter Digest oder laufende Anfrage).",
+        "warning": "Nur Hinweise, keine Bereitstellungsempfehlungen. Auch innerhalb einer Hauptversion können Migrationen inkompatibel sein. Tags können sich ändern; Compose und automatische Updates bleiben unverändert. Ein Strich bedeutet unbekannt oder kein passender Tag in der abgerufenen Liste, nicht zwingend aktuell.",
+        "current": "Zuletzt beobachteter lokaler Digest",
+        "target": "Ziel des aktuellen Tags",
+        "sameMajor": "Gleiche Hauptversion / gleiche Image-Variante",
+        "nextMajor": "Nächste Hauptversion / gleiche Image-Variante",
+        "partial": "Unvollständige Registry-Liste: weitere Versionen sind möglich."
+    },
     "releaseNews.item.sharedSso": "Fügen Sie den entfernten Server einmal hinzu und wählen Sie über Diese Verbindung teilen vertrauenswürdige Instanzen aus. Bestätigen Sie ausdrücklich die Übertragung des Enhanced-Tokens und der Proxy-Zugangsdaten. Jeder Empfänger wird einzeln geprüft; bestehende Verbindungen werden nicht überschrieben. Empfänger vorher aktualisieren. Kopien bleiben unabhängig: Zugangsdaten und Löschung auf jedem Empfänger separat verwalten. Keine Rückverbindung erforderlich.",
     "agentShare.open": "Diese Verbindung teilen",
     "agentShare.noReturn": "Verbindung ohne Rückverbindung (SSO / entfernter Server)",

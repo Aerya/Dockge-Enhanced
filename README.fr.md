@@ -1132,6 +1132,8 @@ Les clients tiers commerciaux sont autorisés par la licence, mais ne doivent pa
 
 ## Crédits
 
+- Merci à **yodadl**.
+
 - [**QFgood**](https://github.com/QFgood) / [**Dockge #1013**](https://github.com/louislam/dockge/pull/1013) — inspiration pour le tableau des liens de services.
 
 - [**Apprise**](https://github.com/caronc/apprise-api) — passerelle de notifications multi-plateformes
