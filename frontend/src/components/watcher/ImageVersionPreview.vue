@@ -16,7 +16,7 @@
                 <dt>{{ $t("imageVersionPreview.nextMajor") }}</dt><dd>{{ result.nextMajor || "—" }}</dd>
             </dl>
             <p v-if="result.partial || result.unavailableCandidate" class="text-warning small mb-2">{{ $t("imageVersionPreview.partial") }}</p>
-            <button class="btn btn-sm btn-outline-secondary" @click="result = null">{{ $t("Close") }}</button>
+            <button class="btn btn-sm btn-outline-secondary" @click="result = null">{{ $t("close") }}</button>
         </div>
     </div>
 </template>
