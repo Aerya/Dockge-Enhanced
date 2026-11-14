@@ -15,6 +15,7 @@ import express, { Express, Router as ExpressRouter, Request, Response, NextFunct
 import { ImageWatcher, imageStatusStore, rollbackStore, updateHistoryStore, RegistryCredential, WatcherSettings, previewObservedImageVersions } from "../watchers/image-watcher";
 import { SelfUpdateChecker } from "../watchers/self-update-checker";
 import { TrivyScanner } from "../watchers/trivy-scanner";
+import { startImageComparison, getComparisonJob } from "../watchers/trivy-comparison-runner";
 import { BackupAlreadyRunningError, BackupManager } from "../watchers/backup-manager";
 import { KulaManager } from "../watchers/kula-manager";
 import { DozzleManager } from "../watchers/dozzle-manager";
@@ -143,6 +144,23 @@ export class WatcherRouter extends Router {
                 // Registry errors may contain credentials or headers; never reflect them.
                 res.status(502).json({ ok: false });
             }
+        });
+
+        router.post("/image/cve-comparison", (req: Request, res: Response) => {
+            try {
+                if (req.body?.confirmed !== true || TrivyScanner.getInstance().getStatus().running) {
+                    throw new Error("Comparison unavailable");
+                }
+                res.json({ ok: true,
+                    data: startImageComparison(req.body?.stack, req.body?.image) });
+            } catch {
+                res.status(409).json({ ok: false });
+            }
+        });
+        router.get("/image/cve-comparison/:id", (req: Request, res: Response) => {
+            const data = getComparisonJob(req.params.id);
+            res.status(data ? 200 : 404).json({ ok: Boolean(data),
+                data });
         });
 
         router.get("/image/update-all", (_req: Request, res: Response) => {

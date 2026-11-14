@@ -1,4 +1,5 @@
 import { TrivyScanner } from "../watchers/trivy-scanner";
+import { startImageComparison, getComparisonJob } from "../watchers/trivy-comparison-runner";
 import { registerContainerFiles } from "./container-files-socket-handler";
 import { deploymentStore } from "../deployment-progress";
 import { registerCatalog } from "./catalog-socket-handler";
@@ -525,6 +526,33 @@ export class DockerSocketHandler extends AgentSocketHandler {
                     data: await previewObservedImageVersions(stack, image) }, callback);
             } catch {
                 callbackError(new Error("Image preview unavailable"), callback);
+            }
+        });
+
+        agentSocket.on("imageCveComparison", async (payload: unknown, callback) => {
+            try {
+                checkLogin(socket);
+                if ((await loadUserAccess(socket.userID)).role !== "admin") {
+                    throw new Error("Permission denied");
+                }
+                if (!payload || typeof payload !== "object") {
+                    throw new Error("Invalid request");
+                }
+                const request = payload as { id?: unknown;
+                    stack?: unknown;
+                    image?: unknown;
+                    confirmed?: unknown };
+                if (!request.id && (request.confirmed !== true || TrivyScanner.getInstance().getStatus().running)) {
+                    throw new Error("Comparison unavailable");
+                }
+                const data = request.id ? getComparisonJob(request.id) : startImageComparison(request.stack, request.image);
+                if (!data) {
+                    throw new Error("Comparison unavailable");
+                }
+                callbackResult({ ok: true,
+                    data }, callback);
+            } catch {
+                callbackError(new Error("Comparison unavailable"), callback);
             }
         });
 

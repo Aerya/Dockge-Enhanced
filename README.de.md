@@ -64,6 +64,8 @@ Die wichtigsten kürzlichen Änderungen sind hier gruppiert, damit Sie schnell s
 
 ### 🆕 November 2026
 
+**Schwachstellen von Images vergleichen :** Vor der Bereitstellung das laufende Image mit dem aktuellen Ziel seines Tags vergleichen: nicht mehr, neu und weiterhin erkannte CVEs. Nur für Administratoren, auf Anfrage mit Bestätigung; beide Analysen verwenden dieselben Datenbanken. Temporärer Scanner, Speicherplatz und Downloads erforderlich. Keine Bereitstellung oder Änderung automatischer Updates; fehlende CVEs garantieren keine Behebung. Verknüpfte Instanzen ebenfalls aktualisieren.
+
 **Vorschau der Image-Versionen :** Vor einem Update lassen sich Ziel-Digest und anhand dieses Digests überprüfte Versions-Tags anzeigen. Vorschläge behalten die Image-Variante bei und prüfen die Plattform; fließende Tags werden nicht erraten. Nur lesend für Administratoren; automatische Updates bleiben unverändert. Auch kleinere Updates können Migrationen erfordern. Verknüpfte Instanzen ebenfalls aktualisieren.
 
 **SSO-Verbindungen teilen :** Fügen Sie den entfernten Server einmal hinzu und wählen Sie über Diese Verbindung teilen vertrauenswürdige Instanzen aus. Bestätigen Sie ausdrücklich die Übertragung des Enhanced-Tokens und der Proxy-Zugangsdaten. Jeder Empfänger wird einzeln geprüft; bestehende Verbindungen werden nicht überschrieben. Empfänger vorher aktualisieren. Kopien bleiben unabhängig: Zugangsdaten und Löschung auf jedem Empfänger separat verwalten. Keine Rückverbindung erforderlich.
@@ -631,6 +633,8 @@ Die Stack-Navigation, der Logs/Compose-Arbeitsbereich, Ressourcenindikatoren, St
 - Anleitungen: [Restic-Backups und Wiederherstellung](docs/restic.de.md) · [Zerobyte-Einrichtung und -Wiederherstellung](docs/zerobyte.de.md)
 
 ### Updates & ImageWatcher
+
+- **Schwachstellen von Images vergleichen** — Vor der Bereitstellung das laufende Image mit dem aktuellen Ziel seines Tags vergleichen: nicht mehr, neu und weiterhin erkannte CVEs. Nur für Administratoren, auf Anfrage mit Bestätigung; beide Analysen verwenden dieselben Datenbanken. Temporärer Scanner, Speicherplatz und Downloads erforderlich. Keine Bereitstellung oder Änderung automatischer Updates; fehlende CVEs garantieren keine Behebung. Verknüpfte Instanzen ebenfalls aktualisieren.
 
 - Digest- und Versionsvorschau vor Image-Updates, auch auf verknüpften Instanzen.
 - Gezielte Image-Bereinigung nach Updates und unabhängiger 24-Stunden-Rollback pro Dienst

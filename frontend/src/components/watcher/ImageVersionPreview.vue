@@ -17,6 +17,7 @@
             </dl>
             <p v-if="result.partial || result.unavailableCandidate" class="text-warning small mb-2">{{ $t("imageVersionPreview.partial") }}</p>
             <button class="btn btn-sm btn-outline-secondary" @click="result = null">{{ $t("close") }}</button>
+            <ImageCveComparison :image="image" :stack="stack" :endpoint="endpoint" />
         </div>
     </div>
 </template>
@@ -24,6 +25,7 @@
 <script setup lang="ts">
 import { ref, getCurrentInstance } from "vue";
 import { watcherApi } from "./shared";
+import ImageCveComparison from "./ImageCveComparison.vue";
 const props = defineProps<{ image: string;
     stack: string;
     endpoint?: string }>();

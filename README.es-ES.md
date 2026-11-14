@@ -64,6 +64,8 @@ Los cambios recientes más importantes se agrupan aquí para entender rápidamen
 
 ### 🆕 Noviembre de 2026
 
+**Comparar vulnerabilidades de imágenes :** Antes del despliegue, compare la imagen en ejecución con el destino actual de su tag: CVE ya no detectadas, nuevas y persistentes. Solo para administradores, bajo demanda y con confirmación; ambos análisis usan las mismas bases. Requiere escáner temporal, disco y descargas. No despliega ni cambia las actualizaciones automáticas; una CVE ausente no garantiza una corrección. Actualice también las instancias vinculadas.
+
 **Vista previa de versiones de imágenes :** Antes de actualizar, consulte el digest de destino y los tags de versión verificados con ese digest. Las sugerencias mantienen la variante y comprueban la plataforma; no se adivinan versiones para tags flotantes. Solo lectura para administradores; las actualizaciones automáticas no cambian. Incluso una actualización menor puede requerir migraciones. Actualice también las instancias vinculadas.
 
 **Compartir conexiones SSO :** Añada el servidor remoto una vez y use Compartir esta conexión para elegir instancias de confianza y autorizar el envío del token Enhanced y las credenciales del proxy. Cada destinatario se prueba por separado; no se sobrescriben conexiones existentes. Actualice los destinatarios primero. Las copias son independientes: gestione cambios de credenciales y eliminación en cada destinatario. No requiere conexión de retorno.
@@ -633,6 +635,8 @@ La navegación, Logs/Compose, indicadores de recursos, tarjetas de salud, temas 
 - Guías: [Copias Restic y recuperación](docs/restic.es.md) · [Instalación y recuperación de Zerobyte](docs/zerobyte.es.md)
 
 ### Actualizaciones e ImageWatcher
+
+- **Comparar vulnerabilidades de imágenes** — Antes del despliegue, compare la imagen en ejecución con el destino actual de su tag: CVE ya no detectadas, nuevas y persistentes. Solo para administradores, bajo demanda y con confirmación; ambos análisis usan las mismas bases. Requiere escáner temporal, disco y descargas. No despliega ni cambia las actualizaciones automáticas; una CVE ausente no garantiza una corrección. Actualice también las instancias vinculadas.
 
 - Vista previa de digests y versiones antes de actualizar, también en instancias vinculadas.
 - Limpieza de imágenes tras actualizar y rollback independiente de 24 horas por servicio

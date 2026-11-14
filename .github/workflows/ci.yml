@@ -68,7 +68,7 @@ jobs:
 
       - name: Tests de l’aperçu des versions d’images
         if: steps.docs.outputs.docs_only != 'true'
-        run: npx tsx --test backend/watchers/image-version-preview.test.ts backend/watchers/image-version-registry.test.ts
+        run: npx tsx --test backend/watchers/image-version-preview.test.ts backend/watchers/image-version-registry.test.ts backend/watchers/trivy-comparison.test.ts backend/watchers/trivy-comparison-runner.test.ts
 
       - name: Tests des catalogues communautaires
         if: steps.docs.outputs.docs_only != 'true'

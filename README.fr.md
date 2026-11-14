@@ -65,6 +65,8 @@ Les évolutions majeures récentes sont regroupées ici afin de comprendre rapid
 
 ### 🆕 Novembre 2026
 
+**Comparer les vulnérabilités des images :** Avant déploiement, comparez l’image exécutée à la cible actuelle de son tag : CVE non détectées dans la cible, nouvelles et persistantes. Réservé aux administrateurs, à la demande avec confirmation ; les deux scans utilisent les mêmes bases. Scanner temporaire, espace disque et téléchargements nécessaires. Aucun déploiement ni changement des mises à jour automatiques ; une CVE absente ne garantit pas un correctif. Mettez aussi les instances liées à jour.
+
 **Aperçu des versions d’images :** Avant une mise à jour, consultez le digest cible et les tags de version vérifiés sur ce digest. Les suggestions conservent la variante et vérifient la plateforme ; aucune version n’est inventée pour les tags flottants. Lecture seule, réservée aux administrateurs ; les mises à jour automatiques restent inchangées. Même une mise à jour mineure peut nécessiter des migrations. Mettez aussi les instances liées à jour.
 
 **Partager les connexions SSO :** Ajoutez le serveur distant une fois, puis utilisez Partager cette connexion pour choisir les instances liées de confiance et autoriser explicitement l’envoi du jeton Enhanced et des identifiants du proxy. Chaque destinataire est testé séparément ; aucune connexion existante n’est écrasée. Mettez les destinataires à jour. Les copies restent indépendantes : modifiez les identifiants ou supprimez la connexion sur chaque destinataire. Aucune connexion retour n’est nécessaire.
@@ -632,6 +634,8 @@ La navigation des stacks, l'espace Logs/Compose, les indicateurs de ressources, 
 - Guides : [Sauvegardes et restauration Restic](docs/restic.fr.md) · [Installation et reprise Zerobyte](docs/zerobyte.fr.md)
 
 ### Mises à jour & ImageWatcher
+
+- **Comparer les vulnérabilités des images** — Avant déploiement, comparez l’image exécutée à la cible actuelle de son tag : CVE non détectées dans la cible, nouvelles et persistantes. Réservé aux administrateurs, à la demande avec confirmation ; les deux scans utilisent les mêmes bases. Scanner temporaire, espace disque et téléchargements nécessaires. Aucun déploiement ni changement des mises à jour automatiques ; une CVE absente ne garantit pas un correctif. Mettez aussi les instances liées à jour.
 
 - Aperçu des digests et versions avant mise à jour, y compris sur les instances liées.
 - Nettoyage ciblé après mise à jour et rollback indépendant de 24 h, réglables par service
