@@ -43,6 +43,7 @@ declare module 'vue' {
     GlobalEnv: typeof import('./src/components/settings/GlobalEnv.vue')['default']
     GlobalSearch: typeof import('./src/components/GlobalSearch.vue')['default']
     HiddenInput: typeof import('./src/components/HiddenInput.vue')['default']
+    ImageVersionPreview: typeof import('./src/components/watcher/ImageVersionPreview.vue')['default']
     Integrations: typeof import('./src/components/settings/Integrations.vue')['default']
     Login: typeof import('./src/components/Login.vue')['default']
     MonitoringTab: typeof import('./src/components/MonitoringTab.vue')['default']

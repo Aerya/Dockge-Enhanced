@@ -1,4 +1,17 @@
 {
+    "releaseNews.item.imageVersionPreview": "Image version preview: view the target digest, verified version aliases and available tags of the same variant. Administrator-only, read-only; automatic updates remain unchanged. Even a minor update may require migrations. Update linked instances too.",
+    "imageVersionPreview.aliases": "Version tags matching the target digest",
+    "imageVersionPreview.unknown": "Unknown (no verified matching tag)",
+    "imageVersionPreview": {
+        "open": "Preview versions",
+        "error": "Preview unavailable (registry, pinned image or another request in progress).",
+        "warning": "Read-only hints, not deployment recommendations. Even within one major version, migrations can break compatibility. Tags may change; these results do not change the Compose or automatic updates. A dash means unknown or no matching tag in the retrieved list, not proof that the image is up to date.",
+        "current": "Last observed local digest",
+        "target": "Current tag points to",
+        "sameMajor": "Same major / same image variant",
+        "nextMajor": "Next major / same image variant",
+        "partial": "Partial registry listing: other versions may exist."
+    },
     "releaseNews.item.sharedSso": "Add the remote server once, then use Share this connection to select trusted linked instances and explicitly authorize sending the Enhanced token and proxy credentials. Each recipient is tested independently; existing connections are not overwritten. Update all recipients first. Copies remain independent: change credentials or remove the connection on each recipient. No return connection is required.",
     "agentShare.open": "Share this connection",
     "agentShare.noReturn": "Connect without a return link (SSO / remote server)",

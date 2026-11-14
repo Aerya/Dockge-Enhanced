@@ -7,6 +7,8 @@ Historial completo del proyecto, de lo más reciente a lo más antiguo. Cada fec
 
 El [README](README.es-ES.md) presenta las principales novedades recientes y el catálogo de funcionalidades.
 
+**2026-11-14 — Vista previa de versiones de imágenes** — Antes de actualizar, consulte el digest de destino y los tags de versión verificados con ese digest. Las sugerencias mantienen la variante y comprueban la plataforma; no se adivinan versiones para tags flotantes. Solo lectura para administradores; las actualizaciones automáticas no cambian. Incluso una actualización menor puede requerir migraciones. Actualice también las instancias vinculadas.
+
 **2026-11-09 — Estadísticas Discord concisas** — El acumulado anual suma ahora los meses medidos del año actual, incluido el mes en curso, en lugar de utilizar el contador anual independiente. Discord solo muestra estadísticas; los contadores históricos permanecen intactos.
 
 **2026-11-09 — Informes de Discord programados** — Las estimaciones de instalaciones se envían los lunes, miércoles y sábados a las 20:00 Europe/Paris, con cambio horario automático. La preparación diaria permanece silenciosa; un webhook ausente ahora produce un error explícito.

@@ -1,4 +1,17 @@
 {
+    "releaseNews.item.imageVersionPreview": "Vista previa de versiones: consulte el digest de destino, sus tags verificados y las versiones de la misma variante. Solo lectura para administradores; no cambia las actualizaciones automáticas. Incluso una versión menor puede requerir migraciones. Actualice también las instancias vinculadas.",
+    "imageVersionPreview.aliases": "Tags de versión con el digest de destino",
+    "imageVersionPreview.unknown": "Desconocida (ningún tag coincidente verificado)",
+    "imageVersionPreview": {
+        "open": "Vista previa de versiones",
+        "error": "Vista previa no disponible (registro, imagen fijada o solicitud en curso).",
+        "warning": "Información de solo lectura, no recomendaciones. Incluso dentro de una versión mayor, las migraciones pueden romper la compatibilidad. Los tags pueden cambiar; no se modifica el Compose ni las actualizaciones automáticas. Un guion significa desconocido o ningún tag coincidente en la lista recibida, no que la imagen esté actualizada.",
+        "current": "Último digest local observado",
+        "target": "Destino del tag actual",
+        "sameMajor": "Misma versión mayor / misma variante",
+        "nextMajor": "Siguiente versión mayor / misma variante",
+        "partial": "Lista parcial del registro: puede haber otras versiones."
+    },
     "releaseNews.item.sharedSso": "Añada el servidor remoto una vez y use Compartir esta conexión para elegir instancias de confianza y autorizar el envío del token Enhanced y las credenciales del proxy. Cada destinatario se prueba por separado; no se sobrescriben conexiones existentes. Actualice los destinatarios primero. Las copias son independientes: gestione cambios de credenciales y eliminación en cada destinatario. No requiere conexión de retorno.",
     "agentShare.open": "Compartir esta conexión",
     "agentShare.noReturn": "Conexión sin retorno (SSO / servidor remoto)",

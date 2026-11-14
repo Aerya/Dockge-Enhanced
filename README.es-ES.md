@@ -64,6 +64,8 @@ Los cambios recientes más importantes se agrupan aquí para entender rápidamen
 
 ### 🆕 Noviembre de 2026
 
+**Vista previa de versiones de imágenes :** Antes de actualizar, consulte el digest de destino y los tags de versión verificados con ese digest. Las sugerencias mantienen la variante y comprueban la plataforma; no se adivinan versiones para tags flotantes. Solo lectura para administradores; las actualizaciones automáticas no cambian. Incluso una actualización menor puede requerir migraciones. Actualice también las instancias vinculadas.
+
 **Compartir conexiones SSO :** Añada el servidor remoto una vez y use Compartir esta conexión para elegir instancias de confianza y autorizar el envío del token Enhanced y las credenciales del proxy. Cada destinatario se prueba por separado; no se sobrescriben conexiones existentes. Actualice los destinatarios primero. Las copias son independientes: gestione cambios de credenciales y eliminación en cada destinatario. No requiere conexión de retorno.
 
 **Verificación de actualizaciones y botones de instancias :** Un fallo de conexión al registro ya no oculta la compilación instalada ni se presenta como una imagen local desconocida. Los errores DNS tienen un mensaje específico; las actualizaciones automáticas siguen bloqueadas mientras falle la verificación. Los botones de agentes inversos quedan alineados y se adaptan a pantallas estrechas.
@@ -632,6 +634,7 @@ La navegación, Logs/Compose, indicadores de recursos, tarjetas de salud, temas 
 
 ### Actualizaciones e ImageWatcher
 
+- Vista previa de digests y versiones antes de actualizar, también en instancias vinculadas.
 - Limpieza de imágenes tras actualizar y rollback independiente de 24 horas por servicio
 
 - **Actualizaciones sin interrupción del servicio** — `dockge.rollout.enabled: "true"`. Compruebe esta compatibilidad antes de activar la opción. El número de contenedores de la aplicación se duplica temporalmente: reserve suficiente CPU/RAM. Se rechazan nombres de contenedor fijos y volúmenes compartidos con escritura. El relé añade un contenedor y un volumen de configuración. Su instalación inicial mueve el puerto de acceso y puede causar un corte. Después, utilice Actualizar; Recreate, los reinicios y el rollback no garantizan mantener las conexiones. Solo TCP, no UDP/QUIC; sin garantía universal de cero interrupciones. [Configuración](docs/service-rollout.es.md). [Verificación de actualizaciones: cambio propuesto en esta rama](docs/image-update-verification.es.md).
@@ -1132,6 +1135,8 @@ Los clientes de terceros comerciales están permitidos por la licencia, pero no 
 ---
 
 ## Créditos
+
+- Gracias a **yodadl**.
 
 - [**QFgood**](https://github.com/QFgood) / [**Dockge #1013**](https://github.com/louislam/dockge/pull/1013) — inspiración para el panel de enlaces de servicios.
 

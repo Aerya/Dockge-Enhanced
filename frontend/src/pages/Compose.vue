@@ -457,6 +457,7 @@
                                 :ports="serviceStatusList[name]?.ports"
                                 :started-at="serviceStatusList[name]?.startedAt ?? null"
                                 :image-update="imageUpdateForService(name)"
+                                :preview-image="imagePreviewForService(name)"
                                 :auto-update="autoUpdateForService(name)"
                                 :auto-update-saving="autoUpdateSaving[name] === true"
                                 :volume-usage="volumeUsageForService(name)"
@@ -1044,6 +1045,9 @@ export default {
         const editorFocus = ref(false);
         const {
             statusCache: imageStatuses,
+            statusForStack: previewStatusForStack,
+            registerRemoteEndpoint,
+            unregisterRemoteEndpoint,
             autoUpdateFor,
             setAutoUpdateMode: saveAutoUpdateMode,
             refreshImageStatus,
@@ -1085,6 +1089,9 @@ export default {
             extensionsEnv,
             editorFocus,
             imageStatuses,
+            previewStatusForStack,
+            registerRemoteEndpoint,
+            unregisterRemoteEndpoint,
             autoUpdateFor,
             saveAutoUpdateMode,
             refreshImageStatus,
@@ -1449,6 +1456,19 @@ export default {
         },
     },
     watch: {
+        endpoint: {
+            immediate: true,
+            handler(value, previous) {
+                if (previous) {
+                    this.unregisterRemoteEndpoint(previous);
+                }
+                if (value) {
+                    this.registerRemoteEndpoint(value, (endpoint, callback) =>
+                        this.$root.emitAgent(endpoint, "watcherImageStatusGet", callback)
+                    );
+                }
+            },
+        },
         effectiveSelectedLogSince(value, previousValue) {
             if (this.selectedLogSince === "restart" && previousValue && value && value !== previousValue) {
                 this.joinSelectedLogTerminal();
@@ -1592,6 +1612,9 @@ export default {
         window.addEventListener("keydown", this.handleWorkspaceEscape);
     },
     unmounted() {
+        if (this.endpoint) {
+            this.unregisterRemoteEndpoint(this.endpoint);
+        }
         clearTimeout(this.stackActionHelpTimeout);
         clearTimeout(this.displayNameSaveTimeout);
         clearTimeout(this.containerInstancesRequestTimeout);
@@ -2235,6 +2258,12 @@ export default {
             }
         },
 
+        imagePreviewForService(serviceName) {
+            const image = this.envsubstJSONConfig?.services?.[serviceName]?.image;
+            return this.previewStatusForStack(this.stack.name, this.endpoint).find(status =>
+                status.image === image
+            )?.image ?? "";
+        },
         imageUpdateForService(serviceName) {
             const image = this.envsubstJSONConfig?.services?.[serviceName]?.image;
             if (!image || !this.stack.name) {

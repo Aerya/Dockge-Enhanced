@@ -393,6 +393,7 @@
                                     >
                                         {{ $t("watcher.status.searchProject") }}
                                     </button>
+                                    <ImageVersionPreview :key="JSON.stringify([s.stack, s.image])" :image="s.image" :stack="s.stack" />
                                 </td>
                                 <td>
                                     <span
@@ -743,6 +744,7 @@
 </template>
 
 <script setup lang="ts">
+import ImageVersionPreview from "./ImageVersionPreview.vue";
 import SchedulingTimezoneNotice from "../SchedulingTimezoneNotice.vue";
 import { isScheduledTime } from "../../../../common/image-update-time";
 import { ref, computed, watch, onMounted, onUnmounted } from "vue";

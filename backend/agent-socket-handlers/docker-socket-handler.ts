@@ -16,7 +16,7 @@ import { rolloutStates } from "../rollout-recovery";
 import { inspectComposeDraft } from "../compose-diagnostics";
 import { AgentSocket } from "../../common/agent-socket";
 import { resolveScheduledTime } from "../../common/image-update-time";
-import { ImageWatcher, imageStatusStore, WatcherSettings } from "../watchers/image-watcher";
+import { ImageWatcher, imageStatusStore, WatcherSettings, previewObservedImageVersions } from "../watchers/image-watcher";
 import { BackupManager } from "../watchers/backup-manager";
 import { isLowPower } from "../low-power";
 import { AuditLogger } from "../audit-log";
@@ -512,6 +512,19 @@ export class DockerSocketHandler extends AgentSocketHandler {
                 }, callback);
             } catch (e) {
                 callbackError(e, callback);
+            }
+        });
+
+        agentSocket.on("imageVersionPreview", async (stack: unknown, image: unknown, callback) => {
+            try {
+                checkLogin(socket);
+                if ((await loadUserAccess(socket.userID)).role !== "admin") {
+                    throw new Error("Permission denied");
+                }
+                callbackResult({ ok: true,
+                    data: await previewObservedImageVersions(stack, image) }, callback);
+            } catch {
+                callbackError(new Error("Image preview unavailable"), callback);
             }
         });
 
