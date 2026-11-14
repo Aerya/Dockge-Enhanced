@@ -393,7 +393,7 @@
                                     >
                                         {{ $t("watcher.status.searchProject") }}
                                     </button>
-                                    <ImageVersionPreview :image="s.image" :stack="s.stack" />
+                                    <ImageVersionPreview :key="JSON.stringify([s.stack, s.image])" :image="s.image" :stack="s.stack" />
                                 </td>
                                 <td>
                                     <span
