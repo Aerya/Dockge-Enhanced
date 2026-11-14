@@ -457,6 +457,7 @@
                                 :ports="serviceStatusList[name]?.ports"
                                 :started-at="serviceStatusList[name]?.startedAt ?? null"
                                 :image-update="imageUpdateForService(name)"
+                                :preview-image="imagePreviewForService(name)"
                                 :auto-update="autoUpdateForService(name)"
                                 :auto-update-saving="autoUpdateSaving[name] === true"
                                 :volume-usage="volumeUsageForService(name)"
@@ -2235,6 +2236,12 @@ export default {
             }
         },
 
+        imagePreviewForService(serviceName) {
+            const image = this.envsubstJSONConfig?.services?.[serviceName]?.image;
+            return this.imageStatuses.find(status =>
+                status.stack === this.stack.name && status.image === image
+            )?.image ?? "";
+        },
         imageUpdateForService(serviceName) {
             const image = this.envsubstJSONConfig?.services?.[serviceName]?.image;
             if (!image || !this.stack.name) {

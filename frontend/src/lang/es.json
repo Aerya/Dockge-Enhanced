@@ -1,5 +1,5 @@
 {
-    "releaseNews.item.imageVersionPreview": "Antes de actualizar, consulte el digest de destino y los tags de versión verificados con ese digest. Las sugerencias mantienen la variante y comprueban la plataforma; no se adivinan versiones para tags flotantes. Solo lectura para administradores; las actualizaciones automáticas no cambian. Incluso una actualización menor puede requerir migraciones. Actualice también las instancias vinculadas.",
+    "releaseNews.item.imageVersionPreview": "Vista previa de versiones: consulte el digest de destino, sus tags verificados y las versiones de la misma variante. Solo lectura para administradores; no cambia las actualizaciones automáticas. Incluso una versión menor puede requerir migraciones. Actualice también las instancias vinculadas.",
     "imageVersionPreview.aliases": "Tags de versión con el digest de destino",
     "imageVersionPreview.unknown": "Desconocida (ningún tag coincidente verificado)",
     "imageVersionPreview": {

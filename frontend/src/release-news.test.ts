@@ -1,7 +1,22 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { readFileSync } from "node:fs";
-import { RELEASE_NEWS, getUnreadReleaseNews, sanitizeSeenReleaseNewsIds } from "./release-news.js";
+import { RELEASE_NEWS, getUnreadReleaseNews, sanitizeSeenReleaseNewsIds, getInitialSeenReleaseNewsIds } from "./release-news.js";
+
+test("les nouvelles annonces sont courtes, traduites et visibles au premier passage", () => {
+    const additions = RELEASE_NEWS.filter(release => release.id.startsWith("2026-11-14-image-"));
+    assert.ok(additions.length > 0);
+    assert.deepEqual(getUnreadReleaseNews(getInitialSeenReleaseNewsIds(null)), [ additions.at(-1) ]);
+    for (const locale of [ "en", "fr", "de", "es", "zh-CN" ]) {
+        const messages = JSON.parse(readFileSync(new URL(`./lang/${locale}.json`, import.meta.url), "utf8"));
+        for (const addition of additions) {
+            for (const key of addition.items) {
+                assert.equal(typeof messages[key], "string");
+                assert.ok(messages[key].length > 0 && messages[key].length < 500);
+            }
+        }
+    }
+});
 
 const latest = RELEASE_NEWS.find(release => release.id === "2026-11-06-compose-containers-security")!;
 
