@@ -823,6 +823,7 @@ export async function getRemoteDigest(
     image: string,
     credentials: RegistryCredential[],
     preferredPlatform = "",
+    verifySinglePlatform = false,
 ): Promise<RemoteDigestInfo> {
     const { registry, name, tag } = normalizeImage(image);
     const platform = getCurrentPlatform(preferredPlatform);
@@ -885,6 +886,22 @@ export async function getRemoteDigest(
         if (!indexDigest) {
             throw new Error("Header Docker-Content-Digest absent dans la réponse");
         }
+        if (verifySinglePlatform) {
+            const configDigest = res.data?.config?.digest;
+            if (typeof configDigest !== "string" || !/^sha256:[a-f0-9]{64}$/.test(configDigest)) {
+                throw new Error("Image platform cannot be verified");
+            }
+            const config = await axios.get(new URL(`../blobs/${configDigest}`, manifestUrl).href, {
+                ...await registryDnsAxiosOptions(),
+                headers: makeHeaders(),
+                timeout: 15000,
+                maxRedirects: 0,
+                maxContentLength: 1024 * 1024,
+            });
+            if (!platformMatches(config.data, platform)) {
+                throw new Error("Image platform mismatch");
+            }
+        }
         return {
             digest: indexDigest,
             platformDigest: indexDigest,
@@ -922,7 +939,7 @@ export async function getRemoteDigest(
 }
 
 /** Bounded, on-demand discovery using the same registry authentication as the watcher. */
-export async function previewImageVersions(image: string, credentials: RegistryCredential[]) {
+export async function previewImageVersions(image: string, credentials: RegistryCredential[], preferredPlatform = "") {
     if (image.includes("@")) {
         throw new Error("Digest-pinned images do not have a version channel");
     }
@@ -965,14 +982,14 @@ export async function previewImageVersions(image: string, credentials: RegistryC
         }
     }
     const candidates = selectVersionCandidates(tag, tags);
-    const target = await getRemoteDigest(image, credentials);
+    const target = await getRemoteDigest(image, credentials, preferredPlatform, true);
     const targetAliases: string[] = [];
     const aliases = versionAliasCandidates(tag, tags);
     // Small batches bound registry traffic. An alias is reported only after digest equality.
     for (let offset = 0; offset < aliases.length; offset += 4) {
         await Promise.all(aliases.slice(offset, offset + 4).map(async alias => {
             try {
-                const manifest = await getRemoteDigest(`${registry}/${name}:${alias}`, credentials, platformToString(target.platform));
+                const manifest = await getRemoteDigest(`${registry}/${name}:${alias}`, credentials, platformToString(target.platform), true);
                 if (manifest.platformDigest === target.platformDigest) {
                     targetAliases.push(alias);
                 }
@@ -985,7 +1002,7 @@ export async function previewImageVersions(image: string, credentials: RegistryC
         const candidate = candidates[key];
         if (candidate) {
             try {
-                const manifest = await getRemoteDigest(`${registry}/${name}:${candidate}`, credentials, platformToString(target.platform));
+                const manifest = await getRemoteDigest(`${registry}/${name}:${candidate}`, credentials, platformToString(target.platform), true);
                 candidateDigests[candidate] = manifest.platformDigest;
             } catch {
                 candidates[key] = null;
@@ -1013,7 +1030,8 @@ export async function previewObservedImageVersions(stack: unknown, image: unknow
     }
     versionPreviewPending = true;
     try {
-        return { ...await previewImageVersions(status.image, ImageWatcher.getInstance().settings.credentials),
+        const watcher = ImageWatcher.getInstance();
+        return { ...await previewImageVersions(status.image, watcher.settings.credentials, watcher.settings.imagePlatform),
             localDigest: status.localDigest };
     } finally {
         versionPreviewPending = false;
