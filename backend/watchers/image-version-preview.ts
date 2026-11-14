@@ -53,10 +53,12 @@ export function selectVersionCandidates(currentTag: string, tags: string[]): {
 }
 
 export function versionAliasCandidates(tag: string, tags: string[]): string[] {
-    const variant = parseVersionTag(tag)?.variant ?? (/^(latest|stable|lts)(-[a-z][a-z0-9.-]*)$/.exec(tag)?.[2] ?? "");
+    const current = parseVersionTag(tag);
+    const variant = current?.variant ?? (/^(latest|stable|lts)(-[a-z][a-z0-9.-]*)$/.exec(tag)?.[2] ?? "");
+    const matchesPrefix = (item: VersionTag) => current?.parts.every((part, index) => item.parts[index] === part) ? 1 : 0;
     return [ ...new Set(tags) ].map(parseVersionTag)
         .filter((item): item is VersionTag => item !== null && item.parts.length === 3 && item.variant === variant)
-        .sort((a, b) => compare(b, a)).slice(0, 12).map(item => item.tag);
+        .sort((a, b) => matchesPrefix(b) - matchesPrefix(a) || compare(b, a)).slice(0, 12).map(item => item.tag);
 }
 
 /** Never follow a pagination URL outside the authenticated repository. */

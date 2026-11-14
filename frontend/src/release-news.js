@@ -1,9 +1,5 @@
 export const RELEASE_NEWS = [
     {
-        id: "2026-11-14-image-version-preview",
-        items: [ "releaseNews.item.imageVersionPreview" ],
-    },
-    {
         id: "2026-11-09-shared-sso-connections",
         items: [ "releaseNews.item.sharedSso" ],
     },
@@ -620,6 +616,14 @@ export const RELEASE_NEWS = [
         ],
     },
 
+    {
+        id: "2026-11-14-image-version-preview",
+        items: [ "releaseNews.item.imageVersionPreview" ],
+    },
+    {
+        id: "2026-11-14-image-cve-comparison",
+        items: [ "releaseNews.item.imageCveComparison" ],
+    },
 ];
 
 function currentReleaseNewsIds() {

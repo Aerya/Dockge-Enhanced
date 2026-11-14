@@ -24,7 +24,8 @@ test("equal totals can conceal one removed CVE and one introduced CVE", () => {
 });
 
 test("changed package version or severity does not mean a CVE disappeared", () => {
-    const result = compareImageScans(scan([ finding("CVE-1") ]), scan([ finding("CVE-1", { installedVersion: "2.0", severity: "CRITICAL" }) ]));
+    const result = compareImageScans(scan([ finding("CVE-1") ]), scan([ finding("CVE-1", { installedVersion: "2.0",
+        severity: "CRITICAL" }) ]));
     assert.equal(result.persistent.length, 1);
     assert.equal(result.noLongerDetected.length, 0);
     assert.equal(result.persistent[0].after.severity, "CRITICAL");
@@ -36,7 +37,7 @@ test("same CVE in different packages stays distinct and exact duplicates collaps
 });
 
 test("failed scans and differing databases/platforms cannot become zero CVEs", () => {
-    for (const overrides of [ { status: "error" as const }, { databaseRevision: "other" }, { platform: "linux/arm64" }, { digest: "latest" } ]) {
+    for (const overrides of [{ status: "error" as const }, { databaseRevision: "other" }, { platform: "linux/arm64" }, { digest: "latest" }]) {
         assert.throws(() => compareImageScans(scan([]), scan([], overrides)));
     }
     assert.throws(() => compareImageScans(scan([ finding("CVE-1"), finding("CVE-1", { installedVersion: "2.0" }) ]), scan([])));

@@ -4,6 +4,42 @@ import axios from "axios";
 import { Settings } from "../settings";
 import { previewImageVersions, previewObservedImageVersions } from "./image-watcher";
 
+test("candidates for another architecture are never offered", async (t) => {
+    t.mock.method(axios, "get", async (url: string) => {
+        if (url.includes("tags/list")) {
+            return { data: { tags: [ "1.2.0", "2.0.0" ] },
+                headers: {} };
+        }
+        const wrong = url.endsWith("2.0.0");
+        return { data: { manifests: [{ digest: "sha256:" + "a".repeat(64),
+            platform: { os: "linux",
+                architecture: wrong ? "arm64" : "amd64" } }] },
+        headers: { "content-type": "application/vnd.oci.image.index.v1+json",
+            "docker-content-digest": "sha256:" + "b".repeat(64) } };
+    });
+    const result = await previewImageVersions("registry.test/app:1", [], "linux/amd64");
+    assert.equal(result.sameMajor, "1.2.0");
+    assert.equal(result.nextMajor, null);
+    assert.equal(result.unavailableCandidate, true);
+});
+test("single-platform manifests must verify their image config", async (t) => {
+    t.mock.method(axios, "get", async (url: string) => {
+        if (url.includes("tags/list")) {
+            return { data: { tags: [] },
+                headers: {} };
+        }
+        if (url.includes("/blobs/")) {
+            return { data: { os: "linux",
+                architecture: "arm64" },
+            headers: {} };
+        }
+        return { data: { config: { digest: "sha256:" + "c".repeat(64) } },
+            headers: { "content-type": "application/vnd.oci.image.manifest.v1+json",
+                "docker-content-digest": "sha256:" + "a".repeat(64) } };
+    });
+    await assert.rejects(previewImageVersions("registry.test/app:1", [], "linux/amd64"), /platform mismatch/);
+});
+
 test.beforeEach(() => {
     test.mock.method(Settings, "get", async () => null);
 });
@@ -21,7 +57,12 @@ test("private registry pagination, credentials and platform-verified digest alia
                 headers: {} } : { data: { tags: [ "1.2.0", "1.3.0" ] },
                 headers: { link: "</v2/team/app/tags/list?last=1.3.0>; rel=\"next\"" } };
         }
-        return { data: {},
+        if (url.includes("/blobs/")) {
+            return { data: { os: "linux",
+                architecture: process.arch === "arm64" ? "arm64" : "amd64" },
+            headers: {} };
+        }
+        return { data: { config: { digest: "sha256:" + "c".repeat(64) } },
             headers: { "content-type": "application/vnd.oci.image.manifest.v1+json",
                 "docker-content-digest": `sha256:${(url.endsWith("1.3.0") || url.endsWith("1") ? "a" : "b").repeat(64)}` } };
     });

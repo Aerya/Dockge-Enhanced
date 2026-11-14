@@ -13,6 +13,7 @@ import { getNotificationLang, getNotificationLocale, notificationText, Notificat
 import { Settings } from "../settings";
 import { log } from "../log";
 import { resolveDataDir } from "../data-dir";
+import { comparisonRunning } from "./trivy-comparison-runner";
 
 const execFileAsync = promisify(execFile);
 
@@ -151,7 +152,8 @@ export class TrivyScanner {
     setBaseUrl(url: string): void { this.baseUrl = url; }
 
     getStatus(): ScanStatus {
-        return { ...this.scanStatus };
+        return { ...this.scanStatus,
+            running: this.scanStatus.running || comparisonRunning() };
     }
 
     settings: ScannerSettings = {
@@ -257,6 +259,9 @@ export class TrivyScanner {
 
     /** Lance un scan manuel immédiat */
     async runScan(targetImage?: string): Promise<ScanResult[]> {
+        if (this.getStatus().running) {
+            return [];
+        }
         console.log("[TrivyScanner] Début du scan de sécurité...");
         this.scanStatus.running = true;
         const scanResults: ScanResult[] = [];

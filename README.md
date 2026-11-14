@@ -64,6 +64,8 @@ The most important recent changes are grouped here so you can quickly see what h
 
 ### 🆕 November 2026
 
+**Compare image vulnerabilities :** Before deployment, compare the running image with the current target of its configured tag: CVEs no longer detected, new and persistent. Administrator-only, on demand with confirmation; both scans use the same databases. Temporary scanner, disk space and downloads required. No deployment or change to automatic updates; a missing CVE does not guarantee a fix. Linked instances must also be updated.
+
 **Image version preview :** Before updating, inspect the target digest and version tags verified against that digest. Suggestions keep the image variant and check the platform; floating tags are not guessed. Read-only, administrator access; automatic updates remain unchanged. Even a minor update may require migrations. Linked instances must be updated too.
 
 **Shared SSO connections :** Add the remote server once, then use Share this connection to select trusted linked instances and explicitly authorize sending the Enhanced token and proxy credentials. Each recipient is tested independently; existing connections are not overwritten. Update all recipients first. Copies remain independent: change credentials or remove the connection on each recipient. No return connection is required.
@@ -631,6 +633,8 @@ Stack navigation, the Logs/Compose workspace, resource indicators, health cards,
 - Guides: [Restic backups and recovery](docs/restic.md) · [Zerobyte setup and recovery](docs/zerobyte.md)
 
 ### Updates & ImageWatcher
+
+- **Compare image vulnerabilities** — Before deployment, compare the running image with the current target of its configured tag: CVEs no longer detected, new and persistent. Administrator-only, on demand with confirmation; both scans use the same databases. Temporary scanner, disk space and downloads required. No deployment or change to automatic updates; a missing CVE does not guarantee a fix. Linked instances must also be updated.
 
 - Digest and version preview before image updates, including linked instances.
 - Targeted post-update image cleanup and independent 24-hour rollback, configurable per service
