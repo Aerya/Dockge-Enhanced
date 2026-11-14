@@ -21,7 +21,7 @@
                     <span v-if="imageUpdate" class="container-image-update ms-2" :title="imageUpdateTitle">
                         <font-awesome-icon icon="arrow-circle-up" class="me-1" />{{ $t("containerImageUpdateAvailable") }}
                     </span>
-                    <ImageVersionPreview v-if="!isEditMode && previewImage && $root.userAccess?.role === 'admin'" :image="previewImage" :stack="stackName" :endpoint="endpoint" />
+                    <ImageVersionPreview v-if="!isEditMode && previewImage && $root.userAccess?.role === 'admin'" :key="JSON.stringify([endpoint, stackName, previewImage])" :image="previewImage" :stack="stackName" :endpoint="endpoint" />
                 </div>
                 <div v-if="!isEditMode && autoUpdate" class="container-auto-update mb-2">
                     <label class="container-auto-update-label" :for="`auto-update-${name}`">
