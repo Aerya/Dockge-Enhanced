@@ -21,6 +21,7 @@ import { buildStackBulkPlan, StackBulkRequest, validateStackBulkRequest } from "
 import { DEFAULT_SCHEDULED_TIME, isScheduledTime, resolveScheduledTime } from "../../common/image-update-time";
 import * as yaml from "js-yaml";
 import axios from "axios";
+import { nextRegistryTagsPage, selectVersionCandidates, versionAliasCandidates } from "./image-version-preview";
 import { registryDnsAxiosOptions } from "../registry-dns-fallback";
 import { EventEmitter } from "events";
 import { parse as parseDotenv } from "dotenv";
@@ -531,7 +532,7 @@ function isManifestList(mediaType = ""): boolean {
     );
 }
 
-function platformMatches(candidate: any, wanted: ImagePlatform): boolean {
+function platformMatches(candidate: Partial<ImagePlatform> | undefined, wanted: ImagePlatform): boolean {
     if (!candidate) {
         return false;
     }
@@ -818,7 +819,7 @@ export async function requestRegistryWithRetry<T>(
  * Fonctionne avec Docker Hub, ghcr.io, lscr.io, quay.io, etc.
  * N'effectue AUCUN téléchargement de layer — HEAD/GET sur /manifests/ uniquement.
  */
-async function getRemoteDigest(
+export async function getRemoteDigest(
     image: string,
     credentials: RegistryCredential[],
     preferredPlatform = "",
@@ -854,8 +855,8 @@ async function getRemoteDigest(
                 timeout: 15000,
                 maxRedirects: 0,
             });
-        } catch (err: any) {
-            if (err.response?.status === 401) {
+        } catch (err: unknown) {
+            if (axios.isAxiosError(err) && err.response?.status === 401) {
                 const challenge =
                     (err.response.headers["www-authenticate"] as string) ?? "";
                 if (challenge) {
@@ -892,16 +893,17 @@ async function getRemoteDigest(
         };
     }
 
-    const manifests = Array.isArray(res.data?.manifests)
+    const manifests: Array<{ platform?: ImagePlatform;
+        digest?: string }> = Array.isArray(res.data?.manifests)
         ? res.data.manifests
         : [];
-    const match = manifests.find((m: any) =>
+    const match = manifests.find(m =>
         platformMatches(m.platform, platform),
     );
 
     if (!match?.digest) {
         const available = manifests
-            .map((m: any) => (m.platform ? platformToString(m.platform) : ""))
+            .map(m => (m.platform ? platformToString(m.platform) : ""))
             .filter(Boolean)
             .join(", ");
 
@@ -917,6 +919,105 @@ async function getRemoteDigest(
         indexDigest,
         platform,
     };
+}
+
+/** Bounded, on-demand discovery using the same registry authentication as the watcher. */
+export async function previewImageVersions(image: string, credentials: RegistryCredential[]) {
+    if (image.includes("@")) {
+        throw new Error("Digest-pinned images do not have a version channel");
+    }
+    const { registry, name, tag } = normalizeImage(image);
+    const first = new URL(buildManifestUrl(registry, name, tag).replace(/\/manifests\/[^/]+$/, "/tags/list?n=100"));
+    let url: URL | null = first;
+    let auth = await getInitialAuth(registry, name, credentials);
+    const tags: string[] = [];
+    const visited = new Set<string>();
+    for (let page = 0; url && page < 10; page++) {
+        if (visited.has(url.href)) {
+            throw new Error("Registry pagination loop");
+        }
+        visited.add(url.href);
+        const target = url.href;
+        const request = async () => axios.get(target, {
+            ...await registryDnsAxiosOptions(),
+            headers: auth ? { Authorization: auth } : {},
+            timeout: 10000,
+            maxRedirects: 0,
+            maxContentLength: 1024 * 1024,
+        });
+        let response;
+        try {
+            response = await request();
+        } catch (error: unknown) {
+            if (!axios.isAxiosError(error) || error.response?.status !== 401 || !error.response.headers?.["www-authenticate"]) {
+                throw error;
+            }
+            auth = await resolveChallenge(String(error.response.headers["www-authenticate"]), credentials, registry);
+            response = await request();
+        }
+        if (!Array.isArray(response.data?.tags) && response.data?.tags !== null) {
+            throw new Error("Invalid registry tag listing");
+        }
+        tags.push(...(response.data.tags ?? []).filter((value: unknown): value is string => typeof value === "string" && /^[\w][\w.-]{0,127}$/.test(value)).slice(0, 1000 - tags.length));
+        url = nextRegistryTagsPage(String(response.headers.link ?? ""), url, first);
+        if (tags.length >= 1000) {
+            break;
+        }
+    }
+    const candidates = selectVersionCandidates(tag, tags);
+    const target = await getRemoteDigest(image, credentials);
+    const targetAliases: string[] = [];
+    const aliases = versionAliasCandidates(tag, tags);
+    // Small batches bound registry traffic. An alias is reported only after digest equality.
+    for (let offset = 0; offset < aliases.length; offset += 4) {
+        await Promise.all(aliases.slice(offset, offset + 4).map(async alias => {
+            try {
+                const manifest = await getRemoteDigest(`${registry}/${name}:${alias}`, credentials, platformToString(target.platform));
+                if (manifest.platformDigest === target.platformDigest) {
+                    targetAliases.push(alias);
+                }
+            } catch { /* Unverified aliases are never shown as versions. */ }
+        }));
+    }
+    const candidateDigests: Record<string, string> = {};
+    let unavailableCandidate = false;
+    for (const key of [ "sameMajor", "nextMajor" ] as const) {
+        const candidate = candidates[key];
+        if (candidate) {
+            try {
+                const manifest = await getRemoteDigest(`${registry}/${name}:${candidate}`, credentials, platformToString(target.platform));
+                candidateDigests[candidate] = manifest.platformDigest;
+            } catch {
+                candidates[key] = null;
+                unavailableCandidate = true;
+            }
+        }
+    }
+    return { image,
+        configuredTag: tag,
+        targetDigest: target.platformDigest,
+        targetAliases: targetAliases.sort(),
+        platform: platformToString(target.platform),
+        checkedAt: new Date().toISOString(),
+        partial: url !== null || tags.length >= 1000,
+        unavailableCandidate,
+        candidateDigests,
+        ...candidates };
+}
+
+let versionPreviewPending = false;
+export async function previewObservedImageVersions(stack: unknown, image: unknown) {
+    const status = [ ...imageStatusStore.values() ].find(item => item.stack === stack && item.image === image);
+    if (!status || versionPreviewPending) {
+        throw new Error("Image preview unavailable");
+    }
+    versionPreviewPending = true;
+    try {
+        return { ...await previewImageVersions(status.image, ImageWatcher.getInstance().settings.credentials),
+            localDigest: status.localDigest };
+    } finally {
+        versionPreviewPending = false;
+    }
 }
 
 /** Retourne l'image avec tag explicite (ajoute :latest si aucun tag ni digest) */

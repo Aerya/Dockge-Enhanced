@@ -21,6 +21,7 @@
                     <span v-if="imageUpdate" class="container-image-update ms-2" :title="imageUpdateTitle">
                         <font-awesome-icon icon="arrow-circle-up" class="me-1" />{{ $t("containerImageUpdateAvailable") }}
                     </span>
+                    <ImageVersionPreview v-if="!isEditMode && imageUpdate && $root.userAccess?.role === 'admin'" :image="service.image" :stack="stackName" :endpoint="endpoint" />
                 </div>
                 <div v-if="!isEditMode && autoUpdate" class="container-auto-update mb-2">
                     <label class="container-auto-update-label" :for="`auto-update-${name}`">
@@ -339,6 +340,7 @@ import {
     setComposeLabel,
 } from "../../../common/compose-labels";
 import VolumeBrowser from "./VolumeBrowser.vue";
+import ImageVersionPreview from "./watcher/ImageVersionPreview.vue";
 import ContainerFiles from "./ContainerFiles.vue";
 import ContainerStatsBadge from "./ContainerStatsBadge.vue";
 import StackScheduleEditor from "./StackScheduleEditor.vue";
@@ -351,6 +353,7 @@ import { buildServiceHealthcheck, proposeServiceHealthcheck } from "../service-h
 
 export default defineComponent({
     components: {
+        ImageVersionPreview,
         FontAwesomeIcon,
         VolumeBrowser,
         ContainerFiles,

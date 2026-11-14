@@ -12,7 +12,7 @@ import { DockgeServer } from "../dockge-server";
 import { basename as pathBasename } from "path";
 import { Router } from "../router";
 import express, { Express, Router as ExpressRouter, Request, Response, NextFunction } from "express";
-import { ImageWatcher, imageStatusStore, rollbackStore, updateHistoryStore, RegistryCredential, WatcherSettings } from "../watchers/image-watcher";
+import { ImageWatcher, imageStatusStore, rollbackStore, updateHistoryStore, RegistryCredential, WatcherSettings, previewObservedImageVersions } from "../watchers/image-watcher";
 import { SelfUpdateChecker } from "../watchers/self-update-checker";
 import { TrivyScanner } from "../watchers/trivy-scanner";
 import { BackupAlreadyRunningError, BackupManager } from "../watchers/backup-manager";
@@ -131,6 +131,18 @@ export class WatcherRouter extends Router {
             const entries = [ ...imageStatusStore.values() ];
             res.json({ ok: true,
                 data: entries });
+        });
+
+        // Admin-only middleware above; only images already observed on this instance.
+        router.post("/image/version-preview", async (req: Request, res: Response) => {
+            try {
+                const data = await previewObservedImageVersions(req.body?.stack, req.body?.image);
+                res.json({ ok: true,
+                    data });
+            } catch {
+                // Registry errors may contain credentials or headers; never reflect them.
+                res.status(502).json({ ok: false });
+            }
         });
 
         router.get("/image/update-all", (_req: Request, res: Response) => {

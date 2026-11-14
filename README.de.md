@@ -64,6 +64,8 @@ Die wichtigsten kürzlichen Änderungen sind hier gruppiert, damit Sie schnell s
 
 ### 🆕 November 2026
 
+**Vorschau der Image-Versionen :** Vor einem Update lassen sich Ziel-Digest und anhand dieses Digests überprüfte Versions-Tags anzeigen. Vorschläge behalten die Image-Variante bei und prüfen die Plattform; fließende Tags werden nicht erraten. Nur lesend für Administratoren; automatische Updates bleiben unverändert. Auch kleinere Updates können Migrationen erfordern. Verknüpfte Instanzen ebenfalls aktualisieren.
+
 **SSO-Verbindungen teilen :** Fügen Sie den entfernten Server einmal hinzu und wählen Sie über Diese Verbindung teilen vertrauenswürdige Instanzen aus. Bestätigen Sie ausdrücklich die Übertragung des Enhanced-Tokens und der Proxy-Zugangsdaten. Jeder Empfänger wird einzeln geprüft; bestehende Verbindungen werden nicht überschrieben. Empfänger vorher aktualisieren. Kopien bleiben unabhängig: Zugangsdaten und Löschung auf jedem Empfänger separat verwalten. Keine Rückverbindung erforderlich.
 
 **Update-Prüfung und Instanz-Schaltflächen :** Ein Verbindungsfehler zur Registry blendet den installierten Build nicht mehr aus und wird nicht mehr als unbekanntes lokales Image dargestellt. DNS-Fehler erhalten eine eigene Meldung; automatische Updates bleiben bei fehlgeschlagener Prüfung blockiert. Die Schaltflächen für Reverse-Agenten sind ausgerichtet und umbrechen auf kleinen Bildschirmen.
@@ -630,6 +632,7 @@ Die Stack-Navigation, der Logs/Compose-Arbeitsbereich, Ressourcenindikatoren, St
 
 ### Updates & ImageWatcher
 
+- Digest- und Versionsvorschau vor Image-Updates, auch auf verknüpften Instanzen.
 - Gezielte Image-Bereinigung nach Updates und unabhängiger 24-Stunden-Rollback pro Dienst
 
 - **Updates ohne Dienstunterbrechung** — `dockge.rollout.enabled: "true"`. Prüfen Sie diese Kompatibilität vor dem Aktivieren. Die Anzahl der Anwendungscontainer verdoppelt sich vorübergehend: ausreichend CPU/RAM einplanen. Feste Containernamen und gemeinsam beschreibbare Volumes werden abgelehnt. Das Relay ergänzt einen Container und ein Konfigurationsvolume. Bei der Erstinstallation wird der Zugangsport verschoben; dabei kann es zu einer Unterbrechung kommen. Danach Aktualisieren verwenden; Recreate, Neustarts und Rollback garantieren keine offenen Verbindungen. Nur TCP, kein UDP/QUIC; keine allgemeine Garantie für unterbrechungsfreien Betrieb. [Einrichtung](docs/service-rollout.de.md).
@@ -1130,6 +1133,8 @@ Kommerzielle Drittanbieter-Clients sind durch die Lizenz gestattet, dürfen jedo
 ---
 
 ## Mitwirkende
+
+- Danke an **yodadl**.
 
 - [**QFgood**](https://github.com/QFgood) / [**Dockge #1013**](https://github.com/louislam/dockge/pull/1013) — Inspiration für die Übersicht der Dienstlinks.
 

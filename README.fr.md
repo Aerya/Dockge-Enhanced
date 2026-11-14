@@ -65,6 +65,8 @@ Les évolutions majeures récentes sont regroupées ici afin de comprendre rapid
 
 ### 🆕 Novembre 2026
 
+**Aperçu des versions d’images :** Avant une mise à jour, consultez le digest cible et les tags de version vérifiés sur ce digest. Les suggestions conservent la variante et vérifient la plateforme ; aucune version n’est inventée pour les tags flottants. Lecture seule, réservée aux administrateurs ; les mises à jour automatiques restent inchangées. Même une mise à jour mineure peut nécessiter des migrations. Mettez aussi les instances liées à jour.
+
 **Partager les connexions SSO :** Ajoutez le serveur distant une fois, puis utilisez Partager cette connexion pour choisir les instances liées de confiance et autoriser explicitement l’envoi du jeton Enhanced et des identifiants du proxy. Chaque destinataire est testé séparément ; aucune connexion existante n’est écrasée. Mettez les destinataires à jour. Les copies restent indépendantes : modifiez les identifiants ou supprimez la connexion sur chaque destinataire. Aucune connexion retour n’est nécessaire.
 
 **Vérification des mises à jour et boutons des instances :** Une panne de connexion au registre ne masque plus le build installé et n’est plus présentée comme une image locale inconnue. Les erreurs DNS disposent d’un message dédié ; les mises à jour automatiques restent bloquées tant que la vérification échoue. Les boutons des agents inversés sont alignés et reviennent à la ligne sur petit écran.
@@ -631,6 +633,7 @@ La navigation des stacks, l'espace Logs/Compose, les indicateurs de ressources, 
 
 ### Mises à jour & ImageWatcher
 
+- Aperçu des digests et versions avant mise à jour, y compris sur les instances liées.
 - Nettoyage ciblé après mise à jour et rollback indépendant de 24 h, réglables par service
 
 - **Mises à jour sans interruption de service** — `dockge.rollout.enabled: "true"`. Vérifiez cette compatibilité avant d’activer l’option. Le nombre de conteneurs de l’application double temporairement : prévoyez assez de CPU/RAM. Les noms de conteneurs fixes et les volumes partagés en écriture sont refusés. Le relais ajoute un conteneur et un volume de configuration. Sa première installation déplace le port d’accès et peut provoquer une coupure. Utilisez ensuite Mettre à jour ; Recreate, les redémarrages et le rollback ne garantissent pas le maintien des connexions. TCP uniquement, pas UDP/QUIC ; aucune garantie universelle de zéro coupure. [Mise en place](docs/service-rollout.fr.md).
@@ -1131,6 +1134,8 @@ Les clients tiers commerciaux sont autorisés par la licence, mais ne doivent pa
 ---
 
 ## Crédits
+
+- Merci à **yodadl**.
 
 - [**QFgood**](https://github.com/QFgood) / [**Dockge #1013**](https://github.com/louislam/dockge/pull/1013) — inspiration pour le tableau des liens de services.
 

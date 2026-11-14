@@ -7,6 +7,8 @@ Vollständige Projekthistorie, neueste Einträge zuerst. Jedes Datum ist der Tag
 
 Die [README](README.de.md) stellt die wichtigsten aktuellen Neuerungen und den Funktionskatalog vor.
 
+**2026-11-14 — Vorschau der Image-Versionen** — Vor einem Update lassen sich Ziel-Digest und anhand dieses Digests überprüfte Versions-Tags anzeigen. Vorschläge behalten die Image-Variante bei und prüfen die Plattform; fließende Tags werden nicht erraten. Nur lesend für Administratoren; automatische Updates bleiben unverändert. Auch kleinere Updates können Migrationen erfordern. Verknüpfte Instanzen ebenfalls aktualisieren.
+
 **2026-11-09 — Kompakte Discord-Statistiken** — Die Jahressumme addiert nun die gemessenen Monate des laufenden Jahres einschließlich des aktuellen Monats, statt den unabhängigen Jahreszähler zu verwenden. Discord zeigt nur Statistiken; historische Zähler bleiben unverändert.
 
 **2026-11-09 — Geplante Discord-Berichte** — Installationsschätzungen werden montags, mittwochs und samstags um 20:00 Uhr Europe/Paris gesendet, einschließlich Zeitumstellung. Die tägliche Vorbereitung bleibt still; ein fehlender Webhook führt nun zu einem sichtbaren Fehler.
