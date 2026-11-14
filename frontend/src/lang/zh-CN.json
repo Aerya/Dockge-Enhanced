@@ -1,4 +1,7 @@
 {
+    "releaseNews.item.imageVersionPreview": "更新前可查看目标摘要及与其摘要一致的已验证版本标签。建议保留镜像变体并验证平台，不猜测浮动标签的版本。仅管理员可只读查看，不改变自动更新。即使次要版本更新也可能需要迁移。关联实例也需更新。",
+    "imageVersionPreview.aliases": "与目标摘要一致的版本标签",
+    "imageVersionPreview.unknown": "未知（未验证到匹配标签）",
     "imageVersionPreview": {
         "open": "版本预览",
         "error": "预览不可用（镜像仓库、固定摘要镜像或其他请求正在进行）。",

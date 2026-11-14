@@ -7,6 +7,8 @@ Complete project history, newest first. Each date is the day the change was merg
 
 The [README](README.md) presents the main recent updates and the feature catalogue.
 
+**2026-11-14 — Image version preview** — Before updating, inspect the target digest and version tags verified against that digest. Suggestions keep the image variant and check the platform; floating tags are not guessed. Read-only, administrator access; automatic updates remain unchanged. Even a minor update may require migrations. Linked instances must be updated too.
+
 **2026-11-09 — Concise Discord statistics** — The annual cumulative now adds the measured months of the current year, including the current month, instead of using the independent annual counter. Discord reports only statistics; historical counts remain unchanged.
 
 **2026-11-09 — Scheduled Discord reports** — Installation estimates are sent on Monday, Wednesday and Saturday at 20:00 Europe/Paris, including daylight-saving changes. Daily counter preparation stays silent; missing webhook configuration now fails visibly.

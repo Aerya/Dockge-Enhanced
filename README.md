@@ -64,6 +64,8 @@ The most important recent changes are grouped here so you can quickly see what h
 
 ### 🆕 November 2026
 
+**Image version preview :** Before updating, inspect the target digest and version tags verified against that digest. Suggestions keep the image variant and check the platform; floating tags are not guessed. Read-only, administrator access; automatic updates remain unchanged. Even a minor update may require migrations. Linked instances must be updated too.
+
 **Shared SSO connections :** Add the remote server once, then use Share this connection to select trusted linked instances and explicitly authorize sending the Enhanced token and proxy credentials. Each recipient is tested independently; existing connections are not overwritten. Update all recipients first. Copies remain independent: change credentials or remove the connection on each recipient. No return connection is required.
 
 **Update checks and linked-instance buttons :** A registry connection failure no longer hides the installed build or implies that the local image is unknown. DNS failures have a specific message; automatic updates remain blocked while verification fails. Reverse-agent buttons are aligned and wrap on narrow screens.
@@ -630,6 +632,7 @@ Stack navigation, the Logs/Compose workspace, resource indicators, health cards,
 
 ### Updates & ImageWatcher
 
+- Digest and version preview before image updates, including linked instances.
 - Targeted post-update image cleanup and independent 24-hour rollback, configurable per service
 
 - **Updates without service interruption** — `dockge.rollout.enabled: "true"`. Check compatibility before enabling this option. The application container count temporarily doubles: allow enough CPU/RAM. Fixed container names and shared writable volumes are refused. The relay adds a container and a configuration volume. Its initial installation moves the access port and may cause an outage. Afterwards, use Update; Recreate, restarts and rollback do not guarantee that connections stay open. TCP only, not UDP/QUIC; no universal zero-downtime guarantee. [Deployment](docs/service-rollout.md).

@@ -1,4 +1,7 @@
 {
+    "releaseNews.item.imageVersionPreview": "Avant une mise à jour, consultez le digest cible et les tags de version vérifiés sur ce digest. Les suggestions conservent la variante et vérifient la plateforme ; aucune version n’est inventée pour les tags flottants. Lecture seule, réservée aux administrateurs ; les mises à jour automatiques restent inchangées. Même une mise à jour mineure peut nécessiter des migrations. Mettez aussi les instances liées à jour.",
+    "imageVersionPreview.aliases": "Tags de version correspondant au digest cible",
+    "imageVersionPreview.unknown": "Inconnue (aucun tag correspondant vérifié)",
     "imageVersionPreview": {
         "open": "Aperçu des versions",
         "error": "Aperçu indisponible (registre, image épinglée ou autre requête en cours).",

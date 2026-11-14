@@ -11,35 +11,48 @@
                 <dt>{{ $t("imageVersionPreview.current") }}</dt><dd><code>{{ result.localDigest || "—" }}</code></dd>
                 <dt>{{ $t("imageVersionPreview.target") }} ({{ result.configuredTag }}, {{ result.platform }})</dt>
                 <dd><code>{{ result.targetDigest }}</code></dd>
+                <dt>{{ $t("imageVersionPreview.aliases") }}</dt><dd>{{ result.targetAliases.join(", ") || $t("imageVersionPreview.unknown") }}</dd>
                 <dt>{{ $t("imageVersionPreview.sameMajor") }}</dt><dd>{{ result.sameMajor || "—" }}</dd>
                 <dt>{{ $t("imageVersionPreview.nextMajor") }}</dt><dd>{{ result.nextMajor || "—" }}</dd>
             </dl>
-            <p v-if="result.partial" class="text-warning small mb-2">{{ $t("imageVersionPreview.partial") }}</p>
+            <p v-if="result.partial || result.unavailableCandidate" class="text-warning small mb-2">{{ $t("imageVersionPreview.partial") }}</p>
             <button class="btn btn-sm btn-outline-secondary" @click="result = null">{{ $t("Close") }}</button>
         </div>
     </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue";
+import { ref, getCurrentInstance } from "vue";
 import { watcherApi } from "./shared";
 const props = defineProps<{ image: string;
-    stack: string }>();
+    stack: string;
+    endpoint?: string }>();
+const root = getCurrentInstance()?.proxy?.$root as { emitAgent?: (endpoint: string, event: string, ...args: unknown[]) => void } | undefined;
 const loading = ref(false);
 const error = ref(false);
 const result = ref<{ configuredTag: string;
     localDigest: string;
     targetDigest: string;
+    targetAliases: string[];
     platform: string;
     sameMajor: string | null;
     nextMajor: string | null;
-    partial: boolean } | null>(null);
+    partial: boolean;
+    unavailableCandidate: boolean } | null>(null);
 async function load() {
     loading.value = true;
     error.value = false;
     result.value = null;
     try {
-        const response = await watcherApi("POST", "/image/version-preview", { image: props.image,
+        const response = props.endpoint !== undefined ? await new Promise<{ ok: boolean;
+            data: typeof result.value }>((resolve, reject) => {
+            const timer = setTimeout(() => reject(new Error("Agent unavailable")), 180000);
+            root?.emitAgent?.(props.endpoint ?? "", "imageVersionPreview", props.stack, props.image, (reply: { ok: boolean;
+                data: typeof result.value }) => {
+                clearTimeout(timer);
+                resolve(reply);
+            });
+        }) : await watcherApi("POST", "/image/version-preview", { image: props.image,
             stack: props.stack });
         if (!response.ok) {
             throw new Error("Preview unavailable");

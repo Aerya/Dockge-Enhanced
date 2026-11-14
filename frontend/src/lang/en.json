@@ -1,4 +1,7 @@
 {
+    "releaseNews.item.imageVersionPreview": "Before updating, inspect the target digest and version tags verified against that digest. Suggestions keep the image variant and check the platform; floating tags are not guessed. Read-only, administrator access; automatic updates remain unchanged. Even a minor update may require migrations. Linked instances must be updated too.",
+    "imageVersionPreview.aliases": "Version tags matching the target digest",
+    "imageVersionPreview.unknown": "Unknown (no verified matching tag)",
     "imageVersionPreview": {
         "open": "Preview versions",
         "error": "Preview unavailable (registry, pinned image or another request in progress).",

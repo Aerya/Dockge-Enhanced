@@ -366,9 +366,6 @@
     }
   },
   "backend/watchers/image-watcher.ts": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 4
-    },
     "@typescript-eslint/no-unused-expressions": {
       "count": 1
     }

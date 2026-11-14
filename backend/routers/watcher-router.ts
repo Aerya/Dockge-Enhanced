@@ -12,7 +12,7 @@ import { DockgeServer } from "../dockge-server";
 import { basename as pathBasename } from "path";
 import { Router } from "../router";
 import express, { Express, Router as ExpressRouter, Request, Response, NextFunction } from "express";
-import { ImageWatcher, imageStatusStore, rollbackStore, updateHistoryStore, RegistryCredential, WatcherSettings, previewImageVersions } from "../watchers/image-watcher";
+import { ImageWatcher, imageStatusStore, rollbackStore, updateHistoryStore, RegistryCredential, WatcherSettings, previewObservedImageVersions } from "../watchers/image-watcher";
 import { SelfUpdateChecker } from "../watchers/self-update-checker";
 import { TrivyScanner } from "../watchers/trivy-scanner";
 import { BackupAlreadyRunningError, BackupManager } from "../watchers/backup-manager";
@@ -134,28 +134,14 @@ export class WatcherRouter extends Router {
         });
 
         // Admin-only middleware above; only images already observed on this instance.
-        let versionPreviewBusy = false;
         router.post("/image/version-preview", async (req: Request, res: Response) => {
-            const status = [ ...imageStatusStore.values() ].find(item => item.image === req.body?.image && item.stack === req.body?.stack);
-            if (!status) {
-                res.status(404).json({ ok: false });
-                return;
-            }
-            if (versionPreviewBusy) {
-                res.status(429).json({ ok: false });
-                return;
-            }
-            versionPreviewBusy = true;
             try {
-                const data = await previewImageVersions(status.image, ImageWatcher.getInstance().settings.credentials);
+                const data = await previewObservedImageVersions(req.body?.stack, req.body?.image);
                 res.json({ ok: true,
-                    data: { ...data,
-                        localDigest: status.localDigest } });
+                    data });
             } catch {
                 // Registry errors may contain credentials or headers; never reflect them.
                 res.status(502).json({ ok: false });
-            } finally {
-                versionPreviewBusy = false;
             }
         });
 

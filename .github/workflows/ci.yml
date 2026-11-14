@@ -66,6 +66,10 @@ jobs:
         if: steps.docs.outputs.docs_only != 'true'
         run: npx tsx --test backend/stack-file-history.test.ts common/env-form.test.ts frontend/src/configuration-tools-ui.test.js
 
+      - name: Tests de l’aperçu des versions d’images
+        if: steps.docs.outputs.docs_only != 'true'
+        run: npx tsx --test backend/watchers/image-version-preview.test.ts backend/watchers/image-version-registry.test.ts
+
       - name: Tests des catalogues communautaires
         if: steps.docs.outputs.docs_only != 'true'
         run: npx tsx --test backend/app-catalog.test.ts backend/catalog-sources.test.ts backend/ui-preferences.test.ts frontend/src/ui-preferences.test.js

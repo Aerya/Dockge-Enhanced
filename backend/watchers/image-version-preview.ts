@@ -26,7 +26,7 @@ function compare(a: VersionTag, b: VersionTag): number {
             return difference;
         }
     }
-    return a.tag.localeCompare(b.tag);
+    return 0;
 }
 
 /** No guessed current version for floating tags, no variant or prerelease mixing. */
@@ -50,6 +50,13 @@ export function selectVersionCandidates(currentTag: string, tags: string[]): {
     return { current,
         sameMajor: same.at(-1)?.tag ?? null,
         nextMajor: next.at(-1)?.tag ?? null };
+}
+
+export function versionAliasCandidates(tag: string, tags: string[]): string[] {
+    const variant = parseVersionTag(tag)?.variant ?? (/^(latest|stable|lts)(-[a-z][a-z0-9.-]*)$/.exec(tag)?.[2] ?? "");
+    return [ ...new Set(tags) ].map(parseVersionTag)
+        .filter((item): item is VersionTag => item !== null && item.parts.length === 3 && item.variant === variant)
+        .sort((a, b) => compare(b, a)).slice(0, 12).map(item => item.tag);
 }
 
 /** Never follow a pagination URL outside the authenticated repository. */

@@ -1,4 +1,7 @@
 {
+    "releaseNews.item.imageVersionPreview": "Vor einem Update lassen sich Ziel-Digest und anhand dieses Digests überprüfte Versions-Tags anzeigen. Vorschläge behalten die Image-Variante bei und prüfen die Plattform; fließende Tags werden nicht erraten. Nur lesend für Administratoren; automatische Updates bleiben unverändert. Auch kleinere Updates können Migrationen erfordern. Verknüpfte Instanzen ebenfalls aktualisieren.",
+    "imageVersionPreview.aliases": "Versions-Tags mit dem Ziel-Digest",
+    "imageVersionPreview.unknown": "Unbekannt (kein passender Tag bestätigt)",
     "imageVersionPreview": {
         "open": "Versionsvorschau",
         "error": "Vorschau nicht verfügbar (Registry, festgelegter Digest oder laufende Anfrage).",
