@@ -256,7 +256,7 @@ export class MonitoringWatcher {
         this.dockerEventBuffer = "";
         const filters = [];
         if (this.settings.crashLoopEnabled) {
-            filters.push("--filter", "event=die");
+            filters.push("--filter", "event=die", "--filter", "event=destroy");
         }
         if (this.settings.healthcheckEnabled) {
             filters.push("--filter", "event=health_status");
@@ -292,6 +292,12 @@ export class MonitoringWatcher {
             const id = eventId ?? name;
             const status = ev.Action ?? ev.status ?? "";
 
+            // A replacement with the same name is a different container.
+            if (status === "destroy") {
+                this.crashTimestamps.delete(id);
+                this.crashCooldowns.delete(id);
+            }
+
             if (this.settings.crashLoopEnabled && status === "die") {
                 this.onContainerDie(name, id);
             }
@@ -313,16 +319,16 @@ export class MonitoringWatcher {
         const now       = Date.now();
         const windowMs  = this.settings.crashLoopWindowMinutes * 60_000;
 
-        const ts = (this.crashTimestamps.get(name) ?? []).concat(now)
+        const ts = (this.crashTimestamps.get(id) ?? []).concat(now)
             .filter(t => now - t < windowMs);
-        this.crashTimestamps.set(name, ts);
+        this.crashTimestamps.set(id, ts);
 
         if (ts.length >= this.settings.crashLoopThreshold) {
-            const lastAlert  = this.crashCooldowns.get(name) ?? 0;
+            const lastAlert  = this.crashCooldowns.get(id) ?? 0;
             const cooldownMs = this.settings.crashLoopCooldownMinutes * 60_000;
             if (now - lastAlert >= cooldownMs) {
-                this.crashCooldowns.set(name, now);
-                this.crashTimestamps.set(name, []);
+                this.crashCooldowns.set(id, now);
+                this.crashTimestamps.set(id, []);
 
                 const event: CrashEvent = {
                     containerName: name,

@@ -1,4 +1,5 @@
 {
+    "releaseNews.item.crashContainerIdentity": "Los contadores siguen el ID del contenedor Docker. Los contenedores temporales que reutilizan un nombre ya no acumulan falsas alertas; las salidas repetidas del mismo contenedor, incluso con código 0, siguen vigiladas. Actualice también las instancias vinculadas.",
     "imageCve.severity": "Gravedad",
     "imageCve.current": "Imagen en ejecución",
     "imageCve.target": "Imagen de destino",

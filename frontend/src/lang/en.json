@@ -1,4 +1,5 @@
 {
+    "releaseNews.item.crashContainerIdentity": "Crash-loop counters follow the Docker container ID. Temporary containers reusing a name no longer accumulate false alerts; repeated exits of the same container, including exit code 0, remain monitored. Update linked instances too.",
     "imageCve.severity": "Severity",
     "imageCve.current": "Running image",
     "imageCve.target": "Target image",

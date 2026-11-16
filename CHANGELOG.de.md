@@ -7,6 +7,8 @@ Vollständige Projekthistorie, neueste Einträge zuerst. Jedes Datum ist der Tag
 
 Die [README](README.de.md) stellt die wichtigsten aktuellen Neuerungen und den Funktionskatalog vor.
 
+> **Vorgeschlagene Korrektur, noch nicht veröffentlicht — Absturzerkennung pro Container** — Crash-Loop-Zähler folgen der Docker-Container-ID. Temporäre Container mit demselben Namen erzeugen keine gemeinsamen Fehlalarme mehr. Wiederholte Beendigungen desselben Containers, auch mit Exit-Code 0, werden weiterhin überwacht. Verknüpfte Instanzen ebenfalls aktualisieren.
+
 **2026-11-14 — Schwachstellen von Images vergleichen** — Vor der Bereitstellung das laufende Image mit dem aktuellen Ziel seines Tags vergleichen: nicht mehr, neu und weiterhin erkannte CVEs. Nur für Administratoren, auf Anfrage mit Bestätigung; beide Analysen verwenden dieselben Datenbanken. Temporärer Scanner, Speicherplatz und Downloads erforderlich. Keine Bereitstellung oder Änderung automatischer Updates; fehlende CVEs garantieren keine Behebung. Verknüpfte Instanzen ebenfalls aktualisieren.
 
 **2026-11-14 — Vorschau der Image-Versionen** — Vor einem Update lassen sich Ziel-Digest und anhand dieses Digests überprüfte Versions-Tags anzeigen. Vorschläge behalten die Image-Variante bei und prüfen die Plattform; fließende Tags werden nicht erraten. Nur lesend für Administratoren; automatische Updates bleiben unverändert. Auch kleinere Updates können Migrationen erfordern. Verknüpfte Instanzen ebenfalls aktualisieren.

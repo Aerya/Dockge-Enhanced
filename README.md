@@ -64,6 +64,8 @@ The most important recent changes are grouped here so you can quickly see what h
 
 ### 🆕 November 2026
 
+**Container-specific crash detection (Proposed fix, not yet published) :** Crash-loop counters follow the Docker container ID. Temporary containers reusing a name no longer accumulate false alerts; repeated exits of the same container, including exit code 0, remain monitored. Update linked instances too.
+
 **Compare image vulnerabilities :** Before deployment, compare the running image with the current target of its configured tag: CVEs no longer detected, new and persistent. Administrator-only, on demand with confirmation; both scans use the same databases. Temporary scanner, disk space and downloads required. No deployment or change to automatic updates; a missing CVE does not guarantee a fix. Linked instances must also be updated.
 
 **Image version preview :** Before updating, inspect the target digest and version tags verified against that digest. Suggestions keep the image variant and check the platform; floating tags are not guessed. Read-only, administrator access; automatic updates remain unchanged. Even a minor update may require migrations. Linked instances must be updated too.
@@ -676,7 +678,7 @@ Stack navigation, the Logs/Compose workspace, resource indicators, health cards,
 - System, stack and container CPU, RAM and disk statistics, with a configurable status bar
 - Host system details, temperatures and monitored disk partitions
 - Optional 5-minute CPU/RAM history for the host and per Compose service, with visible gaps
-- Dashboard health cards, crash-loop detection and healthcheck auto-heal
+- Dashboard health cards, crash-loop detection per Docker container ID and healthcheck auto-heal
 - Responsive live and fullscreen logs with service filter, search, time ranges, **since last restart**, copy of the latest 50 / 100 / 150 or all loaded lines, autoscroll pause, long-line handling and optional default timestamps; individual container tabs with independent search and pause
 - Low-power mode for NAS and small hosts
 - Optional Kula, Dozzle, PowerWatch and PowerWatch Hub integrations, with current PowerWatch power shown across linked instances

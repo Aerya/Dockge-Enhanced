@@ -624,6 +624,10 @@ export const RELEASE_NEWS = [
         id: "2026-11-14-image-cve-comparison",
         items: [ "releaseNews.item.imageCveComparison" ],
     },
+    {
+        id: "2026-11-16-crash-container-identity",
+        items: [ "releaseNews.item.crashContainerIdentity" ],
+    },
 ];
 
 function currentReleaseNewsIds() {

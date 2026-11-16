@@ -167,3 +167,56 @@ test("real Docker CLI events reach the notification and history paths", { skip: 
     assert.ok(f.healthAlerts[0].containerId.length >= 12);
     assert.ok(f.crashAlerts[0].containerId.length >= 12);
 });
+
+test("temporary containers sharing a name never accumulate a crash loop", async () => {
+    const f = fixture();
+    for (let i = 0; i < 12; i++) {
+        const Actor = { ID: `temporary-${i}`,
+            Attributes: { name: "catalogue",
+                exitCode: "0" } };
+        f.emit({ Action: "create",
+            Actor });
+        f.emit({ Action: "start",
+            Actor });
+        f.emit({ Action: "die",
+            Actor });
+        f.emit({ Action: "destroy",
+            Actor });
+    }
+    await f.flush();
+    assert.deepEqual(f.crashAlerts, []);
+    assert.deepEqual(f.watcher.getRecentCrashEvents(), []);
+    const state = f.watcher as unknown as { crashTimestamps: Map<string, number[]>;
+        crashCooldowns: Map<string, number> };
+    assert.equal(state.crashTimestamps.size, 0);
+    assert.equal(state.crashCooldowns.size, 0);
+});
+
+for (const exitCode of [ "0", "1", "137" ]) {
+    test(`real loops remain detected for exit code ${exitCode}, even after renaming`, async () => {
+        const f = fixture();
+        for (const name of [ "before-rename", "after-rename" ]) {
+            f.emit({ Action: "die",
+                Actor: { ID: "same-container",
+                    Attributes: { name,
+                        exitCode } } });
+        }
+        await f.flush();
+        assert.equal(f.crashAlerts.length, 1);
+        assert.equal(f.crashAlerts[0].containerName, "after-rename");
+    });
+}
+
+test("replacement IDs do not share counts or cooldowns even without a destroy event", async () => {
+    const f = fixture();
+    const die = (id: string) => f.emit({ Action: "die",
+        Actor: { ID: id,
+            Attributes: { name: "service" } } });
+    die("old");
+    die("new");
+    assert.equal(f.crashAlerts.length, 0);
+    die("old");
+    die("new");
+    await f.flush();
+    assert.equal(f.crashAlerts.length, 2);
+});

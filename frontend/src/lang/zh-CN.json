@@ -1,4 +1,5 @@
 {
+    "releaseNews.item.crashContainerIdentity": "崩溃循环计数使用 Docker 容器 ID。同名的不同临时容器不再累计触发误报；同一容器反复退出（包括退出码 0）仍受监控。关联实例也需更新。",
     "imageCve.severity": "严重性",
     "imageCve.current": "运行中的镜像",
     "imageCve.target": "目标镜像",
