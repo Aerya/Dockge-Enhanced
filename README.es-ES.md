@@ -64,9 +64,9 @@ Los cambios recientes más importantes se agrupan aquí para entender rápidamen
 
 ### 🆕 Noviembre de 2026
 
-**Intervalos de análisis Trivy (Corrección propuesta, aún no publicada) :** Las opciones de 3 y 7 días conservan 72/168 horas tras guardar y reiniciar. Los intervalos largos cuentan el tiempo desde el último análisis terminado, incluso manual, con comprobación cada minuto; los cambios de mes y hora no los acortan. Sin historial o con un análisis atrasado, comienza en el siguiente minuto. Los horarios de 12/24 horas no cambian. Actualice también las instancias vinculadas.
+**Intervalos de análisis Trivy :** Las opciones de 3 y 7 días conservan 72/168 horas tras guardar y reiniciar. Los intervalos largos cuentan el tiempo desde el último análisis terminado, incluso manual, con comprobación cada minuto; los cambios de mes y hora no los acortan. Sin historial o con un análisis atrasado, comienza en el siguiente minuto. Los horarios de 12/24 horas no cambian. Actualice también las instancias vinculadas.
 
-**Detección de fallos por contenedor (Corrección propuesta, aún no publicada) :** Los contadores siguen el ID del contenedor Docker. Los contenedores temporales que reutilizan un nombre ya no acumulan falsas alertas; las salidas repetidas del mismo contenedor, incluso con código 0, siguen vigiladas. Actualice también las instancias vinculadas.
+**Detección de fallos por contenedor :** Los contadores siguen el ID del contenedor Docker. Los contenedores temporales que reutilizan un nombre ya no acumulan falsas alertas; las salidas repetidas del mismo contenedor, incluso con código 0, siguen vigiladas. Actualice también las instancias vinculadas.
 
 **Comparar vulnerabilidades de imágenes :** Antes del despliegue, compare la imagen en ejecución con el destino actual de su tag: CVE ya no detectadas, nuevas y persistentes. Solo para administradores, bajo demanda y con confirmación; ambos análisis usan las mismas bases. Requiere escáner temporal, disco y descargas. No despliega ni cambia las actualizaciones automáticas; una CVE ausente no garantiza una corrección. Actualice también las instancias vinculadas.
 
@@ -670,7 +670,7 @@ La navegación, Logs/Compose, indicadores de recursos, tarjetas de salud, temas 
 - Inicio de sesión OIDC nativo (Pocket ID, Authentik, Keycloak…) con PKCE, cuentas limitadas por defecto y correspondencia de administración opcional por usuario o grupo ([guía](docs/oidc.es.md))
 - Creación no interactiva del primer administrador desde un archivo secreto
 - Protección del inicio de sesión con Cloudflare Turnstile
-- Análisis de vulnerabilidades Trivy con excepciones CVE — intervalos de 3/7 días conservados tras reiniciar (Corrección propuesta, aún no publicada)
+- Análisis de vulnerabilidades Trivy con excepciones CVE — intervalos de 3/7 días conservados tras reiniciar
 - Validación centralizada de los nombres de stacks contra recorridos de rutas
 - Sidecar de autoactualización restringido con plan de actualización firmado
 - Transferencia cifrada de credenciales de registros privados

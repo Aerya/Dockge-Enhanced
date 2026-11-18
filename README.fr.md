@@ -65,9 +65,9 @@ Les évolutions majeures récentes sont regroupées ici afin de comprendre rapid
 
 ### 🆕 Novembre 2026
 
-**Intervalles des scans Trivy (Correctif proposé, pas encore publié) :** Les choix 3 et 7 jours conservent 72/168 heures après sauvegarde et redémarrage. Les intervalles longs comptent le temps écoulé depuis le dernier scan terminé, même manuel, avec vérification chaque minute ; les fins de mois et changements d’heure ne les raccourcissent pas. Sans historique ou si le scan est en retard, il démarre à la prochaine minute. Les horaires 12/24 h sont inchangés. Mettez aussi les instances liées à jour.
+**Intervalles des scans Trivy :** Les choix 3 et 7 jours conservent 72/168 heures après sauvegarde et redémarrage. Les intervalles longs comptent le temps écoulé depuis le dernier scan terminé, même manuel, avec vérification chaque minute ; les fins de mois et changements d’heure ne les raccourcissent pas. Sans historique ou si le scan est en retard, il démarre à la prochaine minute. Les horaires 12/24 h sont inchangés. Mettez aussi les instances liées à jour.
 
-**Détection des crashs par conteneur (Correctif proposé, pas encore publié) :** Les compteurs de crash loop suivent l’identifiant Docker. Les conteneurs temporaires réutilisant un nom ne cumulent plus de fausses alertes ; les arrêts répétés du même conteneur, même avec un code 0, restent surveillés. Mettez aussi les instances liées à jour.
+**Détection des crashs par conteneur :** Les compteurs de crash loop suivent l’identifiant Docker. Les conteneurs temporaires réutilisant un nom ne cumulent plus de fausses alertes ; les arrêts répétés du même conteneur, même avec un code 0, restent surveillés. Mettez aussi les instances liées à jour.
 
 **Comparer les vulnérabilités des images :** Avant déploiement, comparez l’image exécutée à la cible actuelle de son tag : CVE non détectées dans la cible, nouvelles et persistantes. Réservé aux administrateurs, à la demande avec confirmation ; les deux scans utilisent les mêmes bases. Scanner temporaire, espace disque et téléchargements nécessaires. Aucun déploiement ni changement des mises à jour automatiques ; une CVE absente ne garantit pas un correctif. Mettez aussi les instances liées à jour.
 
@@ -669,7 +669,7 @@ La navigation des stacks, l'espace Logs/Compose, les indicateurs de ressources, 
 - Connexion OIDC native (Pocket ID, Authentik, Keycloak…) avec PKCE, comptes limités par défaut et correspondance admin facultative par utilisateur ou par groupe ([guide](docs/oidc.fr.md))
 - Création non interactive du premier administrateur depuis un fichier secret
 - Protection de la connexion par Cloudflare Turnstile
-- Analyse de vulnérabilités Trivy avec exceptions CVE — intervalles de 3/7 jours conservés après redémarrage (Correctif proposé, pas encore publié)
+- Analyse de vulnérabilités Trivy avec exceptions CVE — intervalles de 3/7 jours conservés après redémarrage
 - Validation centralisée des noms de stacks contre les traversées de chemin
 - Sidecar d’auto-mise à jour restreint avec plan de mise à jour signé
 - Transfert chiffré des identifiants de registres privés
