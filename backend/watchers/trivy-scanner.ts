@@ -51,7 +51,7 @@ const SEVERITY_EMOJI: Record<Severity, string> = {
 function sanitizeIntervalHours(value: unknown, fallback = 24): number {
     const interval = Number(value);
     if (!Number.isFinite(interval)) return fallback;
-    return Math.min(24, Math.max(1, Math.floor(interval)));
+    return Math.min(168, Math.max(1, Math.floor(interval)));
 }
 
 function sanitizeTimeoutMinutes(value: unknown, fallback = 10): number {
@@ -186,6 +186,7 @@ export class TrivyScanner {
                 delete data.discordWebhook;
             }
             this.settings = { ...this.settings, ...data as Partial<ScannerSettings> };
+            this.settings.intervalHours = sanitizeIntervalHours(this.settings.intervalHours);
         } catch { /* config absente ou première utilisation */ }
         await this.loadStatus();
     }
@@ -215,6 +216,7 @@ export class TrivyScanner {
 
     async saveSettings(partial: Partial<ScannerSettings>): Promise<void> {
         this.settings = { ...this.settings, ...partial };
+        this.settings.intervalHours = sanitizeIntervalHours(this.settings.intervalHours);
         const fs = await import("fs/promises");
         await fs.mkdir(DATA_DIR, { recursive: true });
         await fs.writeFile(SETTINGS_PATH, JSON.stringify(this.settings, null, 2));
@@ -236,9 +238,18 @@ export class TrivyScanner {
         this.stop();
         const intervalHours = sanitizeIntervalHours(this.settings.intervalHours);
         this.settings.intervalHours = intervalHours;
-        const cronExpr = `0 */${intervalHours} * * *`;
+        // Long intervals use elapsed time, not day-of-month cron steps (which reset each month).
+        const cronExpr = intervalHours > 24 ? "* * * * *" : `0 */${intervalHours} * * *`;
         log.info("trivy", `Démarrage — scan toutes les ${intervalHours}h`);
-        this.cronJob = scheduleInTimezone(cronExpr, () => this.runScan());
+        this.cronJob = scheduleInTimezone(cronExpr, () => {
+            const lastScanAt = Date.parse(this.scanStatus.lastScanAt ?? "");
+            if (intervalHours > 24 && Number.isFinite(lastScanAt) && Date.now() - lastScanAt < intervalHours * 3_600_000) {
+                return;
+            }
+            // lastScanAt is persisted after manual and automatic scans. Without a previous
+            // scan, the first tick is due; runScan also prevents overlapping scans.
+            return this.runScan();
+        });
     }
 
     stop(): void {

@@ -1,4 +1,5 @@
 {
+    "releaseNews.item.trivyLongIntervals": "The 3- and 7-day choices retain 72/168 hours after saving and restarting. Long intervals count elapsed time since the last completed scan, including a manual scan, and are checked each minute; month boundaries and daylight-saving changes do not shorten them. With no scan history or an overdue scan, scanning starts on the next minute tick. The 12/24-hour schedules are unchanged. Update linked instances too.",
     "releaseNews.item.crashContainerIdentity": "Crash-loop counters follow the Docker container ID. Temporary containers reusing a name no longer accumulate false alerts; repeated exits of the same container, including exit code 0, remain monitored. Update linked instances too.",
     "imageCve.severity": "Severity",
     "imageCve.current": "Running image",

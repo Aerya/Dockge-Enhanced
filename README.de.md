@@ -64,6 +64,8 @@ Die wichtigsten kürzlichen Änderungen sind hier gruppiert, damit Sie schnell s
 
 ### 🆕 November 2026
 
+**Trivy-Scanintervalle (Vorgeschlagene Korrektur, noch nicht veröffentlicht) :** Die Auswahl 3 oder 7 Tage behält 72/168 Stunden nach Speichern und Neustart. Lange Intervalle zählen die Zeit seit dem letzten abgeschlossenen Scan, auch einem manuellen; die Prüfung erfolgt jede Minute. Monats- und Zeitumstellungen verkürzen sie nicht. Ohne Verlauf oder bei überfälligem Scan beginnt er beim nächsten Minutentakt. Die 12/24-Stunden-Zeitpläne bleiben unverändert. Verknüpfte Instanzen ebenfalls aktualisieren.
+
 **Absturzerkennung pro Container (Vorgeschlagene Korrektur, noch nicht veröffentlicht) :** Crash-Loop-Zähler folgen der Docker-Container-ID. Temporäre Container mit demselben Namen erzeugen keine gemeinsamen Fehlalarme mehr. Wiederholte Beendigungen desselben Containers, auch mit Exit-Code 0, werden weiterhin überwacht. Verknüpfte Instanzen ebenfalls aktualisieren.
 
 **Schwachstellen von Images vergleichen :** Vor der Bereitstellung das laufende Image mit dem aktuellen Ziel seines Tags vergleichen: nicht mehr, neu und weiterhin erkannte CVEs. Nur für Administratoren, auf Anfrage mit Bestätigung; beide Analysen verwenden dieselben Datenbanken. Temporärer Scanner, Speicherplatz und Downloads erforderlich. Keine Bereitstellung oder Änderung automatischer Updates; fehlende CVEs garantieren keine Behebung. Verknüpfte Instanzen ebenfalls aktualisieren.
@@ -666,7 +668,7 @@ Die Stack-Navigation, der Logs/Compose-Arbeitsbereich, Ressourcenindikatoren, St
 - Native OIDC-Anmeldung (Pocket ID, Authentik, Keycloak…) mit PKCE, standardmäßig eingeschränkten Konten und optionaler Admin-Zuordnung nach Benutzer oder Gruppe ([Anleitung](docs/oidc.de.md))
 - Nicht interaktive Erstellung des ersten Administrators aus einer Secret-Datei
 - Anmeldeschutz mit Cloudflare Turnstile
-- Trivy-Schwachstellenscans mit CVE-Ausnahmen
+- Trivy-Schwachstellenscans mit CVE-Ausnahmen — 3/7-Tage-Intervalle bleiben nach Neustart erhalten (Vorgeschlagene Korrektur, noch nicht veröffentlicht)
 - Zentrale Prüfung von Stack-Namen gegen Pfad-Traversal
 - Eingeschränkter Self-Update-Sidecar mit signiertem Update-Plan
 - Verschlüsselte Übertragung von Zugangsdaten privater Registries

@@ -7,6 +7,8 @@ Historial completo del proyecto, de lo más reciente a lo más antiguo. Cada fec
 
 El [README](README.es-ES.md) presenta las principales novedades recientes y el catálogo de funcionalidades.
 
+> **Corrección propuesta, aún no publicada — Intervalos de análisis Trivy** — Las opciones de 3 y 7 días conservan 72/168 horas tras guardar y reiniciar. Los intervalos largos cuentan el tiempo desde el último análisis terminado, incluso manual, con comprobación cada minuto; los cambios de mes y hora no los acortan. Sin historial o con un análisis atrasado, comienza en el siguiente minuto. Los horarios de 12/24 horas no cambian. Actualice también las instancias vinculadas.
+
 > **Corrección propuesta, aún no publicada — Detección de fallos por contenedor** — Los contadores siguen el ID del contenedor Docker. Los contenedores temporales que reutilizan un nombre ya no acumulan falsas alertas; las salidas repetidas del mismo contenedor, incluso con código 0, siguen vigiladas. Actualice también las instancias vinculadas.
 
 **2026-11-14 — Comparar vulnerabilidades de imágenes** — Antes del despliegue, compare la imagen en ejecución con el destino actual de su tag: CVE ya no detectadas, nuevas y persistentes. Solo para administradores, bajo demanda y con confirmación; ambos análisis usan las mismas bases. Requiere escáner temporal, disco y descargas. No despliega ni cambia las actualizaciones automáticas; una CVE ausente no garantiza una corrección. Actualice también las instancias vinculadas.
