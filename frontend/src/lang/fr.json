@@ -1,4 +1,5 @@
 {
+    "releaseNews.item.trivyLongIntervals": "Les choix 3 et 7 jours conservent 72/168 heures après sauvegarde et redémarrage. Les intervalles longs comptent le temps écoulé depuis le dernier scan terminé, même manuel, avec vérification chaque minute ; les fins de mois et changements d’heure ne les raccourcissent pas. Sans historique ou si le scan est en retard, il démarre à la prochaine minute. Les horaires 12/24 h sont inchangés. Mettez aussi les instances liées à jour.",
     "releaseNews.item.crashContainerIdentity": "Les compteurs de crash loop suivent l’identifiant Docker. Les conteneurs temporaires réutilisant un nom ne cumulent plus de fausses alertes ; les arrêts répétés du même conteneur, même avec un code 0, restent surveillés. Mettez aussi les instances liées à jour.",
     "imageCve.severity": "Gravité",
     "imageCve.current": "Image exécutée",

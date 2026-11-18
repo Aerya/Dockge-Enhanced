@@ -628,6 +628,10 @@ export const RELEASE_NEWS = [
         id: "2026-11-16-crash-container-identity",
         items: [ "releaseNews.item.crashContainerIdentity" ],
     },
+    {
+        id: "2026-11-18-trivy-long-intervals",
+        items: [ "releaseNews.item.trivyLongIntervals" ],
+    },
 ];
 
 function currentReleaseNewsIds() {

@@ -7,6 +7,8 @@ Complete project history, newest first. Each date is the day the change was merg
 
 The [README](README.md) presents the main recent updates and the feature catalogue.
 
+> **Proposed fix, not yet published — Trivy scan intervals** — The 3- and 7-day choices retain 72/168 hours after saving and restarting. Long intervals count elapsed time since the last completed scan, including a manual scan, and are checked each minute; month boundaries and daylight-saving changes do not shorten them. With no scan history or an overdue scan, scanning starts on the next minute tick. The 12/24-hour schedules are unchanged. Update linked instances too.
+
 > **Proposed fix, not yet published — Container-specific crash detection** — Crash-loop counters follow the Docker container ID. Temporary containers reusing a name no longer accumulate false alerts; repeated exits of the same container, including exit code 0, remain monitored. Update linked instances too.
 
 **2026-11-14 — Compare image vulnerabilities** — Before deployment, compare the running image with the current target of its configured tag: CVEs no longer detected, new and persistent. Administrator-only, on demand with confirmation; both scans use the same databases. Temporary scanner, disk space and downloads required. No deployment or change to automatic updates; a missing CVE does not guarantee a fix. Linked instances must also be updated.
