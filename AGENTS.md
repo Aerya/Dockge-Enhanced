@@ -13,6 +13,8 @@ Ces règles s’appliquent à toute modification de Dockge-Enhanced qui touche u
 
 ## Règles permanentes
 
+- **Ne jamais ajouter de mention de statut provisoire dans les README**, telle que « Proposed fix, not yet published », « Correctif proposé, pas encore publié » ou une traduction équivalente. Les informations de suivi de publication restent dans la PR, pas dans les titres ou le catalogue des README.
+
 1. **Vérifier le code avant toute annonce.** Le code de `main` est la source de vérité, pas les README ni les CHANGELOG existants. Avant de documenter une fonctionnalité, retrouvez son implémentation (backend, frontend, libellés dans `frontend/src/lang/`) et la PR qui l’a fusionnée. N’inventez ni option, ni valeur par défaut, ni libellé d’interface.
 2. **Mettre à jour les cinq langues ensemble.** Toute fonctionnalité visible ajoutée, modifiée ou retirée est décrite dans les cinq README et les cinq CHANGELOG, avec le même contenu, les mêmes avertissements et les mêmes liens. Citez les libellés tels qu’ils apparaissent dans l’interface de chaque langue ; si une traduction d’interface manque, citez le libellé affiché (souvent anglais).
 3. **Conserver les nouveautés en haut des README.** La section « Latest updates » / « Dernières nouveautés » reste juste après le tableau de synthèse, dans un bloc `<details>`. Ajoutez chaque évolution significative au début du mois en cours (la plus récente en premier), avec une explication compréhensible et les précautions utiles. Ne raccourcissez pas, ne supprimez pas et ne déplacez pas vers le CHANGELOG les descriptions récentes existantes. Les correctifs ayant un effet visible pour l’utilisateur y ont aussi leur place.
