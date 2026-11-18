@@ -64,6 +64,8 @@ Die wichtigsten kürzlichen Änderungen sind hier gruppiert, damit Sie schnell s
 
 ### 🆕 November 2026
 
+**Absturzerkennung pro Container (Vorgeschlagene Korrektur, noch nicht veröffentlicht) :** Crash-Loop-Zähler folgen der Docker-Container-ID. Temporäre Container mit demselben Namen erzeugen keine gemeinsamen Fehlalarme mehr. Wiederholte Beendigungen desselben Containers, auch mit Exit-Code 0, werden weiterhin überwacht. Verknüpfte Instanzen ebenfalls aktualisieren.
+
 **Schwachstellen von Images vergleichen :** Vor der Bereitstellung das laufende Image mit dem aktuellen Ziel seines Tags vergleichen: nicht mehr, neu und weiterhin erkannte CVEs. Nur für Administratoren, auf Anfrage mit Bestätigung; beide Analysen verwenden dieselben Datenbanken. Temporärer Scanner, Speicherplatz und Downloads erforderlich. Keine Bereitstellung oder Änderung automatischer Updates; fehlende CVEs garantieren keine Behebung. Verknüpfte Instanzen ebenfalls aktualisieren.
 
 **Vorschau der Image-Versionen :** Vor einem Update lassen sich Ziel-Digest und anhand dieses Digests überprüfte Versions-Tags anzeigen. Vorschläge behalten die Image-Variante bei und prüfen die Plattform; fließende Tags werden nicht erraten. Nur lesend für Administratoren; automatische Updates bleiben unverändert. Auch kleinere Updates können Migrationen erfordern. Verknüpfte Instanzen ebenfalls aktualisieren.
@@ -676,7 +678,7 @@ Die Stack-Navigation, der Logs/Compose-Arbeitsbereich, Ressourcenindikatoren, St
 - CPU-, RAM- und Datenträgerstatistiken für System, Stacks und Container, mit konfigurierbarer Statusleiste
 - Host-Systemdetails, Temperaturen und überwachte Partitionen
 - Optionaler 5-Minuten-CPU/RAM-Verlauf für den Host und pro Compose-Dienst, mit sichtbaren Lücken
-- Health-Cards im Dashboard, Crash-Loop-Erkennung und Healthcheck-Auto-Heal
+- Health-Cards im Dashboard, Crash-Loop-Erkennung pro Docker-Container-ID und Healthcheck-Auto-Heal
 - Responsive Live- und Vollbild-Logs mit Dienstfilter, Suche, Zeitbereichen, **seit dem letzten Neustart**, Kopieren der letzten 50 / 100 / 150 oder aller geladenen Zeilen, pausierbarem Autoscroll, Umgang mit langen Zeilen und optionalen Standard-Zeitstempeln; Container-Tabs mit unabhängiger Suche und Pause
 - Energiesparmodus für NAS und kleine Hosts
 - Optionale Integrationen für Kula, Dozzle, PowerWatch und PowerWatch Hub, mit aktueller PowerWatch-Leistung auf verknüpften Instanzen

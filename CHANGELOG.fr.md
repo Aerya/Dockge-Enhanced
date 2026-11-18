@@ -7,6 +7,8 @@ Historique complet du projet, du plus récent au plus ancien. Chaque date corres
 
 Le [README](README.fr.md) présente les principales nouveautés récentes et le catalogue des fonctionnalités.
 
+> **Correctif proposé, pas encore publié — Détection des crashs par conteneur** — Les compteurs de crash loop suivent l’identifiant Docker. Les conteneurs temporaires réutilisant un nom ne cumulent plus de fausses alertes ; les arrêts répétés du même conteneur, même avec un code 0, restent surveillés. Mettez aussi les instances liées à jour.
+
 **2026-11-14 — Comparer les vulnérabilités des images** — Avant déploiement, comparez l’image exécutée à la cible actuelle de son tag : CVE non détectées dans la cible, nouvelles et persistantes. Réservé aux administrateurs, à la demande avec confirmation ; les deux scans utilisent les mêmes bases. Scanner temporaire, espace disque et téléchargements nécessaires. Aucun déploiement ni changement des mises à jour automatiques ; une CVE absente ne garantit pas un correctif. Mettez aussi les instances liées à jour.
 
 **2026-11-14 — Aperçu des versions d’images** — Avant une mise à jour, consultez le digest cible et les tags de version vérifiés sur ce digest. Les suggestions conservent la variante et vérifient la plateforme ; aucune version n’est inventée pour les tags flottants. Lecture seule, réservée aux administrateurs ; les mises à jour automatiques restent inchangées. Même une mise à jour mineure peut nécessiter des migrations. Mettez aussi les instances liées à jour.

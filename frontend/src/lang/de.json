@@ -1,4 +1,5 @@
 {
+    "releaseNews.item.crashContainerIdentity": "Crash-Loop-Zähler folgen der Docker-Container-ID. Temporäre Container mit demselben Namen erzeugen keine gemeinsamen Fehlalarme mehr. Wiederholte Beendigungen desselben Containers, auch mit Exit-Code 0, werden weiterhin überwacht. Verknüpfte Instanzen ebenfalls aktualisieren.",
     "imageCve.severity": "Schweregrad",
     "imageCve.current": "Laufendes Image",
     "imageCve.target": "Ziel-Image",

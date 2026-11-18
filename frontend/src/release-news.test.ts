@@ -4,7 +4,7 @@ import { readFileSync } from "node:fs";
 import { RELEASE_NEWS, getUnreadReleaseNews, sanitizeSeenReleaseNewsIds, getInitialSeenReleaseNewsIds } from "./release-news.js";
 
 test("les nouvelles annonces sont courtes, traduites et visibles au premier passage", () => {
-    const additions = RELEASE_NEWS.filter(release => release.id.startsWith("2026-11-14-image-"));
+    const additions = RELEASE_NEWS.filter(release => release.id.startsWith("2026-11-14-image-") || release.id === "2026-11-16-crash-container-identity");
     assert.ok(additions.length > 0);
     assert.deepEqual(getUnreadReleaseNews(getInitialSeenReleaseNewsIds(null)), [ additions.at(-1) ]);
     for (const locale of [ "en", "fr", "de", "es", "zh-CN" ]) {

@@ -7,6 +7,8 @@ Complete project history, newest first. Each date is the day the change was merg
 
 The [README](README.md) presents the main recent updates and the feature catalogue.
 
+> **Proposed fix, not yet published — Container-specific crash detection** — Crash-loop counters follow the Docker container ID. Temporary containers reusing a name no longer accumulate false alerts; repeated exits of the same container, including exit code 0, remain monitored. Update linked instances too.
+
 **2026-11-14 — Compare image vulnerabilities** — Before deployment, compare the running image with the current target of its configured tag: CVEs no longer detected, new and persistent. Administrator-only, on demand with confirmation; both scans use the same databases. Temporary scanner, disk space and downloads required. No deployment or change to automatic updates; a missing CVE does not guarantee a fix. Linked instances must also be updated.
 
 **2026-11-14 — Image version preview** — Before updating, inspect the target digest and version tags verified against that digest. Suggestions keep the image variant and check the platform; floating tags are not guessed. Read-only, administrator access; automatic updates remain unchanged. Even a minor update may require migrations. Linked instances must be updated too.

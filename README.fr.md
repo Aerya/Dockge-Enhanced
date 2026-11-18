@@ -65,6 +65,8 @@ Les évolutions majeures récentes sont regroupées ici afin de comprendre rapid
 
 ### 🆕 Novembre 2026
 
+**Détection des crashs par conteneur (Correctif proposé, pas encore publié) :** Les compteurs de crash loop suivent l’identifiant Docker. Les conteneurs temporaires réutilisant un nom ne cumulent plus de fausses alertes ; les arrêts répétés du même conteneur, même avec un code 0, restent surveillés. Mettez aussi les instances liées à jour.
+
 **Comparer les vulnérabilités des images :** Avant déploiement, comparez l’image exécutée à la cible actuelle de son tag : CVE non détectées dans la cible, nouvelles et persistantes. Réservé aux administrateurs, à la demande avec confirmation ; les deux scans utilisent les mêmes bases. Scanner temporaire, espace disque et téléchargements nécessaires. Aucun déploiement ni changement des mises à jour automatiques ; une CVE absente ne garantit pas un correctif. Mettez aussi les instances liées à jour.
 
 **Aperçu des versions d’images :** Avant une mise à jour, consultez le digest cible et les tags de version vérifiés sur ce digest. Les suggestions conservent la variante et vérifient la plateforme ; aucune version n’est inventée pour les tags flottants. Lecture seule, réservée aux administrateurs ; les mises à jour automatiques restent inchangées. Même une mise à jour mineure peut nécessiter des migrations. Mettez aussi les instances liées à jour.
@@ -677,7 +679,7 @@ La navigation des stacks, l'espace Logs/Compose, les indicateurs de ressources, 
 - Statistiques CPU, RAM et disque du système, des stacks et des conteneurs, avec barre d’état configurable
 - Détails du système hôte, températures et partitions disque surveillées
 - Historique CPU/RAM facultatif toutes les 5 minutes pour l’hôte et par service Compose, avec interruptions visibles
-- Cartes de santé du tableau de bord, détection des crash loops et auto-heal des healthchecks
+- Cartes de santé du tableau de bord, détection des crash loops par identifiant Docker et auto-heal des healthchecks
 - Logs en direct responsives et plein écran avec filtre par service, recherche, périodes, **depuis le dernier redémarrage**, copie des 50 / 100 / 150 dernières lignes ou de tout le chargé, pause du défilement, gestion des lignes longues et horodatage par défaut facultatif ; onglets par conteneur avec recherche et pause indépendantes
 - Mode basse consommation pour les NAS et petits hôtes
 - Intégrations facultatives Kula, Dozzle, PowerWatch et PowerWatch Hub, avec la puissance PowerWatch affichée sur les instances liées

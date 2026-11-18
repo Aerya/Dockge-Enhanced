@@ -64,6 +64,8 @@ Los cambios recientes más importantes se agrupan aquí para entender rápidamen
 
 ### 🆕 Noviembre de 2026
 
+**Detección de fallos por contenedor (Corrección propuesta, aún no publicada) :** Los contadores siguen el ID del contenedor Docker. Los contenedores temporales que reutilizan un nombre ya no acumulan falsas alertas; las salidas repetidas del mismo contenedor, incluso con código 0, siguen vigiladas. Actualice también las instancias vinculadas.
+
 **Comparar vulnerabilidades de imágenes :** Antes del despliegue, compare la imagen en ejecución con el destino actual de su tag: CVE ya no detectadas, nuevas y persistentes. Solo para administradores, bajo demanda y con confirmación; ambos análisis usan las mismas bases. Requiere escáner temporal, disco y descargas. No despliega ni cambia las actualizaciones automáticas; una CVE ausente no garantiza una corrección. Actualice también las instancias vinculadas.
 
 **Vista previa de versiones de imágenes :** Antes de actualizar, consulte el digest de destino y los tags de versión verificados con ese digest. Las sugerencias mantienen la variante y comprueban la plataforma; no se adivinan versiones para tags flotantes. Solo lectura para administradores; las actualizaciones automáticas no cambian. Incluso una actualización menor puede requerir migraciones. Actualice también las instancias vinculadas.
@@ -678,7 +680,7 @@ La navegación, Logs/Compose, indicadores de recursos, tarjetas de salud, temas 
 - Estadísticas de CPU, RAM y disco del sistema, los stacks y los contenedores, con barra de estado configurable
 - Detalles del sistema host, temperaturas y particiones de disco supervisadas
 - Historial opcional de CPU/RAM cada 5 minutos para el host y por servicio Compose, con interrupciones visibles
-- Tarjetas de salud del panel, detección de bucles de fallos y auto-reparación de healthchecks
+- Tarjetas de salud del panel, detección de bucles de fallos por ID de contenedor Docker y auto-reparación de healthchecks
 - Logs en directo responsivos y a pantalla completa con filtro por servicio, búsqueda, rangos de tiempo, **desde el último reinicio**, copia de las últimas 50 / 100 / 150 líneas o de todo lo cargado, pausa del desplazamiento, gestión de líneas largas y marcas de tiempo por defecto opcionales; pestañas por contenedor con búsqueda y pausa independientes
 - Modo de bajo consumo para NAS y hosts pequeños
 - Integraciones opcionales Kula, Dozzle, PowerWatch y PowerWatch Hub, con la potencia de PowerWatch visible en las instancias vinculadas
