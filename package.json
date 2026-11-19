@@ -104,7 +104,7 @@
         "concurrently": "^10.0.7",
         "cross-env": "~10.1.0",
         "eslint": "~10.15.0",
-        "eslint-plugin-jsdoc": "~65.4.7",
+        "eslint-plugin-jsdoc": "~65.4.8",
         "eslint-plugin-vue": "~10.12.1",
         "globals": "~17.14.0",
         "sass": "~1.108.2",
