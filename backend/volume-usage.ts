@@ -61,6 +61,10 @@ const defaultCommandRunner: CommandRunner = async (file, args, options) => {
  * monopolize the host or survive a timeout.
  */
 export async function measureVolumeSource(source: string, options: MeasureOptions = {}): Promise<VolumeUsageResult> {
+    if (process.env.DOCKGE_DISABLE_VOLUME_USAGE === "1") {
+        return { size: null };
+    }
+
     const commandRunner = options.commandRunner ?? defaultCommandRunner;
     const helperName = options.helperName ?? `dockge-volume-usage-${process.pid}-${randomUUID()}`;
     const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
@@ -105,6 +109,10 @@ export async function measureVolumeSource(source: string, options: MeasureOption
 }
 
 export function getVolumeSourceSize(source: string): Promise<VolumeUsageResult> {
+    if (process.env.DOCKGE_DISABLE_VOLUME_USAGE === "1") {
+        return Promise.resolve({ size: null });
+    }
+
     const now = Date.now();
     const cached = cache.get(source);
     if (cached && cached.expiresAt > now) {

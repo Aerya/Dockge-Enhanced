@@ -1,8 +1,29 @@
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
-import { CommandRunner, measureVolumeSource } from "./volume-usage";
+import { CommandRunner, getVolumeSourceSize, measureVolumeSource } from "./volume-usage";
 
 describe("volume usage measurement", () => {
+    test("disabled measurements return unknown without running any Docker command", async (t) => {
+        const previous = process.env.DOCKGE_DISABLE_VOLUME_USAGE;
+        process.env.DOCKGE_DISABLE_VOLUME_USAGE = "1";
+        t.after(() => {
+            if (previous === undefined) {
+                delete process.env.DOCKGE_DISABLE_VOLUME_USAGE;
+            } else {
+                process.env.DOCKGE_DISABLE_VOLUME_USAGE = previous;
+            }
+        });
+        let calls = 0;
+        const runner: CommandRunner = async () => {
+            calls++;
+            return { stdout: "12345\t/mnt\n" };
+        };
+
+        assert.deepEqual(await measureVolumeSource("/srv/photos", { commandRunner: runner }), { size: null });
+        assert.deepEqual(await getVolumeSourceSize("/srv/photos"), { size: null });
+        assert.equal(calls, 0);
+    });
+
     test("limits the helper and keeps the scan on one filesystem", async () => {
         const calls: Array<{ file: string; args: string[]; timeout: number }> = [];
         const runner: CommandRunner = async (file, args, options) => {

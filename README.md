@@ -64,6 +64,8 @@ The most important recent changes are grouped here so you can quickly see what h
 
 ### 🆕 November 2026
 
+**Optional volume size scans :** Set `DOCKGE_DISABLE_VOLUME_USAGE=1` in the hosting Enhanced instance’s Compose environment to skip volume and bind-mount size scans, including refresh requests. Sizes show N/A; mounts remain listed and file browsing, backups and transfers remain available. Default: `0` (scans enabled). Recreate the Enhanced container after changing the variable; configure each linked instance that hosts the affected stacks.
+
 **Trivy scan intervals :** The 3- and 7-day choices retain 72/168 hours after saving and restarting. Long intervals count elapsed time since the last completed scan, including a manual scan, and are checked each minute; month boundaries and daylight-saving changes do not shorten them. With no scan history or an overdue scan, scanning starts on the next minute tick. The 12/24-hour schedules are unchanged. Update linked instances too.
 
 **Container-specific crash detection :** Crash-loop counters follow the Docker container ID. Temporary containers reusing a name no longer accumulate false alerts; repeated exits of the same container, including exit code 0, remain monitored. Update linked instances too.
@@ -699,7 +701,7 @@ Stack navigation, the Logs/Compose workspace, resource indicators, health cards,
 - Read-only container file explorer with replica selection and bounded downloads.
 - Global multi-instance search (`Ctrl+K`) across stacks, Compose/`.env` files, Docker resources and recent Restic snapshots
 - Opt-in search in `.env` values, which are never returned or stored in history
-- Compact mounted-volume rows with sizes and a volume browser/editor for each container, even when the stack is stopped; bounded inspection batches preserve every container and mount
+- Compact mounted-volume rows with sizes and a volume browser/editor for each container, even when the stack is stopped; bounded inspection batches preserve every container and mount. Optional sizes: `DOCKGE_DISABLE_VOLUME_USAGE=1` disables measurement on the hosting instance.
 - Optional root-restricted host file manager with chunked transfers, text editing and a file-log viewer
 
 ### Automation & audit
@@ -1026,6 +1028,7 @@ To publish a service, edit its stack and use **PlugNPiN publication (optional)**
 | `DOCKGE_DATA_DIR` | `/app/data` | Dockge data directory; override only for a custom persistent mount |
 | `DOCKGE_AGENT_ONLY` | `0` | Agent without WebUI (`1`) |
 | `DOCKGE_HUB_ONLY` | `0` | Hub only — select a linked instance for Docker operations. (`1`) |
+| `DOCKGE_DISABLE_VOLUME_USAGE` | `0` | Disable volume size scans (`1`); default `0`. Recreate the hosting Enhanced container. |
 | `DOCKGE_DOCKER_RECOVERY_RETRIES` | `0` | Consecutive failures before exit (0 disables; maximum 100) |
 | `DOCKGE_DOCKER_RECOVERY_INTERVAL_SECONDS` | `30` | Seconds between completed checks (5–3600; each probe times out after 5 seconds) |
 | `DOCKGE_PUBLIC_URL` | *(none)* | Public URL used in Discord notification links (e.g. `https://dockge.example.com`) |

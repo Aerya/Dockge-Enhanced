@@ -63,6 +63,8 @@ Dockge Enhanced 是 [Dockge](https://github.com/louislam/dockge) 的分支，通
 
 ### 🆕 2026 年 11 月
 
+**可选的卷大小测量 :** 在承载堆栈的 Enhanced 实例的 Compose 环境中设置 `DOCKGE_DISABLE_VOLUME_USAGE=1`，即可禁用卷和绑定挂载的大小扫描，包括刷新请求。大小显示为 N/A；挂载仍会列出，文件浏览、备份和传输仍可使用。默认值为 `0`（启用扫描）。修改变量后需重新创建 Enhanced 容器；请分别配置承载相关堆栈的每个关联实例。
+
 **Trivy 扫描间隔 :** 选择 3 天或 7 天后，保存和重启仍保留 72/168 小时。长间隔从上次扫描完成时开始计时（包括手动扫描），每分钟检查一次；跨月或夏令时切换不会缩短间隔。没有扫描记录或扫描已逾期时，将在下一个分钟触发点开始。12/24 小时计划不变。关联实例也需要更新。
 
 **按容器识别崩溃循环 :** 崩溃循环计数使用 Docker 容器 ID。同名的不同临时容器不再累计触发误报；同一容器反复退出（包括退出码 0）仍受监控。关联实例也需更新。
@@ -700,7 +702,7 @@ Stack 导航、Logs/Compose、资源指标、健康卡片、主题和移动端�
 - 只读容器文件浏览器，支持副本选择和有大小限制的下载。
 - 跨实例全局搜索（`Ctrl+K`），覆盖 Stack、Compose/`.env` 文件、Docker 资源和最近的 Restic 快照
 - 可选搜索 `.env` 值，这些值从不返回，也不会保存到历史中
-- 紧凑的已挂载卷行及大小显示，每个容器都有卷浏览器/编辑器，即使 Stack 已停止也可使用；分批检查保留所有容器和挂载
+- 紧凑的已挂载卷行及大小显示，每个容器都有卷浏览器/编辑器，即使 Stack 已停止也可使用；分批检查保留所有容器和挂载。可选大小：`DOCKGE_DISABLE_VOLUME_USAGE=1` 可禁用承载实例上的测量。
 - 可选的受限根目录主机文件管理器，支持分块传输、文本编辑和文件日志查看
 
 ### 自动化与审计
@@ -1029,6 +1031,7 @@ PlugNPiN 需要 Nginx Proxy Manager 凭据。Pi-hole、AdGuard Home、metrics �
 | `DOCKGE_DATA_DIR` | `/app/data` | Dockge 数据目录；仅在使用自定义持久化挂载时覆盖 |
 | `DOCKGE_AGENT_ONLY` | `0` | 无 WebUI 的代理 (`1`) |
 | `DOCKGE_HUB_ONLY` | `0` | 仅中心模式 — 请为 Docker 操作选择关联实例。 (`1`) |
+| `DOCKGE_DISABLE_VOLUME_USAGE` | `0` | 禁用卷大小扫描（`1`）；默认 `0`。需重新创建承载堆栈的 Enhanced 容器。 |
 | `DOCKGE_DOCKER_RECOVERY_RETRIES` | `0` | 退出前的连续失败次数（0 禁用；最大 100） |
 | `DOCKGE_DOCKER_RECOVERY_INTERVAL_SECONDS` | `30` | 每次检查结束后的等待秒数（5–3600；单次检查超时为 5 秒） |
 | `DOCKGE_PUBLIC_URL` | *(无)* | Discord 通知链接使用的公开 URL（例如 `https://dockge.example.com`） |
