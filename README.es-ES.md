@@ -64,6 +64,8 @@ Los cambios recientes más importantes se agrupan aquí para entender rápidamen
 
 ### 🆕 Noviembre de 2026
 
+**Medición opcional del tamaño de los volúmenes :** Configura `DOCKGE_DISABLE_VOLUME_USAGE=1` en el entorno Compose de la instancia Enhanced que aloja las stacks para desactivar la medición de volúmenes y bind mounts, incluidas las solicitudes de actualización. Los tamaños muestran N/A; los montajes siguen visibles y el explorador de archivos, las copias de seguridad y las transferencias siguen disponibles. Valor predeterminado: `0` (medición activada). Recrea el contenedor Enhanced tras cambiar la variable; configura cada instancia vinculada que aloje las stacks afectadas.
+
 **Intervalos de análisis Trivy :** Las opciones de 3 y 7 días conservan 72/168 horas tras guardar y reiniciar. Los intervalos largos cuentan el tiempo desde el último análisis terminado, incluso manual, con comprobación cada minuto; los cambios de mes y hora no los acortan. Sin historial o con un análisis atrasado, comienza en el siguiente minuto. Los horarios de 12/24 horas no cambian. Actualice también las instancias vinculadas.
 
 **Detección de fallos por contenedor :** Los contadores siguen el ID del contenedor Docker. Los contenedores temporales que reutilizan un nombre ya no acumulan falsas alertas; las salidas repetidas del mismo contenedor, incluso con código 0, siguen vigiladas. Actualice también las instancias vinculadas.
@@ -701,7 +703,7 @@ La navegación, Logs/Compose, indicadores de recursos, tarjetas de salud, temas 
 - Explorador de archivos de contenedores de solo lectura, selección de réplica y descargas limitadas.
 - Búsqueda global multiinstancia (`Ctrl+K`) en stacks, archivos Compose/`.env`, recursos Docker y snapshots Restic recientes
 - Búsqueda opcional en los valores de `.env`, que nunca se devuelven ni se guardan en el historial
-- Filas compactas de volúmenes montados con su tamaño y explorador/editor de volúmenes para cada contenedor, incluso con el stack detenido; la inspección por lotes acotados conserva todos los contenedores y montajes
+- Filas compactas de volúmenes montados con su tamaño y explorador/editor de volúmenes para cada contenedor, incluso con el stack detenido; la inspección por lotes acotados conserva todos los contenedores y montajes. Tamaños opcionales: `DOCKGE_DISABLE_VOLUME_USAGE=1` desactiva la medición en la instancia anfitriona.
 - Gestor opcional de archivos del host limitado a una raíz, con transferencias por fragmentos, edición de texto y lectura de archivos de log
 
 ### Automatización y auditoría
@@ -1028,6 +1030,7 @@ Para publicar un servicio, edita su stack y usa **Publicación PlugNPiN (opciona
 | `DOCKGE_DATA_DIR` | `/app/data` | Directorio de datos de Dockge; cámbialo solo para un montaje persistente personalizado |
 | `DOCKGE_AGENT_ONLY` | `0` | Agente sin interfaz web (`1`) |
 | `DOCKGE_HUB_ONLY` | `0` | Solo hub — seleccione una instancia vinculada para las acciones Docker. (`1`) |
+| `DOCKGE_DISABLE_VOLUME_USAGE` | `0` | Desactiva la medición de volúmenes (`1`); predeterminado `0`. Recrea el contenedor Enhanced anfitrión. |
 | `DOCKGE_DOCKER_RECOVERY_RETRIES` | `0` | Fallos consecutivos antes de salir (0 desactiva; máximo 100) |
 | `DOCKGE_DOCKER_RECOVERY_INTERVAL_SECONDS` | `30` | Segundos entre comprobaciones terminadas (5–3600; cada comprobación expira en 5 segundos) |
 | `DOCKGE_PUBLIC_URL` | *(ninguna)* | URL pública usada en enlaces de notificaciones Discord (por ejemplo `https://dockge.example.com`) |

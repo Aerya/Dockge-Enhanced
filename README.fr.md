@@ -65,6 +65,8 @@ Les évolutions majeures récentes sont regroupées ici afin de comprendre rapid
 
 ### 🆕 Novembre 2026
 
+**Mesure facultative de la taille des volumes :** Définissez `DOCKGE_DISABLE_VOLUME_USAGE=1` dans l’environnement Compose de l’instance Enhanced qui héberge les stacks pour désactiver les mesures des volumes et bind mounts, y compris les demandes de rafraîchissement. Les tailles affichent N/A ; les montages restent listés et la navigation dans les fichiers, les sauvegardes et les transferts restent disponibles. Valeur par défaut : `0` (mesures activées). Recréez le conteneur Enhanced après modification ; configurez chaque instance liée qui héberge les stacks concernées.
+
 **Intervalles des scans Trivy :** Les choix 3 et 7 jours conservent 72/168 heures après sauvegarde et redémarrage. Les intervalles longs comptent le temps écoulé depuis le dernier scan terminé, même manuel, avec vérification chaque minute ; les fins de mois et changements d’heure ne les raccourcissent pas. Sans historique ou si le scan est en retard, il démarre à la prochaine minute. Les horaires 12/24 h sont inchangés. Mettez aussi les instances liées à jour.
 
 **Détection des crashs par conteneur :** Les compteurs de crash loop suivent l’identifiant Docker. Les conteneurs temporaires réutilisant un nom ne cumulent plus de fausses alertes ; les arrêts répétés du même conteneur, même avec un code 0, restent surveillés. Mettez aussi les instances liées à jour.
@@ -700,7 +702,7 @@ La navigation des stacks, l'espace Logs/Compose, les indicateurs de ressources, 
 - Explorateur des fichiers des conteneurs en lecture seule, choix du réplica et téléchargements bornés.
 - Recherche globale multi-instance (`Ctrl+K`) dans les stacks, fichiers Compose/`.env`, ressources Docker et snapshots Restic récents
 - Recherche facultative dans les valeurs `.env`, jamais renvoyées ni enregistrées dans l’historique
-- Lignes compactes des volumes montés avec leur taille, et navigateur/éditeur de volumes pour chaque conteneur, même lorsque la stack est arrêtée ; lecture par lots bornés conservant tous les conteneurs et montages
+- Lignes compactes des volumes montés avec leur taille, et navigateur/éditeur de volumes pour chaque conteneur, même lorsque la stack est arrêtée ; lecture par lots bornés conservant tous les conteneurs et montages. Tailles facultatives : `DOCKGE_DISABLE_VOLUME_USAGE=1` désactive les mesures sur l’instance hôte.
 - Gestionnaire facultatif de fichiers hôte limité à une racine, avec transferts par morceaux, édition de texte et lecture de fichiers journaux
 
 ### Automatisation & audit
@@ -1027,6 +1029,7 @@ Pour publier un service, éditez sa stack puis utilisez **Publication PlugNPiN (
 | `DOCKGE_DATA_DIR` | `/app/data` | Dossier de données Dockge ; ne le modifier que pour un montage persistant personnalisé |
 | `DOCKGE_AGENT_ONLY` | `0` | Agent sans interface Web (`1`) |
 | `DOCKGE_HUB_ONLY` | `0` | Hub uniquement — sélectionnez une instance liée pour les opérations Docker. (`1`) |
+| `DOCKGE_DISABLE_VOLUME_USAGE` | `0` | Désactive les mesures de taille des volumes (`1`) ; défaut `0`. Recréer le conteneur Enhanced hôte. |
 | `DOCKGE_DOCKER_RECOVERY_RETRIES` | `0` | Échecs consécutifs avant arrêt (0 désactive ; maximum 100) |
 | `DOCKGE_DOCKER_RECOVERY_INTERVAL_SECONDS` | `30` | Secondes entre contrôles terminés (5–3600 ; chaque sonde expire après 5 secondes) |
 | `DOCKGE_PUBLIC_URL` | *(aucun)* | URL publique utilisée dans les liens des notifications Discord (ex : `https://dockge.mondomaine.fr`) |

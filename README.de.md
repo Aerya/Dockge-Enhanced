@@ -64,6 +64,8 @@ Die wichtigsten kürzlichen Änderungen sind hier gruppiert, damit Sie schnell s
 
 ### 🆕 November 2026
 
+**Optionale Messung der Volume-Größe :** Setzen Sie `DOCKGE_DISABLE_VOLUME_USAGE=1` in der Compose-Umgebung der zuständigen Enhanced-Instanz, um Größenmessungen von Volumes und Bind-Mounts einschließlich Aktualisierungsanfragen zu deaktivieren. Größen erscheinen als N/A; Mounts bleiben sichtbar und Dateibrowser, Backups und Transfers bleiben verfügbar. Standard: `0` (Messungen aktiviert). Erstellen Sie den Enhanced-Container nach der Änderung neu; konfigurieren Sie jede verbundene Instanz, die betroffene Stacks hostet.
+
 **Trivy-Scanintervalle :** Die Auswahl 3 oder 7 Tage behält 72/168 Stunden nach Speichern und Neustart. Lange Intervalle zählen die Zeit seit dem letzten abgeschlossenen Scan, auch einem manuellen; die Prüfung erfolgt jede Minute. Monats- und Zeitumstellungen verkürzen sie nicht. Ohne Verlauf oder bei überfälligem Scan beginnt er beim nächsten Minutentakt. Die 12/24-Stunden-Zeitpläne bleiben unverändert. Verknüpfte Instanzen ebenfalls aktualisieren.
 
 **Absturzerkennung pro Container :** Crash-Loop-Zähler folgen der Docker-Container-ID. Temporäre Container mit demselben Namen erzeugen keine gemeinsamen Fehlalarme mehr. Wiederholte Beendigungen desselben Containers, auch mit Exit-Code 0, werden weiterhin überwacht. Verknüpfte Instanzen ebenfalls aktualisieren.
@@ -699,7 +701,7 @@ Die Stack-Navigation, der Logs/Compose-Arbeitsbereich, Ressourcenindikatoren, St
 - Schreibgeschützter Container-Dateiexplorer mit Replikatauswahl und begrenzten Downloads.
 - Globale instanzübergreifende Suche (`Ctrl+K`) in Stacks, Compose-/`.env`-Dateien, Docker-Ressourcen und aktuellen Restic-Snapshots
 - Optionale Suche in `.env`-Werten, die nie zurückgegeben oder im Verlauf gespeichert werden
-- Kompakte Zeilen für eingebundene Volumes mit Größen und ein Volume-Browser/-Editor pro Container, auch bei gestopptem Stack; begrenzte Abfragegruppen erhalten alle Container und Mounts
+- Kompakte Zeilen für eingebundene Volumes mit Größen und ein Volume-Browser/-Editor pro Container, auch bei gestopptem Stack; begrenzte Abfragegruppen erhalten alle Container und Mounts. Optionale Größen: `DOCKGE_DISABLE_VOLUME_USAGE=1` deaktiviert Messungen auf der zuständigen Instanz.
 - Optionaler, auf ein Wurzelverzeichnis beschränkter Host-Dateimanager mit stückweisen Übertragungen, Textbearbeitung und Anzeige von Dateiprotokollen
 
 ### Automatisierung & Audit
@@ -1026,6 +1028,7 @@ Um einen Dienst zu veröffentlichen, bearbeiten Sie dessen Stack und verwenden S
 | `DOCKGE_DATA_DIR` | `/app/data` | Dockge-Datenverzeichnis; nur für einen benutzerdefinierten persistenten Einhängepunkt überschreiben |
 | `DOCKGE_AGENT_ONLY` | `0` | Agent ohne Weboberfläche (`1`) |
 | `DOCKGE_HUB_ONLY` | `0` | Reiner Hub — wählen Sie eine verbundene Instanz für Docker-Aktionen. (`1`) |
+| `DOCKGE_DISABLE_VOLUME_USAGE` | `0` | Volume-Größenmessung deaktivieren (`1`); Standard `0`. Enhanced-Hostcontainer neu erstellen. |
 | `DOCKGE_DOCKER_RECOVERY_RETRIES` | `0` | Aufeinanderfolgende Fehler vor dem Beenden (0 deaktiviert; höchstens 100) |
 | `DOCKGE_DOCKER_RECOVERY_INTERVAL_SECONDS` | `30` | Sekunden zwischen abgeschlossenen Prüfungen (5–3600; Zeitlimit je Prüfung 5 Sekunden) |
 | `DOCKGE_PUBLIC_URL` | *(keine)* | Öffentliche URL, die in Discord-Benachrichtigungslinks verwendet wird (z. B. `https://dockge.example.com`) |
