@@ -8,7 +8,7 @@
             <p class="form-text">{{ $t("updates.self.backupPolicyHelp") }}</p>
             <p class="alert alert-info py-2">{{ $t("updates.self.scopeHint") }}</p>
             <label class="form-label" for="self-update-mode">{{ $t("updates.self.mode") }}</label>
-            <select id="self-update-mode" v-model="settings.mode" class="form-select" @change="save">
+            <select id="self-update-mode" :value="settings.mode" class="form-select" @focus="modeEditing = true" @blur="modeEditing = false" @change="changeMode">
                 <option value="manual">{{ $t("updates.self.manual") }}</option>
                 <option value="sidecar">{{ $t("updates.self.sidecar") }}</option>
             </select>
@@ -250,6 +250,7 @@ const settings = ref({ mode: "manual",
         until: null as string | null } });
 const savedBackupProvider = ref("restic");
 const settingsError = ref("");
+let modeEditing = false;
 let settingsDirty = false;
 let settingsRevision = 0;
 function markSettingsDirty() {
@@ -528,10 +529,12 @@ async function loadHostStats() {
 
 async function load() {
     const loadedRevision = settingsRevision;
+    const settingsWereDirty = settingsDirty;
+    const modeWasEditing = modeEditing;
     const [ settingsResult, statusResult, pauseResult, imageResult ] = await Promise.all([
         watcherApi("GET", "/self/settings"), watcherApi("GET", "/self/status"), watcherApi("GET", "/image/auto-update"), watcherApi("GET", "/image/update-all"),
     ]);
-    if (settingsResult.ok && !settingsDirty && loadedRevision === settingsRevision) {
+    if (settingsResult.ok && !settingsWereDirty && !settingsDirty && !modeWasEditing && !modeEditing && loadedRevision === settingsRevision) {
         settings.value = { ...settings.value,
             ...settingsResult.data };
         savedBackupProvider.value = settings.value.backupProvider;
@@ -576,6 +579,12 @@ async function updateAllImages() {
     }
 }
 
+async function changeMode(event: Event) {
+    // Read the selected value before saving; do not depend on v-model listener order.
+    settings.value.mode = (event.target as HTMLSelectElement).value;
+    await save();
+}
+
 async function save(externalBackupAcknowledged: unknown = false) {
     markSettingsDirty();
     const savedRevision = settingsRevision;
@@ -586,6 +595,8 @@ async function save(externalBackupAcknowledged: unknown = false) {
         savedBackupProvider.value = settings.value.backupProvider;
         if (savedRevision === settingsRevision) {
             settingsDirty = false;
+            // Invalidate reads started before this write completed.
+            settingsRevision++;
         }
     }
 }
