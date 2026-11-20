@@ -2,6 +2,7 @@
     <div>
         <SchedulingTimezoneNotice />
         <BackupZerobyte />
+        <BackupCoverage />
 
         <!-- ═══ DESTINATIONS ═══ -->
         <BackupDestinations v-model="settings" :is-backup-stale="isBackupStale" />
@@ -247,6 +248,7 @@ import { ref, computed, onMounted, onUnmounted } from "vue";
 import { useI18n } from "vue-i18n/dist/vue-i18n.esm-browser.prod.js";
 import { initServerTz } from "../composables/useServerTz";
 import { BModal } from "bootstrap-vue-next";
+import BackupCoverage from "./backup/BackupCoverage.vue";
 import BackupZerobyte from "./backup/BackupZerobyte.vue";
 import BackupDestinations from "./backup/BackupDestinations.vue";
 import BackupVolumes from "./backup/BackupVolumes.vue";

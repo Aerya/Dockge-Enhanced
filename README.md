@@ -65,6 +65,7 @@ The most important recent changes are grouped here so you can quickly see what h
 ### 🆕 November 2026
 
 **Advanced deployments:** Canary requires the existing managed TCP relay, healthy replicas, no shared writable mounts and an explicit migration-free declaration. New connections progress through 10%, 25%, 50%, then 100%; this is not a request percentage or a universal zero-downtime guarantee. Health is checked every 2 s, at least 30 s per stage. Manual promotion expires after 30 minutes per stage. Failure or restart before promotion restores the old route through the existing recovery journal. One to four services, image or strict Compose. No network, published ports, shared mounts, external resources, builds or privileges. Read-only root filesystem, bounded CPU/RAM, temporary private data. Runs health checks for up to 60 s after startup then destroys the preview; recovery cleans leftovers after restart. This is not a browsable environment or a database/migration test. Missing images may be downloaded; image cache is retained.
+**Backup coverage:** On-demand read-only inventory by instance and stack of mounted named volumes and bind mounts. Configuration is not proof of backup. New Restic histories retain source scope and repository identity; older histories remain unknown. Built-in and custom exclusions make coverage partial. A sample-file read is not a full restore test. Zerobyte job success is shown separately; without snapshot-level scope proof its coverage remains unknown. Unreachable/older agents and undeployed stacks are explicit. No retention or destination changes.
 
 
 **Network observation — `/topology`:** Opt-in, administrator-only collection per instance. Rates are approximate Docker counter differences; shared/host namespaces are unavailable. History holds up to 30 samples in memory. Host details require a proven native Linux namespace and local Docker socket; missing tools or permissions remain unavailable. No active probes, privilege changes or VPN configuration. WireGuard interfaces do not establish tunnel health.
@@ -587,7 +588,7 @@ Stack navigation, the Logs/Compose workspace, resource indicators, health cards,
 - Scheduled stack and container start/stop
 - Host mount and `systemd` start prerequisites, with optional monitoring and recovery
 - Server-persisted pinned stacks shared across linked WebUIs
-- Optional WebUI display names, without changing the Compose project or Restic identity
+- Optional WebUI display names, without changing the Compose project or Restic identity On-demand read-only inventory by instance and stack of mounted named volumes and bind mounts. Configuration is not proof of backup. New Restic histories retain source scope and repository identity; older histories remain unknown. Built-in and custom exclusions make coverage partial. A sample-file read is not a full restore test. Zerobyte job success is shown separately; without snapshot-level scope proof its coverage remains unknown. Unreachable/older agents and undeployed stacks are explicit. No retention or destination changes.
 - Per-stack notes, Markdown `README.md` and Git tools
 - Sorting by name, status, instance, creation date, last update, CPU or RAM
 - Collapsible, resizable stack sidebar with compact status, CPU and RAM indicators, and a flexible Logs/Compose workspace

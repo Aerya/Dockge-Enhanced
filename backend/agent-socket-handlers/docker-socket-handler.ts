@@ -1,3 +1,4 @@
+import { collectBackupCoverage } from "../backup-coverage";
 import path from "node:path";
 import { runDeploymentPreview } from "../rollout-preview";
 import { canaryState, decideCanary } from "../rollout-canary";
@@ -228,6 +229,20 @@ export class DockerSocketHandler extends AgentSocketHandler {
                 callback({ ok: false });
             } finally {
                 reservation?.release();
+            }
+        });
+        agentSocket.on("backup:coverage", async (callback) => {
+            if (typeof callback !== "function") {
+                return;
+            }
+            try {
+                await authorizeServiceLinks(socket);
+                const data = await collectBackupCoverage(server);
+                await authorizeServiceLinks(socket);
+                callback({ ok: true,
+                    data });
+            } catch {
+                callback({ ok: false });
             }
         });
         agentSocket.on("getZerobyteSummary", async (callback) => {
