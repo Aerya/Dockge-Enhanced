@@ -2930,5 +2930,22 @@
     "networkObservation.tunnels": "Interfaces WireGuard",
     "networkObservation.firewall": "Pare-feu (lecture seule)",
     "networkObservation.history": "Échantillons récents",
-    "networkObservation.hint": "Collecte facultative par instance, réservée aux administrateurs. Débits approximatifs calculés depuis les compteurs Docker ; espaces réseau partagés/host indisponibles. Historique limité à 30 échantillons en mémoire. Les détails hôte nécessitent un espace réseau Linux natif identifié et un socket Docker local ; outils ou permissions manquants restent signalés. Aucun test actif, changement de privilèges ou configuration VPN. Les interfaces WireGuard ne prouvent pas la santé des tunnels."
+    "networkObservation.hint": "Collecte facultative par instance, réservée aux administrateurs. Débits approximatifs calculés depuis les compteurs Docker ; espaces réseau partagés/host indisponibles. Historique limité à 30 échantillons en mémoire. Les détails hôte nécessitent un espace réseau Linux natif identifié et un socket Docker local ; outils ou permissions manquants restent signalés. Aucun test actif, changement de privilèges ou configuration VPN. Les interfaces WireGuard ne prouvent pas la santé des tunnels.",
+    "backupCoverage.title": "Couverture des sauvegardes",
+    "backupCoverage.inspect": "Inspecter toutes les instances",
+    "backupCoverage.resource": "Ressource persistante",
+    "backupCoverage.state": "Couverture",
+    "backupCoverage.evidence": "Destination et preuves",
+    "backupCoverage.protected": "Protégée",
+    "backupCoverage.partial": "Partiellement protégée",
+    "backupCoverage.unprotected": "Non protégée",
+    "backupCoverage.unknown": "Couverture impossible à déterminer",
+    "backupCoverage.configured": "Configurée",
+    "backupCoverage.success": "Dernière sauvegarde réussie",
+    "backupCoverage.verification": "Vérification",
+    "backupCoverage.sample-read": "Lecture réussie d’un fichier (pas une vérification complète)",
+    "backupCoverage.failed": "Vérification échouée",
+    "backupCoverage.overdue": "Sauvegarde en retard ou aucun succès attribuable",
+    "backupCoverage.exclusions": "Exclusions ou périmètre partiel : vérifier les réglages",
+    "backupCoverage.hint": "Inventaire en lecture seule, à la demande, par instance et stack des volumes nommés et bind mounts montés. Une configuration ne prouve pas une sauvegarde. Les nouveaux historiques Restic conservent le périmètre et l’identité du dépôt ; les anciens restent indéterminés. Les exclusions intégrées ou personnalisées rendent la couverture partielle. Lire un fichier ne constitue pas un test de restauration complet. Le succès d’un job Zerobyte est affiché séparément ; sans preuve du périmètre du snapshot, sa couverture reste indéterminée. Agents anciens/injoignables et stacks non déployées sont signalés. Aucune modification de rétention ou de destination."
 }

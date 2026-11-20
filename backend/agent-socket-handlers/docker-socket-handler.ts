@@ -1,3 +1,5 @@
+import { collectBackupCoverage } from "../backup-coverage";
+import { authorizeServiceLinks } from "../socket-handlers/service-links-socket-handler";
 import { TrivyScanner } from "../watchers/trivy-scanner";
 import { startImageComparison, getComparisonJob } from "../watchers/trivy-comparison-runner";
 import { registerContainerFiles } from "./container-files-socket-handler";
@@ -168,6 +170,20 @@ export class DockerSocketHandler extends AgentSocketHandler {
                     data: await inspectComposeDraft(server, value.name, value.compose, value.env, value.override, value.isAdd) }, callback);
             } catch (error) {
                 callbackError(error, callback);
+            }
+        });
+        agentSocket.on("backup:coverage", async (callback) => {
+            if (typeof callback !== "function") {
+                return;
+            }
+            try {
+                await authorizeServiceLinks(socket);
+                const data = await collectBackupCoverage(server);
+                await authorizeServiceLinks(socket);
+                callback({ ok: true,
+                    data });
+            } catch {
+                callback({ ok: false });
             }
         });
         agentSocket.on("getZerobyteSummary", async (callback) => {

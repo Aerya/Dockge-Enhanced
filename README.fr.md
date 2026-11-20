@@ -65,6 +65,8 @@ Les évolutions majeures récentes sont regroupées ici afin de comprendre rapid
 
 ### 🆕 Novembre 2026
 
+**Couverture des sauvegardes:** Inventaire en lecture seule, à la demande, par instance et stack des volumes nommés et bind mounts montés. Une configuration ne prouve pas une sauvegarde. Les nouveaux historiques Restic conservent le périmètre et l’identité du dépôt ; les anciens restent indéterminés. Les exclusions intégrées ou personnalisées rendent la couverture partielle. Lire un fichier ne constitue pas un test de restauration complet. Le succès d’un job Zerobyte est affiché séparément ; sans preuve du périmètre du snapshot, sa couverture reste indéterminée. Agents anciens/injoignables et stacks non déployées sont signalés. Aucune modification de rétention ou de destination.
+
 
 **Observation réseau — `/topology`:** Collecte facultative par instance, réservée aux administrateurs. Débits approximatifs calculés depuis les compteurs Docker ; espaces réseau partagés/host indisponibles. Historique limité à 30 échantillons en mémoire. Les détails hôte nécessitent un espace réseau Linux natif identifié et un socket Docker local ; outils ou permissions manquants restent signalés. Aucun test actif, changement de privilèges ou configuration VPN. Les interfaces WireGuard ne prouvent pas la santé des tunnels.
 **Mesure facultative de la taille des volumes :** Définissez `DOCKGE_DISABLE_VOLUME_USAGE=1` dans l’environnement Compose de l’instance Enhanced qui héberge les stacks pour désactiver les mesures des volumes et bind mounts, y compris les demandes de rafraîchissement. Les tailles affichent N/A ; les montages restent listés et la navigation dans les fichiers, les sauvegardes et les transferts restent disponibles. Valeur par défaut : `0` (mesures activées). Recréez le conteneur Enhanced après modification ; configurez chaque instance liée qui héberge les stacks concernées.
@@ -586,7 +588,7 @@ La navigation des stacks, l'espace Logs/Compose, les indicateurs de ressources, 
 - Démarrage/arrêt planifié des stacks et des conteneurs
 - Prérequis de démarrage hôte (montages et services `systemd`), avec surveillance et reprise facultatives
 - Stacks épinglées persistées sur le serveur et partagées entre WebUI liées
-- Nom d’affichage facultatif dans la WebUI, sans modifier le projet Compose ni l’identité Restic
+- Nom d’affichage facultatif dans la WebUI, sans modifier le projet Compose ni l’identité Restic Inventaire en lecture seule, à la demande, par instance et stack des volumes nommés et bind mounts montés. Une configuration ne prouve pas une sauvegarde. Les nouveaux historiques Restic conservent le périmètre et l’identité du dépôt ; les anciens restent indéterminés. Les exclusions intégrées ou personnalisées rendent la couverture partielle. Lire un fichier ne constitue pas un test de restauration complet. Le succès d’un job Zerobyte est affiché séparément ; sans preuve du périmètre du snapshot, sa couverture reste indéterminée. Agents anciens/injoignables et stacks non déployées sont signalés. Aucune modification de rétention ou de destination.
 - Notes par stack, `README.md` Markdown et outils Git
 - Tri par nom, état, instance, date de création, dernière mise à jour, CPU ou RAM
 - Barre latérale repliable et redimensionnable avec indicateurs compacts d’état, CPU et RAM, et espace Logs/Compose flexible
