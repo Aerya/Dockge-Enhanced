@@ -2859,5 +2859,22 @@
     "oidc.setupRequired": "请先创建第一个管理员，或配置 DOCKGE_OIDC_ADMIN_USERS 或 DOCKGE_OIDC_ADMIN_GROUPS。",
     "oidc.accountDisabled": "此账户已停用。",
     "oidc.localLoginDisabled": "用户名和密码登录已停用，请使用 SSO。",
-    "oidc.disabled": "未启用 SSO 登录。"
+    "oidc.disabled": "未启用 SSO 登录。",
+    "backupCoverage.title": "备份覆盖范围",
+    "backupCoverage.inspect": "检查所有实例",
+    "backupCoverage.resource": "持久资源",
+    "backupCoverage.state": "覆盖状态",
+    "backupCoverage.evidence": "目标和证据",
+    "backupCoverage.protected": "已保护",
+    "backupCoverage.partial": "部分保护",
+    "backupCoverage.unprotected": "未保护",
+    "backupCoverage.unknown": "无法确定覆盖范围",
+    "backupCoverage.configured": "已配置",
+    "backupCoverage.success": "最近成功备份",
+    "backupCoverage.verification": "验证",
+    "backupCoverage.sample-read": "成功读取一个文件（不是完整验证）",
+    "backupCoverage.failed": "验证失败",
+    "backupCoverage.overdue": "备份逾期或没有可归属的成功记录",
+    "backupCoverage.exclusions": "存在排除项或部分范围：请检查设置",
+    "backupCoverage.hint": "按需只读列出各实例和 stack 已挂载的命名卷和绑定挂载。配置不等于备份证据。新的 Restic 历史保存源范围和仓库标识；旧历史仍为未知。内置和自定义排除项意味着部分覆盖。读取一个文件不是完整恢复测试。Zerobyte 任务成功单独显示；缺少快照范围证据时覆盖仍未知。明确显示旧版或离线 agent 和未部署 stack。不更改保留策略或目标。"
 }

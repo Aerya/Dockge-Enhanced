@@ -2922,5 +2922,22 @@
     "oidc.setupRequired": "Create the first administrator before signing in with SSO, or configure DOCKGE_OIDC_ADMIN_USERS or DOCKGE_OIDC_ADMIN_GROUPS.",
     "oidc.accountDisabled": "This account is disabled.",
     "oidc.localLoginDisabled": "Sign-in with a username and password is disabled. Use SSO.",
-    "oidc.disabled": "SSO sign-in is not enabled."
+    "oidc.disabled": "SSO sign-in is not enabled.",
+    "backupCoverage.title": "Backup coverage",
+    "backupCoverage.inspect": "Inspect all instances",
+    "backupCoverage.resource": "Persistent resource",
+    "backupCoverage.state": "Coverage",
+    "backupCoverage.evidence": "Destination and evidence",
+    "backupCoverage.protected": "Protected",
+    "backupCoverage.partial": "Partially protected",
+    "backupCoverage.unprotected": "Unprotected",
+    "backupCoverage.unknown": "Coverage cannot be determined",
+    "backupCoverage.configured": "Configured",
+    "backupCoverage.success": "Last successful backup",
+    "backupCoverage.verification": "Verification",
+    "backupCoverage.sample-read": "One file read successfully (not a full verification)",
+    "backupCoverage.failed": "Verification failed",
+    "backupCoverage.overdue": "Backup overdue or no attributable success",
+    "backupCoverage.exclusions": "Exclusions or partial scope: review the backup settings",
+    "backupCoverage.hint": "On-demand read-only inventory by instance and stack of mounted named volumes and bind mounts. Configuration is not proof of backup. New Restic histories retain source scope and repository identity; older histories remain unknown. Built-in and custom exclusions make coverage partial. A sample-file read is not a full restore test. Zerobyte job success is shown separately; without snapshot-level scope proof its coverage remains unknown. Unreachable/older agents and undeployed stacks are explicit. No retention or destination changes."
 }

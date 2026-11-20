@@ -64,6 +64,8 @@ Los cambios recientes más importantes se agrupan aquí para entender rápidamen
 
 ### 🆕 Noviembre de 2026
 
+**Cobertura de copias:** Inventario de solo lectura bajo demanda por instancia y stack de volúmenes con nombre y bind mounts montados. La configuración no prueba una copia. Los nuevos historiales Restic guardan alcance e identidad del repositorio; los antiguos son indeterminados. Las exclusiones integradas o personalizadas implican cobertura parcial. Leer un archivo no es una restauración completa. El éxito Zerobyte se muestra por separado; sin alcance del snapshot su cobertura es indeterminada. Se indican agentes antiguos/inaccesibles y stacks no desplegados. Sin cambios en retención ni destinos.
+
 **Medición opcional del tamaño de los volúmenes :** Configura `DOCKGE_DISABLE_VOLUME_USAGE=1` en el entorno Compose de la instancia Enhanced que aloja las stacks para desactivar la medición de volúmenes y bind mounts, incluidas las solicitudes de actualización. Los tamaños muestran N/A; los montajes siguen visibles y el explorador de archivos, las copias de seguridad y las transferencias siguen disponibles. Valor predeterminado: `0` (medición activada). Recrea el contenedor Enhanced tras cambiar la variable; configura cada instancia vinculada que aloje las stacks afectadas.
 
 **Intervalos de análisis Trivy :** Las opciones de 3 y 7 días conservan 72/168 horas tras guardar y reiniciar. Los intervalos largos cuentan el tiempo desde el último análisis terminado, incluso manual, con comprobación cada minuto; los cambios de mes y hora no los acortan. Sin historial o con un análisis atrasado, comienza en el siguiente minuto. Los horarios de 12/24 horas no cambian. Actualice también las instancias vinculadas.
@@ -585,7 +587,7 @@ La navegación, Logs/Compose, indicadores de recursos, tarjetas de salud, temas 
 - Inicio/parada programados de stacks y contenedores
 - Requisitos de arranque del host (montajes y servicios `systemd`), con supervisión y recuperación opcionales
 - Stacks fijados guardados en el servidor y compartidos entre WebUI vinculadas
-- Nombre visible opcional en la WebUI, sin cambiar el proyecto Compose ni la identidad Restic
+- Nombre visible opcional en la WebUI, sin cambiar el proyecto Compose ni la identidad Restic Inventario de solo lectura bajo demanda por instancia y stack de volúmenes con nombre y bind mounts montados. La configuración no prueba una copia. Los nuevos historiales Restic guardan alcance e identidad del repositorio; los antiguos son indeterminados. Las exclusiones integradas o personalizadas implican cobertura parcial. Leer un archivo no es una restauración completa. El éxito Zerobyte se muestra por separado; sin alcance del snapshot su cobertura es indeterminada. Se indican agentes antiguos/inaccesibles y stacks no desplegados. Sin cambios en retención ni destinos.
 - Notas por stack, `README.md` en Markdown y herramientas Git
 - Ordenación por nombre, estado, instancia, fecha de creación, última actualización, CPU o RAM
 - Barra lateral plegable y redimensionable con indicadores compactos de estado, CPU y RAM, y espacio Logs/Compose flexible

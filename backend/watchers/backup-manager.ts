@@ -1,3 +1,4 @@
+import { coverageHostPath, coverageDestination, type CoverageEvidence } from "../backup-coverage-policy";
 import { isZerobyteApplicationBackupActive } from "../integrations/zerobyte-coordination";
 /**
  * BackupManager — Gère les sauvegardes Restic des compose.yaml et .env
@@ -242,6 +243,7 @@ export interface DestinationResult {
 }
 
 export interface BackupResult {
+    coverage?: CoverageEvidence;
     success: boolean;               // true si toutes les destinations ont réussi
     trigger?: "scheduled" | "manual" | "on-save";
     snapshotId?: string;            // premier snapshotId réussi (affichage)
@@ -1392,7 +1394,7 @@ export class BackupManager {
     }
 
     /** Full mount inventory, even mounts hidden from the backup volume selector. */
-    private async getAllHostBackupMounts(): Promise<MountedVolume[]> {
+    async getAllHostBackupMounts(): Promise<MountedVolume[]> {
         const inspected = await resolveCurrentContainer();
         if (!Array.isArray(inspected.Mounts)) {
             throw new Error("Cannot inspect Docker mounts; repository safety check failed");
@@ -1974,6 +1976,11 @@ export class BackupManager {
             [ ...new Set([ ...localRepositories, ...await canonicalRepositoryPaths(localRepositories) ]) ],
             repositoryMounts,
         );
+        result.coverage = {
+            paths: paths.map(p => coverageHostPath(p, repositoryMounts)).filter((p): p is string => p !== null),
+            excludes: [ ...builtinExcludes, ...userExcludes, ...repoExcludes ],
+            destinations: activeDests.map(coverageDestination),
+        };
         const resticArgs = buildBackupArgs({
             paths,
             tags,

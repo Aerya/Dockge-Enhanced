@@ -1844,5 +1844,22 @@
     "oidc.setupRequired": "Cree primero el administrador inicial, o configure DOCKGE_OIDC_ADMIN_USERS o DOCKGE_OIDC_ADMIN_GROUPS.",
     "oidc.accountDisabled": "Esta cuenta está desactivada.",
     "oidc.localLoginDisabled": "El inicio de sesión con usuario y contraseña está desactivado. Use SSO.",
-    "oidc.disabled": "El inicio de sesión SSO no está activado."
+    "oidc.disabled": "El inicio de sesión SSO no está activado.",
+    "backupCoverage.title": "Cobertura de copias",
+    "backupCoverage.inspect": "Inspeccionar todas las instancias",
+    "backupCoverage.resource": "Recurso persistente",
+    "backupCoverage.state": "Cobertura",
+    "backupCoverage.evidence": "Destino y pruebas",
+    "backupCoverage.protected": "Protegido",
+    "backupCoverage.partial": "Parcialmente protegido",
+    "backupCoverage.unprotected": "No protegido",
+    "backupCoverage.unknown": "Cobertura indeterminada",
+    "backupCoverage.configured": "Configurado",
+    "backupCoverage.success": "Última copia correcta",
+    "backupCoverage.verification": "Verificación",
+    "backupCoverage.sample-read": "Un archivo leído correctamente (no es una verificación completa)",
+    "backupCoverage.failed": "Verificación fallida",
+    "backupCoverage.overdue": "Copia atrasada o sin éxito atribuible",
+    "backupCoverage.exclusions": "Exclusiones o alcance parcial: revisar ajustes",
+    "backupCoverage.hint": "Inventario de solo lectura bajo demanda por instancia y stack de volúmenes con nombre y bind mounts montados. La configuración no prueba una copia. Los nuevos historiales Restic guardan alcance e identidad del repositorio; los antiguos son indeterminados. Las exclusiones integradas o personalizadas implican cobertura parcial. Leer un archivo no es una restauración completa. El éxito Zerobyte se muestra por separado; sin alcance del snapshot su cobertura es indeterminada. Se indican agentes antiguos/inaccesibles y stacks no desplegados. Sin cambios en retención ni destinos."
 }
