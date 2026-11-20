@@ -61,7 +61,7 @@ export async function runDeploymentPreview(input: unknown, stateDir: string) {
             const [ image ] = JSON.parse(text) as Array<{ Id: string;
                 Config?: { Labels?: Record<string, string>;
                     Env?: string[] } }>;
-            if (!/^sha256:[a-f0-9]{64}$/.test(image.Id) || Object.keys(image.Config?.Labels || {}).some(key => /^(traefik\.|caddy[._]|plugNPiN\.)/.test(key)) ||
+            if (!/^sha256:[a-f0-9]{64}$/.test(image.Id) || Object.keys(image.Config?.Labels || {}).some(key => /^(traefik\.|caddy(?:[._]|$)|plugNPiN\.)/.test(key)) ||
                 image.Config?.Env?.some(value => /^VIRTUAL_HOST=.+/.test(value))) {
                 throw new Error("Preview refuses image-level publication metadata");
             }

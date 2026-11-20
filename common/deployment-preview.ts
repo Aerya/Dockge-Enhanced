@@ -22,6 +22,10 @@ export function previewModel(input: unknown, project: string) {
             if (Object.keys(service).some(key => !allowed.includes(key))) {
                 throw new Error("Preview refuses mounts, ports, host namespaces, builds, dependencies and privileges");
             }
+            const environment = service.environment;
+            if (Array.isArray(environment) ? environment.some(value => /^VIRTUAL_HOST(?:=|$)/.test(String(value))) : environment && typeof environment === "object" && "VIRTUAL_HOST" in environment) {
+                throw new Error("Preview refuses proxy-discovery environment variables");
+            }
             const labels = service.labels as Record<string, string> | undefined;
             if (!labels || labels["dockge.rollout.migrations"] !== "none" || Object.keys(labels).some(key => key !== "dockge.rollout.migrations") ||
             /(?:postgres|mysql|mariadb|mongo|redis|migrat)/i.test(String(service.image) + " " + JSON.stringify(service.command || "") + " " + JSON.stringify(service.entrypoint || ""))) {

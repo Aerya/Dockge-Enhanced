@@ -60,7 +60,7 @@ test("preview isolates namespaces and resources, and never interpolates host sec
     assert.deepEqual(preview.services.app.cap_drop, [ "ALL" ]);
 });
 test("preview refuses shared mounts, publication, privileges, migrations and arbitrary top-level resources", () => {
-    for (const change of [{ volumes: [ "/prod:/data" ] }, { ports: [ "8080:80" ] }, { network_mode: "host" }, { privileged: true }, { image: "postgres:17" }, { command: "migrate database" }, { labels: {} }, { build: "." }, { env_file: "/secret" }]) {
+    for (const change of [{ volumes: [ "/prod:/data" ] }, { ports: [ "8080:80" ] }, { network_mode: "host" }, { privileged: true }, { image: "postgres:17" }, { command: "migrate database" }, { labels: {} }, { build: "." }, { env_file: "/secret" }, { environment: { VIRTUAL_HOST: "production.example" } }, { environment: [ "VIRTUAL_HOST=production.example" ] }]) {
         assert.throws(() => previewModel({ services: { app: { ...service,
             ...change } } }, "preview-test"));
     }
