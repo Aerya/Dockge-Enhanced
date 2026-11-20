@@ -6,7 +6,9 @@ import { authorizeServiceLinks } from "../socket-handlers/service-links-socket-h
 import { collectTopology, topologyStackNames, TopologyCache } from "../docker-topology";
 import { Settings } from "../settings";
 import { validateServiceLinks } from "../../common/service-links";
+import { TopologyObservation } from "../topology-observation";
 export class TopologySocketHandler extends AgentSocketHandler {
+    private observation = new TopologyObservation();
     private cache?: TopologyCache;
     create(socket: DockgeSocket, server: DockgeServer, agent: AgentSocket) {
         this.cache ??= new TopologyCache(async () => {
@@ -22,6 +24,21 @@ export class TopologySocketHandler extends AgentSocketHandler {
                 snapshot.webLinks = [];
             }
             return snapshot;
+        });
+        agent.on("topology:observe", async (callback) => {
+            if (typeof callback !== "function") {
+                return;
+            }
+            try {
+                await authorizeServiceLinks(socket);
+                const observation = await this.observation.get(await this.cache!.get());
+                await authorizeServiceLinks(socket);
+                callback({ ok: true,
+                    observation });
+            } catch {
+                callback({ ok: false,
+                    msg: "topology.unavailable" });
+            }
         });
         agent.on("topology:get", async (callback) => {
             if (typeof callback !== "function") {

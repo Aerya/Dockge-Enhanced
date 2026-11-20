@@ -64,6 +64,8 @@ Die wichtigsten kürzlichen Änderungen sind hier gruppiert, damit Sie schnell s
 
 ### 🆕 November 2026
 
+
+**Netzwerkbeobachtung — `/topology`:** Optionale Erfassung je Instanz nur für Administratoren. Ungefähre Datenraten aus Docker-Zählern; gemeinsame und Host-Netzwerkräume nicht verfügbar. Bis zu 30 Messungen im Arbeitsspeicher. Hostdetails erfordern einen nachgewiesenen nativen Linux-Netzwerkraum und lokalen Docker-Socket; fehlende Werkzeuge oder Rechte bleiben erkennbar. Keine aktiven Prüfungen, zusätzlichen Rechte oder VPN-Änderungen. WireGuard-Schnittstellen belegen keine Tunnelgesundheit.
 **Optionale Messung der Volume-Größe :** Setzen Sie `DOCKGE_DISABLE_VOLUME_USAGE=1` in der Compose-Umgebung der zuständigen Enhanced-Instanz, um Größenmessungen von Volumes und Bind-Mounts einschließlich Aktualisierungsanfragen zu deaktivieren. Größen erscheinen als N/A; Mounts bleiben sichtbar und Dateibrowser, Backups und Transfers bleiben verfügbar. Standard: `0` (Messungen aktiviert). Erstellen Sie den Enhanced-Container nach der Änderung neu; konfigurieren Sie jede verbundene Instanz, die betroffene Stacks hostet.
 
 **Trivy-Scanintervalle :** Die Auswahl 3 oder 7 Tage behält 72/168 Stunden nach Speichern und Neustart. Lange Intervalle zählen die Zeit seit dem letzten abgeschlossenen Scan, auch einem manuellen; die Prüfung erfolgt jede Minute. Monats- und Zeitumstellungen verkürzen sie nicht. Ohne Verlauf oder bei überfälligem Scan beginnt er beim nächsten Minutentakt. Die 12/24-Stunden-Zeitpläne bleiben unverändert. Verknüpfte Instanzen ebenfalls aktualisieren.
@@ -688,7 +690,7 @@ Die Stack-Navigation, der Logs/Compose-Arbeitsbereich, Ressourcenindikatoren, St
 - Optionale Integrationen für Kula, Dozzle, PowerWatch und PowerWatch Hub, mit aktueller PowerWatch-Leistung auf verknüpften Instanzen
 
 ### Docker-Ressourcen
-- **Docker-Topologie** — `/topology` · TCP/UDP
+- **Docker-Topologie** — `/topology` · TCP/UDP Optionale Erfassung je Instanz nur für Administratoren. Ungefähre Datenraten aus Docker-Zählern; gemeinsame und Host-Netzwerkräume nicht verfügbar. Bis zu 30 Messungen im Arbeitsspeicher. Hostdetails erfordern einen nachgewiesenen nativen Linux-Netzwerkraum und lokalen Docker-Socket; fehlende Werkzeuge oder Rechte bleiben erkennbar. Keine aktiven Prüfungen, zusätzlichen Rechte oder VPN-Änderungen. WireGuard-Schnittstellen belegen keine Tunnelgesundheit.
 - Images, Volumes, Netzwerke und nicht verwaltete Container, mit Suche
 - Verwaltung von `bridge`-, `macvlan`- und `ipvlan`-Netzwerken
 - Einheitliche manuelle und automatische Bereinigung für Images, Netzwerke, Volumes und Build-Cache, mit Vorschau, Ausschlüssen und Verlauf
