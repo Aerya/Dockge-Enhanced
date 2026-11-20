@@ -1844,5 +1844,17 @@
     "oidc.setupRequired": "Cree primero el administrador inicial, o configure DOCKGE_OIDC_ADMIN_USERS o DOCKGE_OIDC_ADMIN_GROUPS.",
     "oidc.accountDisabled": "Esta cuenta está desactivada.",
     "oidc.localLoginDisabled": "El inicio de sesión con usuario y contraseña está desactivado. Use SSO.",
-    "oidc.disabled": "El inicio de sesión SSO no está activado."
+    "oidc.disabled": "El inicio de sesión SSO no está activado.",
+    "networkObservation.title": "Observación de red",
+    "networkObservation.enable": "Recopilar datos de red mientras la página esté abierta (15 s)",
+    "networkObservation.host": "Red del host",
+    "networkObservation.available": "Disponible",
+    "networkObservation.unavailable": "No disponible / pruebas insuficientes",
+    "networkObservation.warming": "Esperando la segunda muestra",
+    "networkObservation.interfaces": "Interfaces y direcciones",
+    "networkObservation.routes": "Rutas y puertas de enlace",
+    "networkObservation.tunnels": "Interfaces WireGuard",
+    "networkObservation.firewall": "Cortafuegos (solo lectura)",
+    "networkObservation.history": "Muestras recientes",
+    "networkObservation.hint": "Recopilación opcional por instancia, solo para administradores. Tasas aproximadas desde contadores Docker; espacios compartidos/host no disponibles. Hasta 30 muestras en memoria. Los detalles del host requieren un espacio Linux nativo comprobado y un socket Docker local; se indican las herramientas o permisos ausentes. Sin sondeos activos, privilegios adicionales ni cambios VPN. Las interfaces WireGuard no demuestran la salud del túnel."
 }

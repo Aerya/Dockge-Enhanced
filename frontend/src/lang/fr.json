@@ -2918,5 +2918,17 @@
     "oidc.setupRequired": "Créez d’abord le premier administrateur, ou configurez DOCKGE_OIDC_ADMIN_USERS ou DOCKGE_OIDC_ADMIN_GROUPS.",
     "oidc.accountDisabled": "Ce compte est désactivé.",
     "oidc.localLoginDisabled": "La connexion par identifiant et mot de passe est désactivée. Utilisez le SSO.",
-    "oidc.disabled": "La connexion SSO n’est pas activée."
+    "oidc.disabled": "La connexion SSO n’est pas activée.",
+    "networkObservation.title": "Observation réseau",
+    "networkObservation.enable": "Collecter les observations réseau tant que cette page est ouverte (15 s)",
+    "networkObservation.host": "Réseau de l’hôte",
+    "networkObservation.available": "Disponible",
+    "networkObservation.unavailable": "Indisponible / preuves insuffisantes",
+    "networkObservation.warming": "En attente du deuxième échantillon",
+    "networkObservation.interfaces": "Interfaces et adresses",
+    "networkObservation.routes": "Routes et passerelles",
+    "networkObservation.tunnels": "Interfaces WireGuard",
+    "networkObservation.firewall": "Pare-feu (lecture seule)",
+    "networkObservation.history": "Échantillons récents",
+    "networkObservation.hint": "Collecte facultative par instance, réservée aux administrateurs. Débits approximatifs calculés depuis les compteurs Docker ; espaces réseau partagés/host indisponibles. Historique limité à 30 échantillons en mémoire. Les détails hôte nécessitent un espace réseau Linux natif identifié et un socket Docker local ; outils ou permissions manquants restent signalés. Aucun test actif, changement de privilèges ou configuration VPN. Les interfaces WireGuard ne prouvent pas la santé des tunnels."
 }

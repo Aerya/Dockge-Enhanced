@@ -2922,5 +2922,17 @@
     "oidc.setupRequired": "Create the first administrator before signing in with SSO, or configure DOCKGE_OIDC_ADMIN_USERS or DOCKGE_OIDC_ADMIN_GROUPS.",
     "oidc.accountDisabled": "This account is disabled.",
     "oidc.localLoginDisabled": "Sign-in with a username and password is disabled. Use SSO.",
-    "oidc.disabled": "SSO sign-in is not enabled."
+    "oidc.disabled": "SSO sign-in is not enabled.",
+    "networkObservation.title": "Network observation",
+    "networkObservation.enable": "Collect network observations while this page is open (15 s)",
+    "networkObservation.host": "Host network",
+    "networkObservation.available": "Available",
+    "networkObservation.unavailable": "Unavailable / insufficient evidence",
+    "networkObservation.warming": "Waiting for a second sample",
+    "networkObservation.interfaces": "Interfaces and addresses",
+    "networkObservation.routes": "Routes and gateways",
+    "networkObservation.tunnels": "WireGuard interfaces",
+    "networkObservation.firewall": "Firewall (read only)",
+    "networkObservation.history": "Recent samples",
+    "networkObservation.hint": "Opt-in, administrator-only collection per instance. Rates are approximate Docker counter differences; shared/host namespaces are unavailable. History holds up to 30 samples in memory. Host details require a proven native Linux namespace and local Docker socket; missing tools or permissions remain unavailable. No active probes, privilege changes or VPN configuration. WireGuard interfaces do not establish tunnel health."
 }
