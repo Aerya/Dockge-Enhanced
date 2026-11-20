@@ -8,12 +8,14 @@ export {}
 declare module 'vue' {
   export interface GlobalComponents {
     About: typeof import('./src/components/settings/About.vue')['default']
+    AdvancedDeployment: typeof import('./src/components/AdvancedDeployment.vue')['default']
     AgentTagsEditor: typeof import('./src/components/AgentTagsEditor.vue')['default']
     Appearance: typeof import('./src/components/settings/Appearance.vue')['default']
     ArrayInput: typeof import('./src/components/ArrayInput.vue')['default']
     ArraySelect: typeof import('./src/components/ArraySelect.vue')['default']
     AuditLogTab: typeof import('./src/components/AuditLogTab.vue')['default']
     Automation: typeof import('./src/components/settings/Automation.vue')['default']
+    BackupCoverage: typeof import('./src/components/backup/BackupCoverage.vue')['default']
     BackupDestinations: typeof import('./src/components/backup/BackupDestinations.vue')['default']
     BackupHistory: typeof import('./src/components/backup/BackupHistory.vue')['default']
     BackupSnapshotDiff: typeof import('./src/components/backup/BackupSnapshotDiff.vue')['default']
@@ -79,6 +81,7 @@ declare module 'vue' {
     SystemStatsBar: typeof import('./src/components/SystemStatsBar.vue')['default']
     Terminal: typeof import('./src/components/Terminal.vue')['default']
     TopologyInstance: typeof import('./src/components/TopologyInstance.vue')['default']
+    TopologyObservation: typeof import('./src/components/TopologyObservation.vue')['default']
     TwoFADialog: typeof import('./src/components/TwoFADialog.vue')['default']
     Uptime: typeof import('./src/components/Uptime.vue')['default']
     Users: typeof import('./src/components/settings/Users.vue')['default']
