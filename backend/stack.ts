@@ -441,6 +441,7 @@ export class Stack {
             isManagedByDockge: this.isManagedByDockge,
             composeFileName: this._composeFileName,
             supportsServiceRollout: true,
+            supportsAdvancedRollout: true,
             supportsPostUpdateCleanup: true,
             rollingUpdates: rolloutStates(this.path, true),
             buildServices: this.getBuildServices(),

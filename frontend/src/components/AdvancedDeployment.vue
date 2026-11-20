@@ -3,7 +3,7 @@
         <summary>{{ $t('advancedDeployment.title') }}</summary>
         <p class="small text-warning">{{ $t('advancedDeployment.hint') }}</p>
         <label v-if="edit">{{ $t('advancedDeployment.canary') }}
-            <select v-model="mode" class="form-select" :disabled="!relay">
+            <select v-model="mode" class="form-select" :disabled="!supported || !relay">
                 <option value="">{{ $t('advancedDeployment.off') }}</option>
                 <option value="manual">{{ $t('advancedDeployment.manual') }}</option>
                 <option value="automatic">{{ $t('advancedDeployment.automatic') }}</option>
@@ -14,21 +14,23 @@
             <button class="btn btn-sm btn-primary ms-2" :disabled="!state.ready || state.mode !== 'manual'" @click="decision('promote')">{{ $t('advancedDeployment.promote') }}</button>
             <button class="btn btn-sm btn-warning ms-2" @click="decision('abort')">{{ $t('advancedDeployment.abort') }}</button>
         </div>
-        <p v-if="unavailable" class="text-warning">{{ $t('advancedDeployment.unavailable') }}</p>
+        <p v-if="unavailable || !supported" class="text-warning">{{ $t('advancedDeployment.unavailable') }}</p>
         <h6 class="mt-3">{{ $t('advancedDeployment.preview') }}</h6>
         <p class="small">{{ $t('advancedDeployment.previewHint') }}</p>
         <label>{{ $t('advancedDeployment.image') }}<input v-model="image" class="form-control" type="text"></label>
         <button class="btn btn-sm btn-normal ms-2" @click="fromImage">{{ $t('advancedDeployment.fromImage') }}</button>
         <textarea v-model="compose" class="form-control mt-2" rows="8" spellcheck="false" :aria-label="$t('advancedDeployment.compose')" />
         <label class="d-block my-2"><input v-model="confirmed" type="checkbox"> {{ $t('advancedDeployment.confirmPreview') }}</label>
-        <button class="btn btn-normal" :disabled="busy || !confirmed" @click="preview">{{ $t('advancedDeployment.runPreview') }}</button>
+        <button class="btn btn-normal" :disabled="!supported || busy || !confirmed" @click="preview">{{ $t('advancedDeployment.runPreview') }}</button>
         <p v-if="result" class="mt-2" role="status">{{ $t('advancedDeployment.' + result) }}</p>
     </details>
 </template>
 <script>
 import { composeLabelValue, setComposeLabel } from "../../../common/compose-labels";
 export default {
-    props: { endpoint: { type: String,
+    props: { supported: { type: Boolean,
+        default: false },
+    endpoint: { type: String,
         default: "" },
     stack: { type: String,
         required: true },
@@ -58,6 +60,9 @@ export default {
                 return composeLabelValue(this.service.labels, "dockge.rollout.canary") || "";
             },
             set(value) {
+                if (!this.supported) {
+                    return;
+                }
                 if (value && !window.confirm(this.$t("advancedDeployment.confirmCanary"))) {
                     return;
                 }
@@ -93,7 +98,7 @@ export default {
         },
         toggle(event) {
             clearInterval(this.timer);
-            if (event.target.open && !this.edit) {
+            if (event.target.open && !this.edit && this.supported) {
                 this.poll();
                 this.timer = setInterval(this.poll, 5000);
             }
@@ -120,6 +125,9 @@ export default {
             await this.poll();
         },
         async preview() {
+            if (!this.supported || !this.confirmed || this.busy) {
+                return;
+            }
             this.busy = true;
             this.result = "running";
             const response = await this.request("rollout:preview", { compose: this.compose,
