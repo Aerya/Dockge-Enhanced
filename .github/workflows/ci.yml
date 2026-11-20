@@ -146,7 +146,13 @@ jobs:
 
       - name: Tests des mises à jour progressives par service
         if: steps.docs.outputs.docs_only != 'true'
-        run: npx tsx --test backend/service-rollout.test.ts backend/rollout-relay.test.ts backend/rollout-recovery.test.ts backend/stack-mutation.test.ts backend/rollout-monitoring.test.ts frontend/src/rollout-relay.test.ts frontend/src/rollout-relay-ui.test.js
+        run: npx tsx --test frontend/src/advanced-deployment-ui.test.js backend/advanced-rollout.test.ts backend/service-rollout.test.ts backend/rollout-relay.test.ts backend/rollout-recovery.test.ts backend/stack-mutation.test.ts backend/rollout-monitoring.test.ts frontend/src/rollout-relay.test.ts frontend/src/rollout-relay-ui.test.js
+
+      - name: Canary et prévisualisation isolée réels (Docker CI uniquement)
+        if: steps.docs.outputs.docs_only != 'true'
+        env:
+          RUN_DOCKER_ROLLOUT_TEST: "1"
+        run: npx tsx --test --test-concurrency=1 backend/rollout-canary.integration.test.ts backend/rollout-preview.integration.test.ts
 
       - name: Tests du suivi des déploiements
         if: steps.docs.outputs.docs_only != 'true'

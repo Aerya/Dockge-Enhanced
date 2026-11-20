@@ -52,14 +52,15 @@ export class RolloutRelay {
     }
 
     /** Validate before atomic replace; then prove a new worker has started. */
-    async route(hosts: string[], wait: (ms: number) => Promise<void>): Promise<void> {
+    async route(hosts: string[], wait: (ms: number) => Promise<void>, weights?: number[]): Promise<void> {
+        relayConfig(hosts, this.port, weights);
         await this.checkTargets(hosts);
         const directory = await mkdtemp(path.join(os.tmpdir(), "dockge-relay-"));
         const file = path.join(directory, "nginx.conf");
         try {
             // Endpoints only, no credentials; readable by the unprivileged worker
             // and by the capability-restricted master after docker cp.
-            await writeFile(file, relayConfig(hosts, this.port), { mode: 0o644 });
+            await writeFile(file, relayConfig(hosts, this.port, weights), { mode: 0o644 });
             const previous = await this.workers();
             await this.docker([ "cp", file, this.id + ":" + RELAY_CONFIG + ".next" ], 15_000);
             await this.docker([ "exec", this.id, "nginx", "-t", "-c", RELAY_CONFIG + ".next" ], 15_000);

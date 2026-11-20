@@ -6,10 +6,13 @@ export const LABEL_RELAY_PORT = "dockge.rollout.port";
 export const RELAY_CONFIG = "/etc/dockge-relay/nginx.conf";
 export const RELAY_SIGNATURE = "# Dockge-Enhanced managed TCP relay v1";
 
-export function relayConfig(hosts: string[], port: number): string {
+export function relayConfig(hosts: string[], port: number, weights?: number[]): string {
     if (!Number.isInteger(port) || port < 1 || port > 65535 || !hosts.length || hosts.length > 16 ||
         hosts.some(host => !/^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,127}$/.test(host))) {
         throw new Error("Invalid relay endpoints");
+    }
+    if (weights && (weights.length !== hosts.length || weights.some(weight => !Number.isInteger(weight) || weight < 1 || weight > 100))) {
+        throw new Error("Invalid relay weights");
     }
     return [
         RELAY_SIGNATURE,
@@ -21,10 +24,10 @@ export function relayConfig(hosts: string[], port: number): string {
         "  resolver 127.0.0.11 valid=5s ipv6=off;",
         "  upstream application {",
         "    zone application 64k;",
-        ...hosts.map(host => `    server ${host}:${port} resolve;`),
+        ...hosts.map((host, i) => `    server ${host}:${port}${weights ? " weight=" + weights[i] : ""} resolve;`),
         // Dynamic DNS starts asynchronously in a fresh worker. A synchronously
         // resolved backup prevents an empty upstream pool during that window.
-        ...hosts.map(host => `    server ${host}:${port} backup;`),
+        ...hosts.map((host, i) => `    server ${host}:${port}${weights ? " weight=" + weights[i] : ""} backup;`),
         "  }",
         `  server { listen ${port}; proxy_pass application; proxy_connect_timeout 5s; proxy_timeout 24h; }`,
         "}",

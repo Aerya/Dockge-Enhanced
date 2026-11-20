@@ -1,5 +1,9 @@
 import { collectBackupCoverage } from "../backup-coverage";
+import path from "node:path";
+import { runDeploymentPreview } from "../rollout-preview";
+import { canaryState, decideCanary } from "../rollout-canary";
 import { authorizeServiceLinks } from "../socket-handlers/service-links-socket-handler";
+import { tryReserveDockerUpdate } from "../self-update/operation-coordinator";
 import { TrivyScanner } from "../watchers/trivy-scanner";
 import { startImageComparison, getComparisonJob } from "../watchers/trivy-comparison-runner";
 import { registerContainerFiles } from "./container-files-socket-handler";
@@ -170,6 +174,61 @@ export class DockerSocketHandler extends AgentSocketHandler {
                     data: await inspectComposeDraft(server, value.name, value.compose, value.env, value.override, value.isAdd) }, callback);
             } catch (error) {
                 callbackError(error, callback);
+            }
+        });
+        agentSocket.on("rollout:canary", async (input, callback) => {
+            if (typeof callback !== "function") {
+                return;
+            }
+            try {
+                await authorizeServiceLinks(socket);
+                const request = input as { stack?: unknown;
+                    service?: unknown;
+                    decision?: "promote" | "abort";
+                    id?: string };
+                if (!request || typeof request.stack !== "string" || typeof request.service !== "string") {
+                    throw new Error("Invalid canary request");
+                }
+                const stack = await Stack.getStack(server, request.stack);
+                if (request.decision) {
+                    decideCanary(stack.path, request.service, request.id || "", request.decision);
+                    await this.auditStack(socket, "stack.canary." + request.decision, stack.name, "success", null);
+                }
+                callback({ ok: true,
+                    state: canaryState(stack.path, request.service) || null });
+            } catch {
+                callback({ ok: false });
+            }
+        });
+        agentSocket.on("rollout:preview", async (input, callback) => {
+            if (typeof callback !== "function") {
+                return;
+            }
+            let reservation;
+            try {
+                await authorizeServiceLinks(socket);
+                const request = input as { compose?: unknown;
+                    confirmation?: unknown };
+                if (typeof request?.compose !== "string" || request.compose.length > 100000 || request.confirmation !== "PREVIEW") {
+                    throw new Error("Invalid preview request");
+                }
+                const { isSelfUpdateBlockingImageMutations } = await import("../watchers/image-watcher");
+                if (await isSelfUpdateBlockingImageMutations(server.config.dataDir)) {
+                    throw new Error("Update blocked");
+                }
+                reservation = tryReserveDockerUpdate("image-update");
+                if (!reservation) {
+                    throw new Error("Another update is active");
+                }
+                const data = await runDeploymentPreview(yaml.parse(request.compose), path.join(server.config.dataDir, "rolling-updates"));
+                await this.auditStack(socket, "stack.preview", "isolated", "success", null);
+                await authorizeServiceLinks(socket);
+                callback({ ok: true,
+                    data });
+            } catch {
+                callback({ ok: false });
+            } finally {
+                reservation?.release();
             }
         });
         agentSocket.on("backup:coverage", async (callback) => {

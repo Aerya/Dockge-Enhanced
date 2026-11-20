@@ -6,6 +6,7 @@
                 <p v-if="!isEditMode && rollingState" class="small text-warning" role="status">
                     {{ $t(rollingState.phase === 'cancelled' ? 'serviceRollout.cancelled' : rollingState.attention ? 'serviceRollout.recoveryAttention' : ['preparing', 'cancelling'].includes(rollingState.phase) ? 'serviceRollout.recovering' : 'serviceRollout.pending') }}
                 </p>
+                <AdvancedDeployment v-if="!isEditMode && $root.userAccess?.role === 'admin'" :endpoint="endpoint" :stack="stackName" :name="name" :service="service" :supported="stack?.supportsAdvancedRollout === true" />
                 <div class="image mb-2">
                     <span class="me-1">{{ imageName }}:</span><span class="tag">{{ imageTag }}</span>
                     <a
@@ -202,6 +203,7 @@
                     </div>
                 </div>
 
+                <AdvancedDeployment v-if="$root.userAccess?.role === 'admin'" :endpoint="endpoint" :stack="stackName" :name="name" :service="service" :supported="stack?.supportsAdvancedRollout === true || ($parent.$parent.isAdd && !$parent.$parent.endpoint)" edit />
                 <ServiceResourceLimits :service="service" @apply="jsonObject.services[name] = $event" />
                 <PostUpdateOptions :id="`post-update-${name}`" :services="{ [name]: service }" :supported="stack?.supportsPostUpdateCleanup === true || ($parent.$parent.isAdd && !$parent.$parent.endpoint)" />
 
@@ -345,6 +347,7 @@ import ContainerFiles from "./ContainerFiles.vue";
 import ContainerStatsBadge from "./ContainerStatsBadge.vue";
 import StackScheduleEditor from "./StackScheduleEditor.vue";
 import ServiceResourceLimits from "./ServiceResourceLimits.vue";
+import AdvancedDeployment from "./AdvancedDeployment.vue";
 import PostUpdateOptions from "./PostUpdateOptions.vue";
 import { LABEL_ROLLOUT, rolloutEnabled, ROLLOUT_HEALTH_PREFIX } from "../../../common/service-rollout";
 import { addRolloutRelay } from "../rollout-relay";
@@ -361,6 +364,7 @@ export default defineComponent({
         StackScheduleEditor,
         ServiceResourceLimits,
         PostUpdateOptions,
+        AdvancedDeployment,
     },
     props: {
         portLinkAddressMode: {
