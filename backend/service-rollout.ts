@@ -1,3 +1,4 @@
+import { runCanary } from "./rollout-canary";
 /**
  * Conservative rolling replacement inspired by Wowu/docker-rollout (MIT):
  * https://github.com/Wowu/docker-rollout
@@ -113,6 +114,10 @@ export async function prepareRollout(
         }
         const deploy = service.deploy as { replicas?: number } | undefined;
         const count = Number(service.scale ?? deploy?.replicas ?? 1);
+        const canary = (service.labels as Record<string, string> | undefined)?.["dockge.rollout.canary"];
+        if (canary && (count > 8 || !options.stateDir || !options.projectPath)) {
+            errors.push("canary-requires-recovery-and-at-most-eight-replicas");
+        }
         if (!Number.isInteger(count) || count < 1 || count > 16) {
             errors.push("replicas");
         }
@@ -270,6 +275,18 @@ export async function prepareRollout(
                     if (!healthy) {
                         throw new Error("Rollout: healthcheck timeout; old replicas preserved");
                     }
+                    const canaryMode = (model.services[plan.name].labels as Record<string, string> | undefined)?.["dockge.rollout.canary"];
+                    if (canaryMode && plan.relay) {
+                        await runCanary(options.projectPath!, plan.name, canaryMode,
+                            percent => plan.relay!.route([ ...hostnames(plan.old), ...hostnames(replacements) ], wait,
+                                [ ...plan.old.map(() => 100 - percent), ...replacements.map(() => percent) ]),
+                            async () => {
+                                const next = await owned();
+                                const old = await inspect(plan.old.map(item => item.Id));
+                                return await allowed() && next.length === plan.old.length && old.length === plan.old.length &&
+                                    [ ...next, ...old ].every(item => item.State.Running && !item.State.Paused && item.State.Health?.Status === "healthy");
+                            }, wait);
+                    }
                     // Allow proxy discovery and detect unstable health before retiring anything.
                     await (options.wait ?? sleep)(10_000);
                     const final = await owned();
@@ -362,6 +379,11 @@ export async function prepareRollout(
                     }
                     if (!retiring) {
                         try {
+                            if (plan.relay && relayChanged) {
+                                const workers = await plan.relay.workers();
+                                await plan.relay.route(hostnames(plan.old), wait);
+                                await plan.relay.drain(workers, wait, options.attempts ?? 60);
+                            }
                             const created = await owned();
                             if (created.length) {
                                 await docker([ "rm", "-f", ...created.map(item => item.Id) ], 30_000);

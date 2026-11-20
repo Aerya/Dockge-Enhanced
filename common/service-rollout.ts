@@ -13,6 +13,14 @@ export function rolloutEnabled(service: Record<string, unknown>): boolean {
 export function rolloutProblems(service: Record<string, unknown>): string[] {
     const errors: string[] = [];
     const labels = service.labels as Record<string, unknown> | undefined;
+    const canary = labels?.["dockge.rollout.canary"];
+    if (canary && (![ "manual", "automatic" ].includes(String(canary)) || !labels?.[LABEL_RELAY])) {
+        errors.push("canary-requires-managed-relay");
+    }
+    if (canary && (labels?.["dockge.rollout.migrations"] !== "none" ||
+        /(?:postgres|mysql|mariadb|mongo|redis|migrat)/i.test(String(service.image) + " " + JSON.stringify(service.command || "") + " " + JSON.stringify(service.entrypoint || "")))) {
+        errors.push("canary-migrations-not-safe");
+    }
     const relay = typeof labels?.[LABEL_RELAY] === "string" && !!labels[LABEL_RELAY];
     if (service.container_name) {
         errors.push("container_name");

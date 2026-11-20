@@ -13,7 +13,8 @@ let confirmed = true;
 const alerts = [];
 const component = runInNewContext(descriptor.script.content.replace(/^import[\s\S]*?from\s+"[^"]+";\s*/gm, "").replace("export default", "result ="), {
     defineComponent, toRaw, addRolloutRelay, setComposeLabel, LABEL_ROLLOUT,
-    FontAwesomeIcon: {}, VolumeBrowser: {}, ContainerFiles: {}, ContainerStatsBadge: {}, StackScheduleEditor: {}, ServiceResourceLimits: {}, PostUpdateOptions: {}, ImageVersionPreview: {},
+    FontAwesomeIcon: {}, VolumeBrowser: {}, ContainerFiles: {}, ContainerStatsBadge: {}, StackScheduleEditor: {}, ServiceResourceLimits: {}, PostUpdateOptions: {},
+    AdvancedDeployment: {}, ImageVersionPreview: {},
     window: { confirm: () => confirmed, alert: message => alerts.push(message) },
 });
 

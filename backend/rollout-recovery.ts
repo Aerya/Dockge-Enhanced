@@ -1,3 +1,5 @@
+import { recoverPreviews } from "./rollout-preview";
+import { canaryState, type CanaryState } from "./rollout-canary";
 import { createHash, randomUUID } from "node:crypto";
 import { mkdir, open, readdir, readFile, rename, unlink } from "node:fs/promises";
 import path from "node:path";
@@ -73,11 +75,13 @@ export function parseRolloutRecord(text: string): RolloutRecord {
 
 export function rolloutStates(directory: string, includeFinished = false): { service: string;
     phase: Phase;
-    attention: boolean }[] {
+    attention: boolean;
+    canary?: CanaryState }[] {
     return [ ...records.values() ].filter(record => record.directory === path.resolve(directory) && (includeFinished || !terminal(record)))
         .map(record => ({ service: record.service,
             phase: record.phase,
-            attention: !!record.problem }));
+            attention: !!record.problem,
+            canary: canaryState(record.directory, record.service) }));
 }
 
 /**
@@ -326,6 +330,7 @@ export class RolloutRecovery {
         }
         this.ticking = true;
         try {
+            await recoverPreviews(this.directory, this.docker);
             for (const stored of records.values()) {
                 if (!this.owned.has(stored.id) || terminal(stored) || this.active.has(stored.id)) {
                     continue;
