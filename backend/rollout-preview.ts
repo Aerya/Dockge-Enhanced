@@ -44,9 +44,9 @@ export async function runDeploymentPreview(input: unknown, stateDir: string) {
     const transport = rolloutTransport([ "compose", "-p", project, "-f", file ], directory);
     active.add(project);
     try {
-        await writeFile(file, JSON.stringify(model), { mode: 0o600,
-            flag: "wx" });
         await writeFile(path.join(directory, project), project, { mode: 0o600,
+            flag: "wx" });
+        await writeFile(file, JSON.stringify(model), { mode: 0o600,
             flag: "wx" });
         for (const service of Object.values(model.services)) {
             const reference = String((service as Record<string, unknown>).image);

@@ -380,6 +380,10 @@ export async function prepareRollout(
                     if (!retiring) {
                         try {
                             if (plan.relay && relayChanged) {
+                                const survivors = await inspect(plan.old.map(item => item.Id));
+                                if (survivors.length !== plan.old.length || survivors.some(item => !item.State.Running || item.State.Paused || item.State.Health?.Status !== "healthy")) {
+                                    throw new Error("Rollout: old replicas lost health; retain both generations for recovery", { cause: error });
+                                }
                                 const workers = await plan.relay.workers();
                                 await plan.relay.route(hostnames(plan.old), wait);
                                 await plan.relay.drain(workers, wait, options.attempts ?? 60);
