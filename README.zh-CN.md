@@ -64,6 +64,7 @@ Dockge Enhanced 是 [Dockge](https://github.com/louislam/dockge) 的分支，通
 ### 🆕 2026 年 11 月
 
 **备份覆盖范围:** 按需只读列出各实例和 stack 已挂载的命名卷和绑定挂载。配置不等于备份证据。新的 Restic 历史保存源范围和仓库标识；旧历史仍为未知。内置和自定义排除项意味着部分覆盖。读取一个文件不是完整恢复测试。Zerobyte 任务成功单独显示；缺少快照范围证据时覆盖仍未知。明确显示旧版或离线 agent 和未部署 stack。不更改保留策略或目标。
+**网络观测 — `/topology`:** 按实例选择启用，仅限管理员。速率由 Docker 计数器差值估算；共享及 host 网络命名空间不可用。内存最多保留 30 个样本。主机详情需要确认原生 Linux 网络命名空间和本地 Docker socket；缺少工具或权限会明确提示。无主动探测、提权或 VPN 配置更改。WireGuard 接口不代表隧道健康。
 
 **可选的卷大小测量 :** 在承载堆栈的 Enhanced 实例的 Compose 环境中设置 `DOCKGE_DISABLE_VOLUME_USAGE=1`，即可禁用卷和绑定挂载的大小扫描，包括刷新请求。大小显示为 N/A；挂载仍会列出，文件浏览、备份和传输仍可使用。默认值为 `0`（启用扫描）。修改变量后需重新创建 Enhanced 容器；请分别配置承载相关堆栈的每个关联实例。
 
@@ -691,7 +692,7 @@ Stack 导航、Logs/Compose、资源指标、健康卡片、主题和移动端�
 - 可选 Kula、Dozzle、PowerWatch 和 PowerWatch Hub 集成，关联实例上也显示 PowerWatch 当前功率
 
 ### Docker 资源
-- **Docker 拓扑** — `/topology` · TCP/UDP
+- **Docker 拓扑** — `/topology` · TCP/UDP 按实例选择启用，仅限管理员。速率由 Docker 计数器差值估算；共享及 host 网络命名空间不可用。内存最多保留 30 个样本。主机详情需要确认原生 Linux 网络命名空间和本地 Docker socket；缺少工具或权限会明确提示。无主动探测、提权或 VPN 配置更改。WireGuard 接口不代表隧道健康。
 - 镜像、卷、网络和未管理容器，并支持搜索
 - 管理 `bridge`、`macvlan` 和 `ipvlan` 网络
 - 统一的手动和自动清理，覆盖镜像、网络、卷和构建缓存，提供预览、排除项和历史

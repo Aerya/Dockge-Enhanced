@@ -66,6 +66,8 @@ Los cambios recientes más importantes se agrupan aquí para entender rápidamen
 
 **Cobertura de copias:** Inventario de solo lectura bajo demanda por instancia y stack de volúmenes con nombre y bind mounts montados. La configuración no prueba una copia. Los nuevos historiales Restic guardan alcance e identidad del repositorio; los antiguos son indeterminados. Las exclusiones integradas o personalizadas implican cobertura parcial. Leer un archivo no es una restauración completa. El éxito Zerobyte se muestra por separado; sin alcance del snapshot su cobertura es indeterminada. Se indican agentes antiguos/inaccesibles y stacks no desplegados. Sin cambios en retención ni destinos.
 
+
+**Observación de red — `/topology`:** Recopilación opcional por instancia, solo para administradores. Tasas aproximadas desde contadores Docker; espacios compartidos/host no disponibles. Hasta 30 muestras en memoria. Los detalles del host requieren un espacio Linux nativo comprobado y un socket Docker local; se indican las herramientas o permisos ausentes. Sin sondeos activos, privilegios adicionales ni cambios VPN. Las interfaces WireGuard no demuestran la salud del túnel.
 **Medición opcional del tamaño de los volúmenes :** Configura `DOCKGE_DISABLE_VOLUME_USAGE=1` en el entorno Compose de la instancia Enhanced que aloja las stacks para desactivar la medición de volúmenes y bind mounts, incluidas las solicitudes de actualización. Los tamaños muestran N/A; los montajes siguen visibles y el explorador de archivos, las copias de seguridad y las transferencias siguen disponibles. Valor predeterminado: `0` (medición activada). Recrea el contenedor Enhanced tras cambiar la variable; configura cada instancia vinculada que aloje las stacks afectadas.
 
 **Intervalos de análisis Trivy :** Las opciones de 3 y 7 días conservan 72/168 horas tras guardar y reiniciar. Los intervalos largos cuentan el tiempo desde el último análisis terminado, incluso manual, con comprobación cada minuto; los cambios de mes y hora no los acortan. Sin historial o con un análisis atrasado, comienza en el siguiente minuto. Los horarios de 12/24 horas no cambian. Actualice también las instancias vinculadas.
@@ -692,7 +694,7 @@ La navegación, Logs/Compose, indicadores de recursos, tarjetas de salud, temas 
 - Integraciones opcionales Kula, Dozzle, PowerWatch y PowerWatch Hub, con la potencia de PowerWatch visible en las instancias vinculadas
 
 ### Recursos Docker
-- **Topología Docker** — `/topology` · TCP/UDP
+- **Topología Docker** — `/topology` · TCP/UDP Recopilación opcional por instancia, solo para administradores. Tasas aproximadas desde contadores Docker; espacios compartidos/host no disponibles. Hasta 30 muestras en memoria. Los detalles del host requieren un espacio Linux nativo comprobado y un socket Docker local; se indican las herramientas o permisos ausentes. Sin sondeos activos, privilegios adicionales ni cambios VPN. Las interfaces WireGuard no demuestran la salud del túnel.
 - Imágenes, volúmenes, redes y contenedores no gestionados, con búsqueda
 - Gestión de redes `bridge`, `macvlan` e `ipvlan`
 - Limpieza manual y automática unificada de imágenes, redes, volúmenes y caché de compilación, con vistas previas, exclusiones e historial

@@ -66,6 +66,8 @@ The most important recent changes are grouped here so you can quickly see what h
 
 **Backup coverage:** On-demand read-only inventory by instance and stack of mounted named volumes and bind mounts. Configuration is not proof of backup. New Restic histories retain source scope and repository identity; older histories remain unknown. Built-in and custom exclusions make coverage partial. A sample-file read is not a full restore test. Zerobyte job success is shown separately; without snapshot-level scope proof its coverage remains unknown. Unreachable/older agents and undeployed stacks are explicit. No retention or destination changes.
 
+
+**Network observation — `/topology`:** Opt-in, administrator-only collection per instance. Rates are approximate Docker counter differences; shared/host namespaces are unavailable. History holds up to 30 samples in memory. Host details require a proven native Linux namespace and local Docker socket; missing tools or permissions remain unavailable. No active probes, privilege changes or VPN configuration. WireGuard interfaces do not establish tunnel health.
 **Optional volume size scans :** Set `DOCKGE_DISABLE_VOLUME_USAGE=1` in the hosting Enhanced instance’s Compose environment to skip volume and bind-mount size scans, including refresh requests. Sizes show N/A; mounts remain listed and file browsing, backups and transfers remain available. Default: `0` (scans enabled). Recreate the Enhanced container after changing the variable; configure each linked instance that hosts the affected stacks.
 
 **Trivy scan intervals :** The 3- and 7-day choices retain 72/168 hours after saving and restarting. Long intervals count elapsed time since the last completed scan, including a manual scan, and are checked each minute; month boundaries and daylight-saving changes do not shorten them. With no scan history or an overdue scan, scanning starts on the next minute tick. The 12/24-hour schedules are unchanged. Update linked instances too.
@@ -690,7 +692,7 @@ Stack navigation, the Logs/Compose workspace, resource indicators, health cards,
 - Optional Kula, Dozzle, PowerWatch and PowerWatch Hub integrations, with current PowerWatch power shown across linked instances
 
 ### Docker resources
-- **Docker topology** — `/topology` · TCP/UDP
+- **Docker topology** — `/topology` · TCP/UDP Opt-in, administrator-only collection per instance. Rates are approximate Docker counter differences; shared/host namespaces are unavailable. History holds up to 30 samples in memory. Host details require a proven native Linux namespace and local Docker socket; missing tools or permissions remain unavailable. No active probes, privilege changes or VPN configuration. WireGuard interfaces do not establish tunnel health.
 - Images, volumes, networks and unmanaged containers, with search
 - `bridge`, `macvlan` and `ipvlan` network management
 - Unified manual and automatic cleanup for images, networks, volumes and build cache, with previews, exclusions and history

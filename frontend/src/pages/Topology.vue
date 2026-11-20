@@ -9,10 +9,11 @@
             <label>Stack<select v-model="stack" class="form-select"><option value="">{{ $t('topology.all') }}</option><option v-for="s in stackOptions" :key="s.key" :value="s.key">{{ s.label }}</option></select></label>
             <label><input v-model="stopped" type="checkbox"> {{ $t('topology.stopped') }}</label><label><input v-model="external" type="checkbox"> {{ $t('topology.external') }}</label>
         </div>
+        <label class="mb-3"><input v-model="observe" type="checkbox"> {{ $t("networkObservation.enable") }}</label>
         <p v-if="busy" role="status">{{ $t('topology.loading') }}</p>
         <p v-if="groupsError" class="text-warning">{{ $t('topology.groupsUnavailable') }}</p>
         <p v-for="ep in failures" :key="ep" class="alert alert-warning">{{ instanceLabel(ep) }} — {{ $t('topology.unavailable') }}</p>
-        <TopologyInstance v-for="entry in entries" :key="entry.endpoint" :snapshot="entry.snapshot" :containers="entry.containers" :context-ids="entry.contextIds" :endpoint="entry.endpoint" :label="instanceLabel(entry.endpoint)" :view="view" />
+        <TopologyInstance v-for="entry in entries" :key="entry.endpoint" :snapshot="entry.snapshot" :containers="entry.containers" :context-ids="entry.contextIds" :endpoint="entry.endpoint" :label="instanceLabel(entry.endpoint)" :view="view" :network-enabled="observe" :observation="observations[entry.endpoint]" />
         <p v-if="!busy && !entries.length">{{ $t('topology.empty') }}</p>
         <p class="small text-secondary">{{ $t('topology.webHint') }} {{ $t('topology.sharedHint') }}</p>
     </main>
@@ -23,7 +24,10 @@ import { topologyOwner } from "../../../common/docker-topology";
 import { stackIdentity } from "../../../common/stack-groups";
 export default {
     components: { TopologyInstance },
-    data: () => ({ view: "map",
+    data: () => ({ observe: false,
+        observations: {},
+        observationTimer: null,
+        view: "map",
         instance: "",
         group: "",
         stack: "",
@@ -52,10 +56,22 @@ export default {
                     snapshot,
                     containers: [ ...selected, ...context ],
                     contextIds: context.map(c => c.id) };
-            }).filter(e => e.containers.length || e.snapshot.unavailable);
+            }).filter(e => this.observe || e.containers.length || e.snapshot.unavailable);
         },
     },
     watch: {
+        observe() {
+            clearInterval(this.observationTimer);
+            this.observations = {};
+            this.load();
+            if (this.observe) {
+                this.observationTimer = setInterval(() => {
+                    if (!this.busy) {
+                        this.load();
+                    }
+                }, 15000);
+            }
+        },
         instance() {
             this.stack = "";
         },
@@ -83,6 +99,7 @@ export default {
         this.load();
     },
     beforeUnmount() {
+        clearInterval(this.observationTimer);
         this.invalidate();
         const socket = this.$root.getSocket();
         socket.off("connect", this.load);
@@ -102,6 +119,7 @@ export default {
         },
         invalidate() {
             this.generation++;
+            this.observations = {};
             this.snapshots = {};
             this.busy = false;
             this.failures = this.endpoints;
@@ -147,8 +165,14 @@ export default {
                 while (pending.length && generation === this.generation) {
                     const endpoint = pending.shift();
                     const result = await this.request(endpoint, "topology:get");
+                    const network = this.observe && result.ok ? await this.request(endpoint, "topology:observe") : null;
                     if (generation !== this.generation) {
                         return;
+                    }
+                    if (this.observe && network?.ok) {
+                        this.observations[endpoint] = network.observation;
+                    } else {
+                        delete this.observations[endpoint];
                     }
                     if (result.ok && Array.isArray(result.snapshot?.containers) && Array.isArray(result.snapshot?.networks)) {
                         this.snapshots = { ...this.snapshots,

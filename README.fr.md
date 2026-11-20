@@ -67,6 +67,8 @@ Les évolutions majeures récentes sont regroupées ici afin de comprendre rapid
 
 **Couverture des sauvegardes:** Inventaire en lecture seule, à la demande, par instance et stack des volumes nommés et bind mounts montés. Une configuration ne prouve pas une sauvegarde. Les nouveaux historiques Restic conservent le périmètre et l’identité du dépôt ; les anciens restent indéterminés. Les exclusions intégrées ou personnalisées rendent la couverture partielle. Lire un fichier ne constitue pas un test de restauration complet. Le succès d’un job Zerobyte est affiché séparément ; sans preuve du périmètre du snapshot, sa couverture reste indéterminée. Agents anciens/injoignables et stacks non déployées sont signalés. Aucune modification de rétention ou de destination.
 
+
+**Observation réseau — `/topology`:** Collecte facultative par instance, réservée aux administrateurs. Débits approximatifs calculés depuis les compteurs Docker ; espaces réseau partagés/host indisponibles. Historique limité à 30 échantillons en mémoire. Les détails hôte nécessitent un espace réseau Linux natif identifié et un socket Docker local ; outils ou permissions manquants restent signalés. Aucun test actif, changement de privilèges ou configuration VPN. Les interfaces WireGuard ne prouvent pas la santé des tunnels.
 **Mesure facultative de la taille des volumes :** Définissez `DOCKGE_DISABLE_VOLUME_USAGE=1` dans l’environnement Compose de l’instance Enhanced qui héberge les stacks pour désactiver les mesures des volumes et bind mounts, y compris les demandes de rafraîchissement. Les tailles affichent N/A ; les montages restent listés et la navigation dans les fichiers, les sauvegardes et les transferts restent disponibles. Valeur par défaut : `0` (mesures activées). Recréez le conteneur Enhanced après modification ; configurez chaque instance liée qui héberge les stacks concernées.
 
 **Intervalles des scans Trivy :** Les choix 3 et 7 jours conservent 72/168 heures après sauvegarde et redémarrage. Les intervalles longs comptent le temps écoulé depuis le dernier scan terminé, même manuel, avec vérification chaque minute ; les fins de mois et changements d’heure ne les raccourcissent pas. Sans historique ou si le scan est en retard, il démarre à la prochaine minute. Les horaires 12/24 h sont inchangés. Mettez aussi les instances liées à jour.
@@ -691,7 +693,7 @@ La navigation des stacks, l'espace Logs/Compose, les indicateurs de ressources, 
 - Intégrations facultatives Kula, Dozzle, PowerWatch et PowerWatch Hub, avec la puissance PowerWatch affichée sur les instances liées
 
 ### Ressources Docker
-- **Cartographie Docker** — `/topology` · TCP/UDP
+- **Cartographie Docker** — `/topology` · TCP/UDP Collecte facultative par instance, réservée aux administrateurs. Débits approximatifs calculés depuis les compteurs Docker ; espaces réseau partagés/host indisponibles. Historique limité à 30 échantillons en mémoire. Les détails hôte nécessitent un espace réseau Linux natif identifié et un socket Docker local ; outils ou permissions manquants restent signalés. Aucun test actif, changement de privilèges ou configuration VPN. Les interfaces WireGuard ne prouvent pas la santé des tunnels.
 - Images, volumes, réseaux et conteneurs non gérés, avec recherche
 - Gestion des réseaux `bridge`, `macvlan` et `ipvlan`
 - Nettoyage manuel et automatique unifié des images, réseaux, volumes et caches de build, avec aperçus, exclusions et historique

@@ -2,6 +2,8 @@
     <section class="shadow-box p-3 mb-3 topology-instance">
         <h3 class="h5">{{ label }}</h3>
         <p class="small text-secondary">{{ $t('topology.snapshot') }} {{ snapshot.capturedAt }} · {{ snapshot.containers.length }} {{ $t('topology.containers') }}</p>
+        <p v-if="networkEnabled && !observation" class="text-warning">{{ $t("networkObservation.unavailable") }}</p>
+        <TopologyObservation v-if="networkEnabled && observation" :observation="observation" :containers="containers" />
         <p v-if="snapshot.unavailable" class="text-warning">{{ $t('topology.partial', { count: snapshot.unavailable }) }}</p>
         <div v-if="snapshot.webLinks?.length" class="small mb-3"><strong>{{ $t('topology.configuredLinks') }}</strong><a v-for="(link, i) in snapshot.webLinks" :key="i" class="ms-3" :href="safeRoute(link.url)" target="_blank" rel="noopener noreferrer">{{ link.name }} ↗</a></div>
         <p v-if="!containers.length">{{ $t('topology.empty') }}</p>
@@ -43,11 +45,17 @@
     </section>
 </template>
 <script>
+import TopologyObservation from "./TopologyObservation.vue";
 import { topologyOwner } from "../../../common/docker-topology";
 import { safeServiceUrl } from "../../../common/service-links";
 import { topologyPortUrl, topologyRoute } from "../topology";
 export default {
-    props: { snapshot: { type: Object,
+    components: { TopologyObservation },
+    props: { networkEnabled: { type: Boolean,
+        default: false },
+    observation: { type: Object,
+        default: null },
+    snapshot: { type: Object,
         required: true },
     containers: { type: Array,
         required: true },
