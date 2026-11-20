@@ -66,6 +66,8 @@ The most important recent changes are grouped here so you can quickly see what h
 
 **Advanced deployments:** Canary requires the existing managed TCP relay, healthy replicas, no shared writable mounts and an explicit migration-free declaration. New connections progress through 10%, 25%, 50%, then 100%; this is not a request percentage or a universal zero-downtime guarantee. Health is checked every 2 s, at least 30 s per stage. Manual promotion expires after 30 minutes per stage. Failure or restart before promotion restores the old route through the existing recovery journal. One to four services, image or strict Compose. No network, published ports, shared mounts, external resources, builds or privileges. Read-only root filesystem, bounded CPU/RAM, temporary private data. Runs health checks for up to 60 s after startup then destroys the preview; recovery cleans leftovers after restart. This is not a browsable environment or a database/migration test. Missing images may be downloaded; image cache is retained.
 
+
+**Network observation — `/topology`:** Opt-in, administrator-only collection per instance. Rates are approximate Docker counter differences; shared/host namespaces are unavailable. History holds up to 30 samples in memory. Host details require a proven native Linux namespace and local Docker socket; missing tools or permissions remain unavailable. No active probes, privilege changes or VPN configuration. WireGuard interfaces do not establish tunnel health.
 **Optional volume size scans :** Set `DOCKGE_DISABLE_VOLUME_USAGE=1` in the hosting Enhanced instance’s Compose environment to skip volume and bind-mount size scans, including refresh requests. Sizes show N/A; mounts remain listed and file browsing, backups and transfers remain available. Default: `0` (scans enabled). Recreate the Enhanced container after changing the variable; configure each linked instance that hosts the affected stacks.
 
 **Trivy scan intervals :** The 3- and 7-day choices retain 72/168 hours after saving and restarting. Long intervals count elapsed time since the last completed scan, including a manual scan, and are checked each minute; month boundaries and daylight-saving changes do not shorten them. With no scan history or an overdue scan, scanning starts on the next minute tick. The 12/24-hour schedules are unchanged. Update linked instances too.
@@ -690,7 +692,7 @@ Stack navigation, the Logs/Compose workspace, resource indicators, health cards,
 - Optional Kula, Dozzle, PowerWatch and PowerWatch Hub integrations, with current PowerWatch power shown across linked instances
 
 ### Docker resources
-- **Docker topology** — `/topology` · TCP/UDP
+- **Docker topology** — `/topology` · TCP/UDP Opt-in, administrator-only collection per instance. Rates are approximate Docker counter differences; shared/host namespaces are unavailable. History holds up to 30 samples in memory. Host details require a proven native Linux namespace and local Docker socket; missing tools or permissions remain unavailable. No active probes, privilege changes or VPN configuration. WireGuard interfaces do not establish tunnel health.
 - Images, volumes, networks and unmanaged containers, with search
 - `bridge`, `macvlan` and `ipvlan` network management
 - Unified manual and automatic cleanup for images, networks, volumes and build cache, with previews, exclusions and history
