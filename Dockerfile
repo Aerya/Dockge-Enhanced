@@ -5,7 +5,7 @@ FROM golang:1.27.4-alpine AS restic-builder
 RUN apk add --no-cache --upgrade ca-certificates ca-certificates-bundle \
     && update-ca-certificates
 
-ARG RESTIC_VERSION=0.19.1
+ARG RESTIC_VERSION=0.20.0
 ARG GRPC_VERSION=1.83.2
 ARG COMPRESS_VERSION=1.18.7
 WORKDIR /src
