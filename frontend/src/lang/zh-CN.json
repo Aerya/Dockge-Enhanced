@@ -1,4 +1,7 @@
 {
+    "watcher.status.auInherit": "继承全局设置",
+    "watcher.img.defaultAutoUpdateHint": "适用于没有单独策略的现有及未来镜像，包括已停止的服务。启用 ImageWatcher 才会执行更新。不会启动已停止的服务，而是推迟其更新。每个镜像的单独设置优先。",
+    "watcher.img.defaultAutoUpdateMode": "全局默认模式",
     "releaseNews.item.trivyLongIntervals": "选择 3 天或 7 天后，保存和重启仍保留 72/168 小时。长间隔从上次扫描完成时开始计时（包括手动扫描），每分钟检查一次；跨月或夏令时切换不会缩短间隔。没有扫描记录或扫描已逾期时，将在下一个分钟触发点开始。12/24 小时计划不变。关联实例也需要更新。",
     "releaseNews.item.crashContainerIdentity": "崩溃循环计数使用 Docker 容器 ID。同名的不同临时容器不再累计触发误报；同一容器反复退出（包括退出码 0）仍受监控。关联实例也需更新。",
     "imageCve.severity": "严重性",
@@ -446,7 +449,7 @@
     "updates.self.backupSkipped": "根据所选备份策略，此步骤未执行。",
     "releaseNews.item.cleanupNotifications": "Discord 和 Apprise 报告显示实例名称并按类别汇总，完整 Docker 输出保留在历史记录中。最后检查时发现的镜像保护会计为跳过，真正的失败仍会明确显示。Enhanced 镜像包含 Buildx。",
     "watcher.img.defaultScheduledTime": "计划更新的默认时间",
-    "watcher.img.defaultScheduledTimeHint": "仅用于新建计划（默认为 02:00），使用 Enhanced 的计划任务时区。现有时间保持不变。关联堆栈使用其托管实例的设置。",
+    "watcher.img.defaultScheduledTimeHint": "用于全局计划模式，也是新增单独计划的建议时间。现有单独计划的时间不变。使用主机实例的计划时区。",
     "watcher.img.invalidScheduledTime": "请输入 HH:MM 格式的有效时间。",
     "releaseNews.item.defaultScheduledTime": "可在“镜像”中设置计划镜像更新的默认时间。现有计划保持不变；关联堆栈使用其托管实例的设置和计划任务时区。",
     "serviceRollout.cancelled": "上次服务不中断更新已取消或恢复到上一代。重试前请检查服务。",

@@ -157,6 +157,15 @@ test("agent handlers use each hosting instance's default and reject malformed in
         assert.equal(applied.data.applied, 1);
         assert.equal(watcher.settings.autoUpdateConfig["demo::fixture/app"].time, watcher.settings.defaultScheduledTime);
         assert.equal(watcher.settings.autoUpdateConfig["demo::fixture/db"].time, "00:00");
+        watcher.settings.defaultAutoUpdateMode = "immediate";
+        const manual = await call(watcher, "watcherImageAutoUpdateSet", { key: "demo::fixture/app",
+            mode: "off" });
+        assert.equal(manual.data.autoUpdateConfig["demo::fixture/app"].mode, "off");
+        const inherited = await call(watcher, "watcherImageAutoUpdateSet", { key: "demo::fixture/app",
+            mode: "inherit" });
+        assert.equal(inherited.data.defaultAutoUpdateMode, "immediate");
+        assert.equal(inherited.data.autoUpdateConfig["demo::fixture/app"], undefined);
+        assert.equal(watcher.getAutoUpdateEntry("demo::fixture/app")?.mode, "immediate");
     }
     assert.equal(instances[0].settings.autoUpdateConfig["demo::fixture/web"].time, "05:30");
     assert.equal(instances[1].settings.autoUpdateConfig["demo::fixture/web"].time, "08:45");
@@ -207,4 +216,15 @@ test("local HTTP API persists the default and uses it only for new requests with
         mode: "scheduled",
         time: "bad" })).status, 400);
     assert.equal(watcher.settings.autoUpdateConfig["demo::fixture/web"].time, "05:30");
+    assert.equal((await post("/image/settings", { defaultAutoUpdateMode: "scheduled" })).body.ok, true);
+    const state = (await (await fetch(url + "/image/auto-update")).json()).data;
+    assert.equal(state.defaultAutoUpdateMode, "scheduled");
+    await post("/image/auto-update", { key: "demo::fixture/web",
+        mode: "off" });
+    assert.equal(watcher.getAutoUpdateEntry("demo::fixture/web")?.mode, "off");
+    await post("/image/auto-update", { key: "demo::fixture/web",
+        mode: "inherit" });
+    assert.equal(watcher.settings.autoUpdateConfig["demo::fixture/web"], undefined);
+    assert.deepEqual(watcher.getAutoUpdateEntry("demo::fixture/web"), { mode: "scheduled",
+        time: "06:45" });
 });

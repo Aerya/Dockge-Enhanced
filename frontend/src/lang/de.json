@@ -1,4 +1,7 @@
 {
+    "watcher.status.auInherit": "Globale Einstellung übernehmen",
+    "watcher.img.defaultAutoUpdateHint": "Gilt für aktuelle und zukünftige Images ohne eigene Regel, auch bei gestoppten Diensten. ImageWatcher zum Aktualisieren aktivieren. Gestoppte Dienste werden nicht gestartet: ihre Aktualisierung wird verschoben. Ausnahmen pro Image haben Vorrang.",
+    "watcher.img.defaultAutoUpdateMode": "Globaler Standardmodus",
     "releaseNews.item.trivyLongIntervals": "Die Auswahl 3 oder 7 Tage behält 72/168 Stunden nach Speichern und Neustart. Lange Intervalle zählen die Zeit seit dem letzten abgeschlossenen Scan, auch einem manuellen; die Prüfung erfolgt jede Minute. Monats- und Zeitumstellungen verkürzen sie nicht. Ohne Verlauf oder bei überfälligem Scan beginnt er beim nächsten Minutentakt. Die 12/24-Stunden-Zeitpläne bleiben unverändert. Verknüpfte Instanzen ebenfalls aktualisieren.",
     "releaseNews.item.crashContainerIdentity": "Crash-Loop-Zähler folgen der Docker-Container-ID. Temporäre Container mit demselben Namen erzeugen keine gemeinsamen Fehlalarme mehr. Wiederholte Beendigungen desselben Containers, auch mit Exit-Code 0, werden weiterhin überwacht. Verknüpfte Instanzen ebenfalls aktualisieren.",
     "imageCve.severity": "Schweregrad",
@@ -446,7 +449,7 @@
     "updates.self.backupSkipped": "Schritt gemäß gewählter Backup-Richtlinie nicht ausgeführt.",
     "releaseNews.item.cleanupNotifications": "Discord- und Apprise-Berichte nennen die Instanz und fassen jede Kategorie zusammen; vollständige Docker-Ausgaben bleiben im Verlauf. Beim letzten Prüfschritt erkannte Image-Schutzmaßnahmen zählen als übersprungen, echte Fehler bleiben sichtbar. Buildx ist im Enhanced-Image enthalten.",
     "watcher.img.defaultScheduledTime": "Standardzeit für geplante Updates",
-    "watcher.img.defaultScheduledTimeHint": "Nur für neue Zeitpläne (Standard: 02:00), in der Planungszeitzone von Enhanced. Bestehende Uhrzeiten bleiben unverändert. Verknüpfte Stacks verwenden die Einstellung ihrer Host-Instanz.",
+    "watcher.img.defaultScheduledTimeHint": "Zeit für den globalen Modus Geplant und Vorschlag für neue Ausnahmen. Bestehende eigene Zeiten bleiben unverändert. Verwendet die Planungszeitzone der Host-Instanz.",
     "watcher.img.invalidScheduledTime": "Geben Sie eine gültige Uhrzeit im Format HH:MM ein.",
     "releaseNews.item.defaultScheduledTime": "Die vorgeschlagene Uhrzeit für geplante Image-Updates lässt sich unter Images festlegen. Bestehende Zeitpläne bleiben unverändert; verknüpfte Stacks verwenden die Einstellung und Planungszeitzone ihrer Host-Instanz.",
     "serviceRollout.cancelled": "Das letzte Update ohne Dienstunterbrechung wurde abgebrochen oder auf die vorherige Generation zurückgesetzt. Prüfen Sie den Dienst vor einem erneuten Versuch.",

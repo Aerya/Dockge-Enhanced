@@ -270,16 +270,16 @@ export class WatcherRouter extends Router {
 
         router.post("/image/auto-update", async (req: Request, res: Response) => {
             const { key, mode, time, pause } = req.body as { key: string;
-                mode: "off" | "immediate" | "scheduled" | "ignored";
+                mode: "inherit" | "off" | "immediate" | "scheduled" | "ignored";
                 time?: string;
                 pause?: unknown };
             if (!key) {
                 return res.status(400).json({ ok: false,
                     message: "key requis (format: stack::image)" });
             }
-            if (![ "off", "immediate", "scheduled", "ignored" ].includes(mode)) {
+            if (![ "inherit", "off", "immediate", "scheduled", "ignored" ].includes(mode)) {
                 return res.status(400).json({ ok: false,
-                    message: "mode invalide (off | immediate | scheduled | ignored)" });
+                    message: "mode invalide (inherit | off | immediate | scheduled | ignored)" });
             }
             const watcher = ImageWatcher.getInstance();
             let scheduledTime: string | undefined;
@@ -292,7 +292,7 @@ export class WatcherRouter extends Router {
             const autoUpdateConfig = { ...(watcher.settings.autoUpdateConfig ?? {}) };
             let pendingAutoUpdates = [ ...(watcher.settings.pendingAutoUpdates ?? []) ];
 
-            if (mode === "off") {
+            if (mode === "inherit") {
                 delete autoUpdateConfig[key];
                 pendingAutoUpdates = pendingAutoUpdates.filter(k => k !== key);
                 await watcher.saveSettings({ autoUpdateConfig,
@@ -312,7 +312,7 @@ export class WatcherRouter extends Router {
                 // Active automatiquement le watcher si ce n'est pas déjà le cas
                 const patch: Partial<WatcherSettings> = { autoUpdateConfig,
                     pendingAutoUpdates };
-                if (!watcher.settings.enabled && mode !== "ignored") {
+                if (!watcher.settings.enabled && mode !== "ignored" && mode !== "off") {
                     patch.enabled = true;
                 }
                 await watcher.saveSettings(patch, mode !== "immediate");

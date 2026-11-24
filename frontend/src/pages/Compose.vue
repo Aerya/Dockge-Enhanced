@@ -1169,6 +1169,7 @@ export default {
             autoUpdateSaving: {},
             remoteAutoUpdateLoaded: false,
             remoteAutoUpdateState: {
+                defaultAutoUpdateMode: "off",
                 defaultScheduledTime: DEFAULT_SCHEDULED_TIME,
                 autoUpdateConfig: {},
                 pendingAutoUpdates: [],
@@ -2293,7 +2294,8 @@ export default {
             const key = `${this.stack.name}::${image}`;
             const config = this.remoteAutoUpdateState.autoUpdateConfig?.[key];
             return {
-                mode: config?.mode ?? "off",
+                mode: config?.mode ?? "inherit",
+                defaultMode: this.remoteAutoUpdateState.defaultAutoUpdateMode,
                 time: config?.time ?? this.remoteAutoUpdateState.defaultScheduledTime,
                 pending: this.remoteAutoUpdateState.pendingAutoUpdates?.includes(key) ?? false,
                 updating: this.remoteAutoUpdateState.updatingImages?.includes(key) ?? false,
@@ -2308,6 +2310,7 @@ export default {
             this.$root.emitAgent(this.endpoint, "watcherImageAutoUpdateGet", (res) => {
                 if (res?.ok) {
                     this.remoteAutoUpdateState = {
+                        defaultAutoUpdateMode: res.data?.defaultAutoUpdateMode ?? "off",
                         defaultScheduledTime: res.data?.defaultScheduledTime ?? DEFAULT_SCHEDULED_TIME,
                         autoUpdateConfig: res.data?.autoUpdateConfig ?? {},
                         pendingAutoUpdates: res.data?.pendingAutoUpdates ?? [],
@@ -2357,6 +2360,7 @@ export default {
                 });
                 if (result.ok && result.data) {
                     this.remoteAutoUpdateState = {
+                        defaultAutoUpdateMode: result.data.defaultAutoUpdateMode ?? "off",
                         defaultScheduledTime: result.data.defaultScheduledTime ?? DEFAULT_SCHEDULED_TIME,
                         autoUpdateConfig: result.data.autoUpdateConfig ?? {},
                         pendingAutoUpdates: result.data.pendingAutoUpdates ?? [],

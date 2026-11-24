@@ -4,6 +4,7 @@
         <div>
             <label for="bulk-update-mode" class="form-label">{{ $t("stackBulk.mode") }}</label>
             <select id="bulk-update-mode" v-model="mode" class="form-select mb-2" :disabled="loading" @change="clearPreview">
+                <option value="inherit">{{ $t("watcher.status.auInherit") }}</option>
                 <option value="off">{{ $t("stackBulk.off") }}</option>
                 <option value="immediate">{{ $t("stackBulk.immediate") }}</option>
                 <option value="scheduled">{{ $t("stackBulk.scheduled") }}</option>
@@ -58,7 +59,7 @@ const ownerRoot = (getCurrentInstance()?.proxy as unknown as { $root?: { emitAge
     data?: Preview;
     msg?: string;
     message?: string }) => void) => void } })?.$root;
-const mode = ref<"off" | "immediate" | "scheduled">("scheduled");
+const mode = ref<"inherit" | "off" | "immediate" | "scheduled">("scheduled");
 const time = ref(props.defaultTime);
 const preserveExisting = ref(true);
 const loading = ref(false);

@@ -1,4 +1,7 @@
 {
+    "watcher.status.auInherit": "Heredar ajuste global",
+    "watcher.img.defaultAutoUpdateHint": "Se aplica a las imágenes actuales y futuras sin una regla específica, incluidos los servicios detenidos. Active ImageWatcher para ejecutar las actualizaciones. Los servicios detenidos no se inician: su actualización se aplaza. Las excepciones por imagen tienen prioridad.",
+    "watcher.img.defaultAutoUpdateMode": "Modo global predeterminado",
     "releaseNews.item.trivyLongIntervals": "Las opciones de 3 y 7 días conservan 72/168 horas tras guardar y reiniciar. Los intervalos largos cuentan el tiempo desde el último análisis terminado, incluso manual, con comprobación cada minuto; los cambios de mes y hora no los acortan. Sin historial o con un análisis atrasado, comienza en el siguiente minuto. Los horarios de 12/24 horas no cambian. Actualice también las instancias vinculadas.",
     "releaseNews.item.crashContainerIdentity": "Los contadores siguen el ID del contenedor Docker. Los contenedores temporales que reutilizan un nombre ya no acumulan falsas alertas; las salidas repetidas del mismo contenedor, incluso con código 0, siguen vigiladas. Actualice también las instancias vinculadas.",
     "imageCve.severity": "Gravedad",
@@ -448,7 +451,7 @@
     "updates.self.backupSkipped": "Paso omitido según la política de copia seleccionada.",
     "releaseNews.item.cleanupNotifications": "Los informes de Discord y Apprise identifican la instancia y resumen cada categoría; la salida completa de Docker se conserva en el historial. Las protecciones de imágenes detectadas en la última comprobación se distinguen de los fallos reales. La imagen de Enhanced incluye Buildx.",
     "watcher.img.defaultScheduledTime": "Hora predeterminada de las actualizaciones programadas",
-    "watcher.img.defaultScheduledTimeHint": "Solo para nuevas programaciones (02:00 por defecto), en la zona horaria de planificación de Enhanced. Los horarios existentes no cambian. Las stacks vinculadas utilizan el ajuste de su instancia anfitriona.",
+    "watcher.img.defaultScheduledTimeHint": "Hora del modo global Programada y propuesta para nuevas excepciones. Los horarios específicos existentes no cambian. Usa la zona horaria de planificación de la instancia anfitriona.",
     "watcher.img.invalidScheduledTime": "Introduce una hora válida en formato HH:MM.",
     "releaseNews.item.defaultScheduledTime": "Elige la hora propuesta para las actualizaciones de imágenes programadas en Imágenes. Los horarios existentes no cambian; las stacks vinculadas utilizan el ajuste y la zona horaria de planificación de su instancia anfitriona.",
     "serviceRollout.cancelled": "La última actualización sin interrupción del servicio se canceló o volvió a la generación anterior. Revise el servicio antes de reintentar.",

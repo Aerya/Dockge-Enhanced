@@ -63,7 +63,7 @@ if (args.includes("config")) {
     console.log(JSON.stringify({name:"fixture",services:{app:{image:"fixture/shared:latest",
         ...(invalidRollout ? {labels:{"dockge.rollout.enabled":"true"},ports:[{published:"8080"}]} : {})}}}));
 }
-else if (args.includes("ps")) console.log(args.includes("paused") ? "" : args.includes("-q") ? "container-fixture" : "app");
+else if (args.includes("ps")) console.log(args.includes("paused") || fs.existsSync(path.join(root, "stopped")) ? "" : args.includes("-q") ? "container-fixture" : "app");
 else if (args.includes("inspect")) {
     const imageId = "sha256:" + "d".repeat(64);
     console.log(args.some(a=>a.includes('"Config"')) ? JSON.stringify({Image:imageId,State:{Running:true},Config:{Labels:{"com.docker.compose.service":"app"}}}) : args.includes("{{json .}}") ? JSON.stringify(args[0] === "image" ? {Id:imageId} : {Image:imageId,State:{Running:true},Config:{Labels:{"com.docker.compose.service":"app"}}}) : imageId);
@@ -129,7 +129,7 @@ beforeEach(async () => {
     rollbackStore.clear();
     updateHistoryStore.length = 0;
     await fs.writeFile(path.join(root, "commands"), "");
-    for (const file of [ "block", "entered", "release", "rollout-invalid", "rollout-valid", "rollout-runtime" ]) {
+    for (const file of [ "block", "entered", "release", "rollout-invalid", "rollout-valid", "rollout-runtime", "stopped" ]) {
         await fs.rm(path.join(root, file), { force: true });
     }
 });
@@ -526,4 +526,56 @@ test("manual rollback preserves the exact Compose file, environment and project 
     const up = (await commands()).find(args => args.includes("up"));
     assert.ok(up);
     assert.deepEqual(up.slice(0, base.length), base);
+});
+
+test("full scans discover inherited immediate images while preserving manual exceptions", async () => {
+    const w = watcher();
+    w.settings.defaultAutoUpdateMode = "immediate";
+    w.settings.autoUpdateConfig = { [key("b")]: { mode: "off" } };
+    w.checkOneImage = async (_image, stack) => status(stack);
+    const selected: string[] = [];
+    w.performAutoUpdate = async s => {
+        selected.push(s.stack);
+        return true;
+    };
+    await w.runCheck();
+    assert.deepEqual(selected, [ "a" ]);
+    assert.equal(w.settings.autoUpdateConfig[key("a")], undefined);
+    // Removing the explicit exception also applies to an already known image.
+    delete w.settings.autoUpdateConfig[key("b")];
+    selected.length = 0;
+    await w.runCheck();
+    assert.deepEqual(selected.sort(), [ "a", "b" ]);
+});
+
+test("inherited scheduled updates queue and execute without materializing exceptions", async () => {
+    const w = watcher();
+    w.settings.defaultAutoUpdateMode = "scheduled";
+    w.settings.defaultScheduledTime = "02:00";
+    w.settings.autoUpdateConfig = {};
+    w.checkOneImage = async (_image, stack) => status(stack);
+    const selected: string[] = [];
+    w.performAutoUpdate = async s => {
+        selected.push(s.stack);
+        return true;
+    };
+    await w.runCheck();
+    assert.deepEqual(selected, []);
+    assert.deepEqual(w.settings.pendingAutoUpdates.sort(), [ key("a"), key("b") ]);
+    const { schedulingClock } = await import("../scheduling-timezone");
+    const now = new Date();
+    const clock = schedulingClock(now);
+    w.settings.defaultScheduledTime = `${String(clock.hour).padStart(2, "0")}:${String(clock.minute).padStart(2, "0")}`;
+    await w.applyPendingUpdates(now);
+    assert.deepEqual(selected.sort(), [ "a", "b" ]);
+    assert.deepEqual(w.settings.autoUpdateConfig, {});
+});
+
+test("inherited updates never pull or recreate stopped services", async () => {
+    await fs.writeFile(path.join(root, "stopped"), "");
+    const w = watcher();
+    w.settings.defaultAutoUpdateMode = "immediate";
+    w.settings.autoUpdateConfig = {};
+    assert.equal(await w.performAutoUpdate(status("a"), watched("a"), "immediate"), false);
+    assert.equal((await commands()).some(args => args.includes("pull") || args.includes("up")), false);
 });

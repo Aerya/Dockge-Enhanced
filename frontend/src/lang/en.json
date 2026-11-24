@@ -1,4 +1,7 @@
 {
+    "watcher.status.auInherit": "Inherit global setting",
+    "watcher.img.defaultAutoUpdateHint": "Applies to current and future images without a specific policy, including stopped services. Enable ImageWatcher to run updates. Stopped services are not started: their update is deferred. Per-image exceptions take priority.",
+    "watcher.img.defaultAutoUpdateMode": "Global default mode",
     "releaseNews.item.trivyLongIntervals": "The 3- and 7-day choices retain 72/168 hours after saving and restarting. Long intervals count elapsed time since the last completed scan, including a manual scan, and are checked each minute; month boundaries and daylight-saving changes do not shorten them. With no scan history or an overdue scan, scanning starts on the next minute tick. The 12/24-hour schedules are unchanged. Update linked instances too.",
     "releaseNews.item.crashContainerIdentity": "Crash-loop counters follow the Docker container ID. Temporary containers reusing a name no longer accumulate false alerts; repeated exits of the same container, including exit code 0, remain monitored. Update linked instances too.",
     "imageCve.severity": "Severity",
@@ -446,7 +449,7 @@
     "updates.self.backupSkipped": "Step not run under the selected backup policy.",
     "releaseNews.item.cleanupNotifications": "Discord and Apprise cleanup reports identify the instance and summarize each category, keeping full Docker output in history. Last-minute image protections are reported as skips; genuine failures remain visible. Buildx is included in the Enhanced image.",
     "watcher.img.defaultScheduledTime": "Default time for scheduled updates",
-    "watcher.img.defaultScheduledTimeHint": "Used for new schedules only (02:00 by default), in Enhanced’s scheduling timezone. Existing times remain unchanged. Linked stacks use their hosting instance’s setting.",
+    "watcher.img.defaultScheduledTimeHint": "Time used by the global Scheduled mode and suggested for new exceptions. Existing explicit times remain unchanged. Uses the host instance scheduling timezone.",
     "watcher.img.invalidScheduledTime": "Enter a valid time in HH:MM format.",
     "releaseNews.item.defaultScheduledTime": "Choose the default scheduled image update time in Images. Existing schedules remain unchanged; linked stacks use their hosting instance’s setting and scheduling timezone.",
     "serviceRollout.cancelled": "The previous update without service interruption was cancelled or recovered to the previous generation. Check the service before retrying.",

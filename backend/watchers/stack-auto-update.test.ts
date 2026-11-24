@@ -71,15 +71,15 @@ test("replace updates existing policy, including its pause; other stacks never t
     assert.equal(r.changes.some(c => c.key.startsWith("other::")), false);
 });
 
-test("off preserves existing exceptions by default; replace removes configured entries", () => {
+test("off persists explicit opt-outs, including previously inherited images", () => {
     const preserve = buildStackBulkPlan({ stack: "demo",
         mode: "off",
         preserveExisting: true }, model, entries);
-    assert.equal(preserve.changed, 0);
+    assert.equal(preserve.changed, 1);
     const replace = buildStackBulkPlan({ stack: "demo",
         mode: "off",
         preserveExisting: false }, model, entries);
-    assert.deepEqual(replace.changes.map(c => c.key), [ "demo::nginx:latest" ]);
+    assert.deepEqual(replace.changes.map(c => c.key), [ "demo::nginx:latest", "demo::postgres:16" ]);
 });
 
 test("preview fingerprint detects settings/compose/policy changes", () => {
@@ -127,4 +127,18 @@ test("shared image with excluded service updates only eligible services", () => 
 
     const update = buildImageUpdateComposePlan(JSON.stringify(mixed), "nginx:latest");
     assert.deepEqual(update.services, [ "allowed" ]);
+});
+
+test("bulk preview resolves inherited policy and invalidates on global changes", () => {
+    const request = { stack: "demo",
+        mode: "off" as const,
+        preserveExisting: false };
+    const plan = buildStackBulkPlan(request, model, {}, { mode: "immediate" });
+    assert.equal(plan.changes[0].before, "immediate");
+    assert.notEqual(plan.previewToken, buildStackBulkPlan(request, model, {}, { mode: "scheduled",
+        time: "03:00" }).previewToken);
+    const inherit = buildStackBulkPlan({ ...request,
+        mode: "inherit" }, model, entries);
+    assert.deepEqual(inherit.changes.map(change => change.key), [ "demo::nginx:latest" ]);
+    assert.equal(inherit.changes[0].after, "inherit");
 });
