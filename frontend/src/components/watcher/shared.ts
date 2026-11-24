@@ -21,7 +21,7 @@ export interface Cred {
 }
 
 export interface AutoUpdateEntry {
-    mode: "immediate" | "scheduled" | "ignored";
+    mode: "off" | "immediate" | "scheduled" | "ignored";
     time?: string;
     pause?: { enabled: boolean; until: string | null };
 }
@@ -36,6 +36,7 @@ export interface ImgSettings {
     enabled: boolean;
     intervalHours: number;
     immediateCheckMinutes: number;
+    defaultAutoUpdateMode: "off" | "immediate" | "scheduled";
     defaultScheduledTime: string;
     discordWebhooks: string[];
     autoUpdateConfig: Record<string, AutoUpdateEntry>;

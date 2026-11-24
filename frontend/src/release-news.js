@@ -632,6 +632,10 @@ export const RELEASE_NEWS = [
         id: "2026-11-18-trivy-long-intervals",
         items: [ "releaseNews.item.trivyLongIntervals" ],
     },
+    {
+        id: "2026-11-24-global-image-auto-update",
+        items: [ "releaseNews.item.globalImageAutoUpdate" ],
+    },
 ];
 
 function currentReleaseNewsIds() {

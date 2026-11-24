@@ -71,6 +71,16 @@
                     <small class="text-muted">{{ $t("watcher.img.defaultScheduledTimeHint") }}</small>
                 </div>
 
+                <div class="col-lg-4">
+                    <label for="defaultAutoUpdateMode" class="form-label">{{ $t("watcher.img.defaultAutoUpdateMode") }}</label>
+                    <select id="defaultAutoUpdateMode" v-model="imgSettings.defaultAutoUpdateMode" class="form-select">
+                        <option value="off">{{ $t("watcher.status.auOff") }}</option>
+                        <option value="immediate">{{ $t("watcher.status.auImmediate") }}</option>
+                        <option value="scheduled">{{ $t("watcher.status.auScheduled") }}</option>
+                    </select>
+                    <small class="text-muted">{{ $t("watcher.img.defaultAutoUpdateHint") }}</small>
+                </div>
+
                 <!-- Plateforme image -->
                 <div class="col-lg-3">
                     <label class="form-label">{{
@@ -489,11 +499,12 @@
                                     <div class="au-cell">
                                         <select
                                             class="form-select form-select-sm au-select"
-                                            :value="getAutoUpdateMode(s)"
+                                            :value="imgSettings.autoUpdateConfig[`${s.stack}::${s.image}`]?.mode ?? 'inherit'"
                                             @change="
                                                 setAutoUpdateMode(
                                                     s,
                                                     ($event.target as HTMLSelectElement).value as
+                                                        | 'inherit'
                                                         | 'off'
                                                         | 'ignored'
                                                         | 'immediate'
@@ -501,6 +512,7 @@
                                                 )
                                             "
                                         >
+                                            <option value="inherit">{{ $t("watcher.status.auInherit") }} ({{ $t(`watcher.status.${imgSettings.defaultAutoUpdateMode === 'immediate' ? 'auImmediate' : imgSettings.defaultAutoUpdateMode === 'scheduled' ? 'auScheduled' : 'auOff'}`) }})</option>
                                             <option value="off">
                                                 {{ $t("watcher.status.auOff") }}
                                             </option>
@@ -535,7 +547,7 @@
                                             :title="globalMaintenanceWindow ? $t('watcher.status.auPendingGlobalHint', { window: globalWindowLabel }) : $t('watcher.status.auPendingHint')"
                                         >⏳</span>
                                         <button
-                                            v-if="getAutoUpdateMode(s) !== 'off' && getAutoUpdateMode(s) !== 'ignored'"
+                                            v-if="imgSettings.autoUpdateConfig[`${s.stack}::${s.image}`] && getAutoUpdateMode(s) !== 'off' && getAutoUpdateMode(s) !== 'ignored'"
                                             class="btn btn-xs btn-outline-secondary image-action-button"
                                             :title="isAutoUpdatePaused(s) ? $t('updates.pause.resumeTarget') : $t('updates.pause.pauseTarget')"
                                             :aria-label="isAutoUpdatePaused(s) ? $t('updates.pause.resumeTarget') : $t('updates.pause.pauseTarget')"
@@ -856,7 +868,6 @@ function dnsErrorReason(code: string | undefined, dnsFamily: number): string {
         : reason;
 }
 
-
 // ─── State ────────────────────────────────────────────────────────
 
 const newCred = ref<Cred>({ registry: "",
@@ -1129,7 +1140,7 @@ function getAutoUpdateMode(
     s: ImageStatus,
 ): "off" | "ignored" | "immediate" | "scheduled" {
     const cfg = imgSettings.value.autoUpdateConfig[`${s.stack}::${s.image}`];
-    return cfg?.mode ?? "off";
+    return cfg?.mode ?? imgSettings.value.defaultAutoUpdateMode;
 }
 
 function getAutoUpdateTime(s: ImageStatus): string {
@@ -1236,7 +1247,7 @@ async function clearIgnoredDigest(s: ImageStatus) {
 
 async function setAutoUpdateMode(
     s: ImageStatus,
-    mode: "off" | "ignored" | "immediate" | "scheduled",
+    mode: "inherit" | "off" | "ignored" | "immediate" | "scheduled",
     time?: string,
 ) {
     const key = `${s.stack}::${s.image}`;
@@ -1247,10 +1258,9 @@ async function setAutoUpdateMode(
     }
     const res = await watcherApi("POST", "/image/auto-update", body);
     if (res.ok) {
-        if (mode === "off") {
+        imgSettings.value.pendingAutoUpdates = imgSettings.value.pendingAutoUpdates.filter(k => k !== key);
+        if (mode === "inherit") {
             delete imgSettings.value.autoUpdateConfig[key];
-            imgSettings.value.pendingAutoUpdates =
-                imgSettings.value.pendingAutoUpdates.filter((k) => k !== key);
         } else {
             imgSettings.value.autoUpdateConfig[key] =
                 mode === "scheduled" ? { mode,

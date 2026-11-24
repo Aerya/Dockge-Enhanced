@@ -35,6 +35,7 @@
                         :disabled="autoUpdateSaving"
                         @change="changeAutoUpdateMode"
                     >
+                        <option value="inherit">{{ $t("watcher.status.auInherit") }} ({{ $t(autoUpdate.defaultMode === "immediate" ? "watcher.status.auImmediate" : autoUpdate.defaultMode === "scheduled" ? "watcher.status.auScheduled" : "watcher.status.auOff") }})</option>
                         <option value="off">{{ $t("watcher.status.auOff") }}</option>
                         <option value="ignored">{{ $t("watcher.status.auIgnored") }}</option>
                         <option value="immediate">{{ $t("watcher.status.auImmediate") }}</option>

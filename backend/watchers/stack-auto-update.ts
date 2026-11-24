@@ -5,7 +5,7 @@ import { composeLabelIsFalse, LABEL_IMAGEUPDATES_CHECK } from "../../common/comp
 import type { ResolvedComposeModel } from "../compose-network-namespace";
 import type { AutoUpdateEntry } from "./image-watcher";
 
-export type StackBulkMode = "off" | "immediate" | "scheduled";
+export type StackBulkMode = "inherit" | "off" | "immediate" | "scheduled";
 
 export interface StackBulkRequest {
     stack: string;
@@ -43,7 +43,7 @@ export function validateStackBulkRequest(input: unknown, defaultTime = DEFAULT_S
     if (typeof stack !== "string" || !/^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,127}$/.test(stack)) {
         throw new Error("Nom de stack invalide");
     }
-    if (raw.mode !== "off" && raw.mode !== "immediate" && raw.mode !== "scheduled") {
+    if (raw.mode !== "inherit" && raw.mode !== "off" && raw.mode !== "immediate" && raw.mode !== "scheduled") {
         throw new Error("Mode de mise à jour groupée invalide");
     }
     if (typeof raw.preserveExisting !== "boolean") {
@@ -66,6 +66,7 @@ export function buildStackBulkPlan(
     request: StackBulkRequest,
     model: ResolvedComposeModel,
     entries: Record<string, AutoUpdateEntry>,
+    defaultPolicy: AutoUpdateEntry = { mode: "off" },
 ): StackBulkPlan {
     const images = new Set<string>();
     let excludedServices = 0;
@@ -100,10 +101,15 @@ export function buildStackBulkPlan(
             preserved++;
             continue;
         }
+        const effective = previous ?? defaultPolicy;
+        if (request.mode === "inherit" && !previous) {
+            unchanged++;
+            continue;
+        }
         const after = request.mode === "scheduled" ? `scheduled@${request.time}` : request.mode;
-        const before = previous ? (previous.mode === "scheduled" ? `scheduled@${previous.time ?? DEFAULT_SCHEDULED_TIME}` : previous.mode) : "off";
+        const before = effective.mode === "scheduled" ? `scheduled@${effective.time ?? DEFAULT_SCHEDULED_TIME}` : effective.mode;
         // Replacing a policy also clears its individual pause; preserving keeps it intact.
-        if (before === after && (!previous || !previous.pause?.enabled)) {
+        if (previous && before === after && !previous.pause?.enabled) {
             unchanged++;
             continue;
         }
@@ -118,6 +124,7 @@ export function buildStackBulkPlan(
         time: request.time ?? null,
         preserveExisting: request.preserveExisting,
         services,
+        defaultPolicy,
         entries: [ ...images ].sort().map(image => [ image, entries[`${request.stack}::${image}`] ?? null ]),
     })).digest("hex");
     return {

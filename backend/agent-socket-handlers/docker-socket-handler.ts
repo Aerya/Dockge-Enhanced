@@ -660,7 +660,7 @@ export class DockerSocketHandler extends AgentSocketHandler {
                 if (!key || !key.includes("::")) {
                     throw new ValidationError("key must use stack::image format");
                 }
-                if (![ "off", "immediate", "scheduled", "ignored" ].includes(String(mode))) {
+                if (![ "inherit", "off", "immediate", "scheduled", "ignored" ].includes(String(mode))) {
                     throw new ValidationError("invalid auto-update mode");
                 }
                 const watcher = ImageWatcher.getInstance();
@@ -668,7 +668,7 @@ export class DockerSocketHandler extends AgentSocketHandler {
                 const autoUpdateConfig = { ...(watcher.settings.autoUpdateConfig ?? {}) };
                 let pendingAutoUpdates = [ ...(watcher.settings.pendingAutoUpdates ?? []) ];
 
-                if (mode === "off") {
+                if (mode === "inherit") {
                     delete autoUpdateConfig[key];
                     pendingAutoUpdates = pendingAutoUpdates.filter(k => k !== key);
                     await watcher.saveSettings({ autoUpdateConfig,
@@ -684,12 +684,12 @@ export class DockerSocketHandler extends AgentSocketHandler {
                         ? { mode,
                             time: scheduledTime,
                             pause: effectivePause }
-                        : { mode: mode as "immediate" | "ignored",
+                        : { mode: mode as "off" | "immediate" | "ignored",
                             pause: effectivePause };
 
                     const patch: Partial<WatcherSettings> = { autoUpdateConfig,
                         pendingAutoUpdates };
-                    if (!watcher.settings.enabled && mode !== "ignored") {
+                    if (!watcher.settings.enabled && mode !== "ignored" && mode !== "off") {
                         patch.enabled = true;
                     }
                     await watcher.saveSettings(patch, mode !== "immediate");

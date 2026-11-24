@@ -12,17 +12,18 @@ export interface ImageStatus {
     error?: string;
 }
 
-export type AutoUpdateMode = "off" | "ignored" | "immediate" | "scheduled";
+export type AutoUpdateMode = "inherit" | "off" | "ignored" | "immediate" | "scheduled";
 
 export interface AutoUpdateStatus {
     mode: AutoUpdateMode;
+    defaultMode: "off" | "immediate" | "scheduled";
     time: string;
     pending: boolean;
     updating: boolean;
 }
 
 interface AutoUpdateEntry {
-    mode: Exclude<AutoUpdateMode, "off">;
+    mode: Exclude<AutoUpdateMode, "inherit">;
     time?: string;
 }
 
@@ -30,6 +31,7 @@ const statusCache = ref<ImageStatus[]>([]);
 const remoteStatusCache = ref<Record<string, ImageStatus[]>>({});
 const autoUpdateConfig = ref<Record<string, AutoUpdateEntry>>({});
 const defaultScheduledTime = ref(DEFAULT_SCHEDULED_TIME);
+const defaultAutoUpdateMode = ref<"off" | "immediate" | "scheduled">("off");
 const autoUpdateLoaded = ref(false);
 const pendingAutoUpdates = ref<string[]>([]);
 const updatingImages = ref<string[]>([]);
@@ -98,6 +100,7 @@ async function fetchStatus() {
         const autoUpdateJson = await autoUpdateRes.json();
         if (autoUpdateJson.ok) {
             defaultScheduledTime.value = autoUpdateJson.data?.defaultScheduledTime ?? DEFAULT_SCHEDULED_TIME;
+            defaultAutoUpdateMode.value = autoUpdateJson.data?.defaultAutoUpdateMode ?? "off";
             autoUpdateLoaded.value = true;
             autoUpdateConfig.value = autoUpdateJson.data?.autoUpdateConfig ?? {};
             pendingAutoUpdates.value = autoUpdateJson.data?.pendingAutoUpdates ?? [];
@@ -180,7 +183,8 @@ export function useImageStatus() {
         const key = `${stackName}::${image}`;
         const config = autoUpdateConfig.value[key];
         return {
-            mode: config?.mode ?? "off",
+            mode: config?.mode ?? "inherit",
+            defaultMode: defaultAutoUpdateMode.value,
             time: config?.time ?? defaultScheduledTime.value,
             pending: pendingAutoUpdates.value.includes(key),
             updating: updatingImages.value.includes(key),
@@ -208,7 +212,7 @@ export function useImageStatus() {
             }
 
             pendingAutoUpdates.value = pendingAutoUpdates.value.filter(item => item !== key);
-            if (mode === "off") {
+            if (mode === "inherit") {
                 delete autoUpdateConfig.value[key];
             } else {
                 autoUpdateConfig.value[key] = mode === "scheduled"

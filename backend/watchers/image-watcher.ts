@@ -147,7 +147,7 @@ export function resolveAutomaticImageUpdateAction(
     globalWindowOpen: boolean,
     alreadyPending = false,
 ): AutomaticImageUpdateAction {
-    if (entry?.mode === "ignored" || (!mandatory && !entry)) {
+    if (entry?.mode === "ignored" || entry?.mode === "off" || (!mandatory && !entry)) {
         return null;
     }
     if (globalWindow) {
@@ -170,7 +170,7 @@ export function pendingAutomaticImageUpdateMayRun(
     currentTime: string,
     alreadyDue = false,
 ): boolean {
-    if (entry?.mode === "ignored" || (!mandatory && !entry)) {
+    if (entry?.mode === "ignored" || entry?.mode === "off" || (!mandatory && !entry)) {
         return false;
     }
     if (globalWindow) {
@@ -208,7 +208,7 @@ export interface RegistryCredential extends DockerRegistryCredential {
 }
 
 export interface AutoUpdateEntry {
-    mode: "immediate" | "scheduled" | "ignored";
+    mode: "off" | "immediate" | "scheduled" | "ignored";
     time?: string; // "HH:MM" — uniquement pour mode scheduled
     pause?: UpdatePause;
 }
@@ -273,6 +273,7 @@ export interface WatcherSettings {
     enabled: boolean;
     intervalHours: number;
     immediateCheckMinutes: number; // 0 disables periodic targeted checks; full scans remain active
+    defaultAutoUpdateMode: "off" | "immediate" | "scheduled";
     defaultScheduledTime: string;
     discordWebhooks: string[]; // liste de webhooks (migration auto depuis discordWebhook)
     credentials: RegistryCredential[];
@@ -1455,6 +1456,7 @@ export class ImageWatcher {
         enabled: false,
         intervalHours: 6,
         immediateCheckMinutes: DEFAULT_IMMEDIATE_CHECK_MINUTES,
+        defaultAutoUpdateMode: "off",
         defaultScheduledTime: DEFAULT_SCHEDULED_TIME,
         discordWebhooks: [],
         credentials: [],
@@ -1514,9 +1516,51 @@ export class ImageWatcher {
         } catch {
             /* première utilisation */
         }
+        if (![ "off", "immediate", "scheduled" ].includes(this.settings.defaultAutoUpdateMode)) {
+            this.settings.defaultAutoUpdateMode = "off";
+        }
+        // Environment values override persisted defaults on startup only.
+        const mode = process.env.DOCKGE_IMAGE_AUTO_UPDATE_MODE;
+        const time = process.env.DOCKGE_IMAGE_AUTO_UPDATE_TIME;
+        if (mode !== undefined) {
+            if (![ "off", "immediate", "scheduled" ].includes(mode)) {
+                throw new Error("Invalid DOCKGE_IMAGE_AUTO_UPDATE_MODE");
+            }
+            this.settings.defaultAutoUpdateMode = mode as WatcherSettings["defaultAutoUpdateMode"];
+            if (mode !== "off") {
+                this.settings.enabled = true;
+            }
+        }
+        if (time !== undefined) {
+            this.settings.defaultScheduledTime = resolveScheduledTime(time, DEFAULT_SCHEDULED_TIME);
+        }
+    }
+
+    /** Resolve inheritance at execution time; never persist generated defaults as exceptions. */
+    getAutoUpdateEntry(key: string): AutoUpdateEntry | undefined {
+        return this.settings.autoUpdateConfig?.[key] ?? (this.settings.defaultAutoUpdateMode === "immediate"
+            ? { mode: "immediate" }
+            : this.settings.defaultAutoUpdateMode === "scheduled"
+                ? { mode: "scheduled",
+                    time: this.settings.defaultScheduledTime }
+                : undefined);
+    }
+
+    private effectiveAutoUpdateConfig(): Record<string, AutoUpdateEntry> {
+        const config = { ...this.settings.autoUpdateConfig };
+        for (const key of imageStatusStore.keys()) {
+            const entry = this.getAutoUpdateEntry(key);
+            if (entry) {
+                config[key] = entry;
+            }
+        }
+        return config;
     }
 
     async saveSettings(partial: Partial<WatcherSettings>, runInitialCheck = true): Promise<void> {
+        if (partial.defaultAutoUpdateMode !== undefined && ![ "off", "immediate", "scheduled" ].includes(partial.defaultAutoUpdateMode)) {
+            throw new Error("Invalid default auto-update mode");
+        }
         const defaultScheduledTime = resolveScheduledTime(partial.defaultScheduledTime, this.settings.defaultScheduledTime);
         this.settings = { ...this.settings,
             ...partial,
@@ -1575,6 +1619,7 @@ export class ImageWatcher {
     getAutoUpdateState() {
         return {
             enabled: this.settings.enabled,
+            defaultAutoUpdateMode: this.settings.defaultAutoUpdateMode,
             defaultScheduledTime: this.settings.defaultScheduledTime,
             autoUpdateConfig: this.settings.autoUpdateConfig ?? {},
             pendingAutoUpdates: this.settings.pendingAutoUpdates ?? [],
@@ -1599,7 +1644,8 @@ export class ImageWatcher {
     async previewStackBulkAutoUpdate(raw: unknown) {
         const request = validateStackBulkRequest(raw, this.settings.defaultScheduledTime);
         const model = await this.resolveStackBulkComposeModel(request.stack);
-        return buildStackBulkPlan(request, model, this.settings.autoUpdateConfig ?? {});
+        return buildStackBulkPlan(request, model, this.settings.autoUpdateConfig ?? {}, { mode: this.settings.defaultAutoUpdateMode,
+            time: this.settings.defaultScheduledTime });
     }
 
     /** Persist a policy batch once after rechecking Compose and settings, with a bulk-write guard. */
@@ -1622,7 +1668,8 @@ export class ImageWatcher {
             if (this.isBusy()) {
                 throw new Error("Une opération ImageWatcher a démarré : réessayer plus tard.");
             }
-            const plan = buildStackBulkPlan(request, model, this.settings.autoUpdateConfig ?? {});
+            const plan = buildStackBulkPlan(request, model, this.settings.autoUpdateConfig ?? {}, { mode: this.settings.defaultAutoUpdateMode,
+                time: this.settings.defaultScheduledTime });
             if (request.previewToken !== plan.previewToken) {
                 throw new Error("La stack ou ses réglages ont changé : actualiser l’aperçu");
             }
@@ -1634,8 +1681,10 @@ export class ImageWatcher {
             const config = { ...this.settings.autoUpdateConfig };
             const changes = new Set(plan.changes.map(change => change.key));
             for (const change of plan.changes) {
-                if (request.mode === "off") {
+                if (request.mode === "inherit") {
                     delete config[change.key];
+                } else if (request.mode === "off") {
+                    config[change.key] = { mode: "off" };
                 } else {
                     config[change.key] = request.mode === "scheduled"
                         ? { mode: "scheduled",
@@ -1646,7 +1695,7 @@ export class ImageWatcher {
             const pendingAutoUpdates = this.settings.pendingAutoUpdates.filter(key => !changes.has(key));
             await this.saveSettings({ autoUpdateConfig: config,
                 pendingAutoUpdates,
-                ...(request.mode !== "off" && !this.settings.enabled ? { enabled: true } : {}) }, false);
+                ...((request.mode === "immediate" || request.mode === "scheduled") && !this.settings.enabled ? { enabled: true } : {}) }, false);
             if (request.mode === "immediate") {
                 // Sequential targeted checks avoid a large parallel pull burst.
                 void (async () => {
@@ -1903,7 +1952,7 @@ export class ImageWatcher {
             return;
         }
         await this.removeConfirmedMissingImmediateTargets();
-        const keys = immediateUpdateKeys(this.settings.autoUpdateConfig ?? {});
+        const keys = immediateUpdateKeys(this.effectiveAutoUpdateConfig());
         if (keys.length === 0) {
             return;
         }
@@ -1957,7 +2006,7 @@ export class ImageWatcher {
     }
     const stack = key.slice(0, sepIdx);
     const image = key.slice(sepIdx + 2);
-    const cfg = this.settings.autoUpdateConfig?.[key];
+    const cfg = this.getAutoUpdateEntry(key);
     if (!cfg || cfg.mode !== "immediate") {
       return "skipped";
     }
@@ -2012,7 +2061,7 @@ export class ImageWatcher {
 
     const updated = await this.performAutoUpdate(status, watched, "immediate");
     if (updated && (this.settings.discordWebhooks.length > 0 || this.settings.appriseServerUrl)) {
-      await this.notify([ status ], 1, [ status ], this.settings.autoUpdateConfig, globalWindowPolicy.window);
+      await this.notify([ status ], 1, [ status ], this.effectiveAutoUpdateConfig(), globalWindowPolicy.window);
     }
     return updated ? "updated" : "pending";
   }
@@ -2055,7 +2104,7 @@ export class ImageWatcher {
                 for (const image of images) {
                     const key = `${stack}::${image}`;
                     processedKeys.add(key);
-                    const cfg = (this.settings.autoUpdateConfig ?? {})[key];
+                    const cfg = this.getAutoUpdateEntry(key);
                     if (cfg?.mode === "ignored") {
                         const prev = imageStatusStore.get(key);
                         const ignored: ImageStatus = prev
@@ -2102,7 +2151,7 @@ export class ImageWatcher {
         const updates = results.filter((r) => r.hasUpdate && !r.error);
 
         // ── Auto-update ───────────────────────────────────────────
-        const autoUpdateConfig = this.settings.autoUpdateConfig ?? {};
+        const autoUpdateConfig = this.effectiveAutoUpdateConfig();
         const currentPending = new Set(this.settings.pendingAutoUpdates ?? []);
 
         const toApplyNow: Array<{ status: ImageStatus;
@@ -2168,7 +2217,7 @@ export class ImageWatcher {
                 updates,
                 results.length,
                 autoUpdated,
-                this.settings.autoUpdateConfig,
+                this.effectiveAutoUpdateConfig(),
                 globalWindowPolicy.window,
             );
         }
@@ -2220,8 +2269,8 @@ export class ImageWatcher {
 
         const due = this.settings.pendingAutoUpdateDue ??= {};
         const signature = (key: string) => JSON.stringify([
-            this.settings.autoUpdateConfig?.[key]?.mode,
-            this.settings.autoUpdateConfig?.[key]?.time,
+            this.getAutoUpdateEntry(key)?.mode,
+            this.getAutoUpdateEntry(key)?.time,
         ]);
         let invalidated = false;
         for (const key of Object.keys(due)) {
@@ -2234,7 +2283,7 @@ export class ImageWatcher {
             await this.persistToFile();
         }
         const toApply = pending.filter((key) => {
-            const cfg = this.settings.autoUpdateConfig?.[key];
+            const cfg = this.getAutoUpdateEntry(key);
             const sepIdx = key.indexOf("::");
             if (sepIdx === -1 || isUpdatePaused(cfg?.pause)) {
                 return false;
@@ -2282,7 +2331,7 @@ export class ImageWatcher {
             }
             const stack = key.slice(0, sepIdx);
             const image = key.slice(sepIdx + 2);
-            const cfg = this.settings.autoUpdateConfig?.[key];
+            const cfg = this.getAutoUpdateEntry(key);
             if (!this.settings.pendingAutoUpdates.includes(key) || due[key] !== signature(key) ||
                 cfg?.mode === "ignored" || isUpdatePaused(cfg?.pause) || isUpdatePaused(this.settings.globalUpdatePause)) {
                 continue;
@@ -2336,7 +2385,7 @@ export class ImageWatcher {
                 applied,
                 applied.length,
                 applied,
-                this.settings.autoUpdateConfig,
+                this.effectiveAutoUpdateConfig(),
             );
         }
     }
@@ -2395,7 +2444,11 @@ export class ImageWatcher {
         const { composePath, project, configFiles, workingDir, envFiles } = watched;
         // Read live settings, never the policy captured when a batch was selected.
         // This also excludes stale manual-batch candidates and managed Dozzle.
-        const ignored = () => this.settings.autoUpdateConfig?.[key]?.mode === "ignored";
+        const ignored = () => {
+            const entry = this.getAutoUpdateEntry(key);
+            return entry?.mode === "ignored" || (mode !== "manual" &&
+                (entry?.mode === "off" || (!entry && !isMandatoryManagedUpdate(status))));
+        };
         if (ignored()) {
             return false;
         }

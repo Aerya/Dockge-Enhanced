@@ -27,6 +27,7 @@ test("service controls show the server default, preserve existing times and use 
         }
         return Response.json({ ok: true,
             data: url.endsWith("/status") ? [] : {
+                defaultAutoUpdateMode: "immediate",
                 defaultScheduledTime: advertisedTime,
                 autoUpdateConfig: { "demo::db": { mode: "scheduled",
                     time: "00:00" } },
@@ -41,6 +42,12 @@ test("service controls show the server default, preserve existing times and use 
     assert.equal(api.autoUpdateLoaded.value, true);
     assert.equal(api.defaultScheduledTime.value, "05:30");
     assert.equal(api.autoUpdateFor("demo", "web").time, "05:30");
+    assert.equal(api.autoUpdateFor("demo", "web").mode, "inherit");
+    assert.equal(api.autoUpdateFor("demo", "web").defaultMode, "immediate");
+    await api.setAutoUpdateMode("demo", "web", "off");
+    assert.equal(api.autoUpdateFor("demo", "web").mode, "off");
+    await api.setAutoUpdateMode("demo", "web", "inherit");
+    assert.equal(api.autoUpdateFor("demo", "web").mode, "inherit");
     assert.equal(api.autoUpdateFor("demo", "db").time, "00:00");
     assert.equal((await api.setAutoUpdateMode("demo", "web", "scheduled")).ok, true);
     assert.equal(Object.hasOwn(posted, "time"), false);
