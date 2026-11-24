@@ -1,4 +1,5 @@
 {
+    "releaseNews.item.globalImageAutoUpdate": "Unter Images einen globalen Modus Manuell, Sofort oder Geplant für aktuelle und zukünftige Images wählen. Eigene Ausnahmen haben Vorrang; Globale Einstellung übernehmen entfernt sie. ImageWatcher aktivieren und speichern. Gestoppte Dienste bleiben gestoppt; ihr Update wird verschoben. Umgebungsvariablen werden ebenfalls unterstützt, mit eigenen Einstellungen je Instanz.",
     "watcher.status.auInherit": "Globale Einstellung übernehmen",
     "watcher.img.defaultAutoUpdateHint": "Gilt für aktuelle und zukünftige Images ohne eigene Regel, auch bei gestoppten Diensten. ImageWatcher zum Aktualisieren aktivieren. Gestoppte Dienste werden nicht gestartet: ihre Aktualisierung wird verschoben. Ausnahmen pro Image haben Vorrang.",
     "watcher.img.defaultAutoUpdateMode": "Globaler Standardmodus",

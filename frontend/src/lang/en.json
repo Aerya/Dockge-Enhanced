@@ -1,4 +1,5 @@
 {
+    "releaseNews.item.globalImageAutoUpdate": "In Images, choose a global Manual, Immediate or Scheduled mode for current and future images. Explicit exceptions take priority; Inherit global setting removes them. Enable ImageWatcher and save. Stopped services stay stopped and their update is deferred. Environment variables are also supported, with separate settings for each instance.",
     "watcher.status.auInherit": "Inherit global setting",
     "watcher.img.defaultAutoUpdateHint": "Applies to current and future images without a specific policy, including stopped services. Enable ImageWatcher to run updates. Stopped services are not started: their update is deferred. Per-image exceptions take priority.",
     "watcher.img.defaultAutoUpdateMode": "Global default mode",

@@ -1,4 +1,5 @@
 {
+    "releaseNews.item.globalImageAutoUpdate": "En Imágenes, elija un modo global Manual, Inmediata o Programada para imágenes actuales y futuras. Las excepciones tienen prioridad; Heredar ajuste global las elimina. Active ImageWatcher y guarde. Los servicios detenidos permanecen detenidos y su actualización se aplaza. También admite variables de entorno, con ajustes propios por instancia.",
     "watcher.status.auInherit": "Heredar ajuste global",
     "watcher.img.defaultAutoUpdateHint": "Se aplica a las imágenes actuales y futuras sin una regla específica, incluidos los servicios detenidos. Active ImageWatcher para ejecutar las actualizaciones. Los servicios detenidos no se inician: su actualización se aplaza. Las excepciones por imagen tienen prioridad.",
     "watcher.img.defaultAutoUpdateMode": "Modo global predeterminado",

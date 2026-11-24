@@ -1,4 +1,5 @@
 {
+    "releaseNews.item.globalImageAutoUpdate": "在镜像中为现有及未来镜像选择全局手动、立即或计划模式。单独设置优先；选择继承全局设置可移除例外。启用 ImageWatcher 并保存。已停止的服务保持停止，其更新将推迟。也支持环境变量，每个实例拥有自己的设置。",
     "watcher.status.auInherit": "继承全局设置",
     "watcher.img.defaultAutoUpdateHint": "适用于没有单独策略的现有及未来镜像，包括已停止的服务。启用 ImageWatcher 才会执行更新。不会启动已停止的服务，而是推迟其更新。每个镜像的单独设置优先。",
     "watcher.img.defaultAutoUpdateMode": "全局默认模式",

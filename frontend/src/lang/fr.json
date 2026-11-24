@@ -1,4 +1,5 @@
 {
+    "releaseNews.item.globalImageAutoUpdate": "Dans Images, choisissez un mode global Manuelle, Immédiate ou Planifiée pour les images actuelles et futures. Les exceptions restent prioritaires ; « Hériter du réglage global » les retire. Activez ImageWatcher et enregistrez. Les services arrêtés restent arrêtés, leur mise à jour est différée. Configuration aussi possible par variables d’environnement, propre à chaque instance.",
     "watcher.status.auInherit": "Hériter du réglage global",
     "watcher.img.defaultAutoUpdateHint": "S’applique aux images actuelles et futures sans réglage spécifique, même si leurs services sont arrêtés. Activez ImageWatcher pour exécuter les mises à jour. Les services arrêtés ne sont pas démarrés : leur mise à jour est différée. Les exceptions par image restent prioritaires.",
     "watcher.img.defaultAutoUpdateMode": "Mode global par défaut",
