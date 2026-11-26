@@ -1,3 +1,4 @@
+import { secretContext, prepareSecrets, validateSecretCompose } from "./secrets/runtime";
 import { DockgeServer } from "./dockge-server";
 import { requireLocalRuntime } from "./hub-mode";
 import * as os from "node:os";
@@ -22,6 +23,8 @@ export class Terminal {
         return Terminal.terminalMap.size > 0;
     }
 
+    protected starting = false;
+    protected closed = false;
     protected _ptyProcess? : pty.IPty;
     protected server : DockgeServer;
     protected buffer : LimitQueue<string> = new LimitQueue(100);
@@ -88,9 +91,14 @@ export class Terminal {
 
     public start() {
         requireLocalRuntime();
-        if (this._ptyProcess) {
+        void this.startWithSecrets();
+    }
+
+    private async startWithSecrets() {
+        if (this._ptyProcess || this.starting || this.closed) {
             return;
         }
+        this.starting = true;
 
         this.kickDisconnectedClientsInterval = setInterval(() => {
             for (const socketID in this.socketList) {
@@ -121,6 +129,20 @@ export class Terminal {
         }
 
         try {
+            const context = secretContext(this.file, this.args, this.cwd);
+            if (context) {
+                this.env = await prepareSecrets(context);
+                await validateSecretCompose(context, this.env);
+                // Do not buffer arbitrary tool output containing interpolated credentials.
+                this.outputTransform = () => "";
+                for (const socket of Object.values(this.socketList)) {
+                    socket.emitAgent("terminalWrite", this.name, "[Dockge] Secret provider enabled: command output hidden\r\n");
+                }
+            }
+            if (this.closed) {
+                this.env = undefined;
+                return;
+            }
             this._ptyProcess = pty.spawn(this.file, this.args, {
                 name: "xterm-256color",
                 cwd: this.cwd,
@@ -146,11 +168,15 @@ export class Terminal {
             // On Exit
             this._ptyProcess.onExit(this.exit);
         } catch (error) {
+            if (this.closed) {
+                return;
+            }
             if (error instanceof Error) {
                 clearInterval(this.keepAliveInterval);
 
                 log.error("Terminal", "Failed to start terminal: " + error.message);
-                const exitCode = Number(error.message.split(" ").pop());
+                const parsedCode = Number(error.message.split(" ").pop());
+                const exitCode = Number.isFinite(parsedCode) ? parsedCode : 1;
                 this.exit({
                     exitCode,
                 });
@@ -172,6 +198,7 @@ export class Terminal {
         this.socketList = {};
 
         Terminal.terminalMap.delete(this.name);
+        this.env = undefined;
         log.debug("Terminal", "Terminal " + this.name + " exited with code " + res.exitCode);
 
         clearInterval(this.keepAliveInterval);
@@ -213,6 +240,10 @@ export class Terminal {
     }
 
     close() {
+        this.closed = true;
+        if (!this._ptyProcess) {
+            this.exit({ exitCode: 130 });
+        }
         clearInterval(this.keepAliveInterval);
         // Send Ctrl+C to the terminal
         this.ptyProcess?.write("\x03");

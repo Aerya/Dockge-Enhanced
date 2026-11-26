@@ -4,7 +4,7 @@ import { readFileSync } from "node:fs";
 import { RELEASE_NEWS, getUnreadReleaseNews, sanitizeSeenReleaseNewsIds, getInitialSeenReleaseNewsIds } from "./release-news.js";
 
 test("les nouvelles annonces sont courtes, traduites et visibles au premier passage", () => {
-    const additions = RELEASE_NEWS.filter(release => release.id.startsWith("2026-11-14-image-") || release.id === "2026-11-16-crash-container-identity" || release.id === "2026-11-18-trivy-long-intervals" || release.id === "2026-11-24-global-image-auto-update");
+    const additions = RELEASE_NEWS.filter(release => release.id.startsWith("2026-11-14-image-") || release.id === "2026-11-16-crash-container-identity" || release.id === "2026-11-18-trivy-long-intervals" || release.id === "2026-11-24-global-image-auto-update" || release.id === "2026-11-26-stack-secrets");
     assert.ok(additions.length > 0);
     assert.deepEqual(getUnreadReleaseNews(getInitialSeenReleaseNewsIds(null)), [ additions.at(-1) ]);
     for (const locale of [ "en", "fr", "de", "es", "zh-CN" ]) {

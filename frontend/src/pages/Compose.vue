@@ -337,6 +337,13 @@
                 :stack-name="stack.name"
             />
 
+            <StackSecrets
+                v-if="!isAdd && stack.isManagedByDockge && $root.userAccess?.role === 'admin'"
+                :key="`secrets:${endpoint}:${stack.name}`"
+                :stack-name="stack.name"
+                :endpoint="endpoint"
+            />
+
             <!-- Progress Terminal -->
             <DeploymentProgress v-if="stack.name && $root.userAccess?.role === 'admin'" :stack-name="stack.name" :endpoint="endpoint" />
             <transition name="slide-fade" appear>
@@ -983,6 +990,7 @@ import StackReplicationStatus from "../components/StackReplicationStatus.vue";
 import PendingStackMoveStatus from "../components/PendingStackMoveStatus.vue";
 import RemoteInstanceLinks from "../components/RemoteInstanceLinks.vue";
 import PlugNPiNLabelAssistant from "../components/PlugNPiNLabelAssistant.vue";
+import StackSecrets from "../components/StackSecrets.vue";
 import StackGitPanel from "../components/StackGitPanel.vue";
 import ConfigurationTools from "../components/ConfigurationTools.vue";
 import EnvForm from "../components/EnvForm.vue";
@@ -1027,6 +1035,7 @@ export default {
         RemoteInstanceLinks,
         PlugNPiNLabelAssistant,
         StackGitPanel,
+        StackSecrets,
         ConfigurationTools,
         EnvForm,
         StackResourceHistory,

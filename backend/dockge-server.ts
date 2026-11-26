@@ -1,3 +1,4 @@
+import { configureSecrets } from "./secrets/store";
 import { installReverseHub, startReverseNode, stopReverseNode } from "./reverse-agent";
 import { agentOnly, requireAgentAuthentication } from "./agent-mode";
 import { hubOnly } from "./hub-mode";
@@ -262,6 +263,7 @@ export class DockgeServer {
         this.config.port = args.port || Number(process.env.DOCKGE_PORT) || 5001;
         this.config.hostname = args.hostname || process.env.DOCKGE_HOSTNAME || undefined;
         this.config.dataDir = args.dataDir || resolveDataDir();
+        configureSecrets(this.config.dataDir);
         this.config.stacksDir = args.stacksDir || process.env.DOCKGE_STACKS_DIR || defaultStacksDir;
         this.config.enableConsole = args.enableConsole || process.env.DOCKGE_ENABLE_CONSOLE === "true" || false;
         this.config.fileManagerRoot = args.fileManagerRoot || process.env.DOCKGE_FILE_MANAGER_ROOT || undefined;

@@ -1,3 +1,4 @@
+import { protectedStack } from "./secrets/runtime";
 import { promisify } from "node:util";
 import { promises as fs } from "node:fs";
 import path from "node:path";
@@ -9,6 +10,9 @@ import type { Stack } from "./stack";
 const exec = promisify(execFile);
 
 export async function mergedStackConfiguration(stack: Stack): Promise<string> {
+    if (protectedStack(stack.path)) {
+        throw new Error("stackSecrets.configHidden");
+    }
     try {
         const result = await exec("docker", stack.getComposeOptions("config"), {
             cwd: stack.path,
