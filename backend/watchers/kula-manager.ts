@@ -3,7 +3,7 @@
  * Monitoring système léger : CPU, RAM, réseau, disque, containers.
  *
  * Stratégie hybride :
- * - Le container est démarré/arrêté via `docker run` / `docker stop+rm`
+ * - Le container est démarré/arrêté via `docker create/cp/start` / `docker stop+rm`
  *   (compatible avec tous les systèmes, dont Synology DSM dont Docker Compose v2
  *   injecte un profil AppArmor que le kernel DSM ne peut pas appliquer).
  * - Un compose.yaml est quand même écrit dans STACKS_DIR pour que l'ImageWatcher
@@ -15,6 +15,9 @@
 
 import * as fs from "fs/promises";
 import * as path from "path";
+import * as os from "node:os";
+import { isIP } from "node:net";
+import { parseDocument } from "yaml";
 import childProcessAsync from "../buffered-process";
 import { resolveDataDir } from "../data-dir";
 
@@ -26,13 +29,13 @@ async function docker(args: string[]): Promise<string> {
     return result.stdout?.toString() ?? "";
 }
 
-const DATA_DIR      = resolveDataDir();
-const STACKS_DIR    = process.env.DOCKGE_STACKS_DIR ?? "/opt/stacks";
+const DATA_DIR = resolveDataDir();
+const STACKS_DIR = process.env.DOCKGE_STACKS_DIR ?? "/opt/stacks";
 const SETTINGS_PATH = path.join(DATA_DIR, "kula-settings.json");
 
-export const KULA_STACK_NAME     = "kula-dockge-enhanced";
+export const KULA_STACK_NAME = "kula-dockge-enhanced";
 export const KULA_CONTAINER_NAME = "kula-dockge-enhanced";
-export const KULA_IMAGE          = "c0m4r/kula:latest";
+export const KULA_IMAGE = "c0m4r/kula:latest";
 
 /** Répertoire de la stack dans STACKS_DIR (pour l'ImageWatcher uniquement) */
 const KULA_STACK_DIR = path.join(STACKS_DIR, KULA_STACK_NAME);
@@ -40,20 +43,47 @@ const KULA_STACK_DIR = path.join(STACKS_DIR, KULA_STACK_NAME);
 // ─── Types ────────────────────────────────────────────────────────
 
 export interface KulaSettings {
-    enabled:     boolean;
-    port:        number;              // port exposé sur l'hôte (défaut 27960)
-    customUrl:   string;             // URL override (vide = auto)
+    allowedHosts: string[];
+    enabled: boolean;
+    port: number;              // port exposé sur l'hôte (défaut 27960)
+    customUrl: string;             // URL override (vide = auto)
     networkMode: "bridge" | "host";  // bridge = -p port:port, host = --network host
 }
 
 export type KulaStatus = "running" | "stopped" | "error";
 
 const DEFAULT_SETTINGS: KulaSettings = {
-    enabled:     false,
-    port:        27960,
-    customUrl:   "",
+    allowedHosts: [],
+    enabled: false,
+    port: 27960,
+    customUrl: "",
     networkMode: "bridge",
 };
+
+/** Accept exact DNS names or IP addresses, never a wildcard or URL. */
+export function normalizeKulaAllowedHosts(value: unknown): string[] {
+    if (!Array.isArray(value) || value.length > 100 || value.some(host => typeof host !== "string")) {
+        throw new Error("Kula: allowedHosts must be a list of at most 100 hostnames");
+    }
+    return [ ...new Set(value.map((entry: string) => {
+        const host = entry.trim().toLowerCase().replace(/\.$/, "");
+        if (!host || host.length > 253 || (!isIP(host) && !host.split(".").every(label =>
+            /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/.test(label)
+        ))) {
+            throw new Error("Kula: enter exact hostnames without protocol, port, path or wildcard");
+        }
+        return host;
+    })) ];
+}
+
+export function configureKulaHosts(source: string, hosts: string[]): string {
+    const document = parseDocument(source);
+    if (document.errors.length) {
+        throw new Error("Kula: invalid image configuration");
+    }
+    document.setIn([ "web", "security", "allowed_hosts" ], normalizeKulaAllowedHosts(hosts));
+    return document.toString();
+}
 
 // ─── Singleton ────────────────────────────────────────────────────
 
@@ -63,8 +93,12 @@ export class KulaManager {
     settings: KulaSettings = { ...DEFAULT_SETTINGS };
     private _starting = false;
 
+    constructor(private readonly runDocker: typeof docker = docker) {}
+
     static getInstance(): KulaManager {
-        if (!KulaManager._instance) KulaManager._instance = new KulaManager();
+        if (!KulaManager._instance) {
+            KulaManager._instance = new KulaManager();
+        }
         return KulaManager._instance;
     }
 
@@ -73,14 +107,21 @@ export class KulaManager {
     async loadSettings(): Promise<void> {
         try {
             const raw = await fs.readFile(SETTINGS_PATH, "utf8");
-            this.settings = { ...DEFAULT_SETTINGS, ...JSON.parse(raw) as Partial<KulaSettings> };
+            this.settings = { ...DEFAULT_SETTINGS,
+                ...JSON.parse(raw) as Partial<KulaSettings> };
         } catch {
             this.settings = { ...DEFAULT_SETTINGS };
         }
     }
 
     async saveSettings(partial: Partial<KulaSettings>): Promise<void> {
-        this.settings = { ...this.settings, ...partial };
+        if (this._starting) {
+            throw new Error("Kula: startup in progress, retry saving after it finishes");
+        }
+        const allowedHosts = normalizeKulaAllowedHosts(partial.allowedHosts === undefined ? this.settings.allowedHosts : partial.allowedHosts);
+        this.settings = { ...this.settings,
+            ...partial,
+            allowedHosts };
         await fs.mkdir(DATA_DIR, { recursive: true });
         await fs.writeFile(SETTINGS_PATH, JSON.stringify(this.settings, null, 2));
         if (this.settings.enabled) {
@@ -92,7 +133,8 @@ export class KulaManager {
     }
 
     getSettingsSafe(): KulaSettings {
-        return { ...this.settings };
+        return { ...this.settings,
+            allowedHosts: [ ...this.settings.allowedHosts ] };
     }
 
     // ── Compose file (ImageWatcher uniquement) ────────────────────
@@ -100,7 +142,7 @@ export class KulaManager {
     /**
      * Écrit un compose.yaml dans STACKS_DIR/kula-dockge-enhanced/ uniquement
      * pour que l'ImageWatcher détecte c0m4r/kula:latest et surveille les MàJ.
-     * Ce fichier n'est PAS utilisé pour démarrer le container (docker run est utilisé).
+     * Ce fichier n'est PAS utilisé pour démarrer le container (docker create/cp/start est utilisé).
      */
     private async _writeComposeFile(): Promise<void> {
         await fs.mkdir(KULA_STACK_DIR, { recursive: true });
@@ -108,7 +150,7 @@ export class KulaManager {
             path.join(KULA_STACK_DIR, "compose.yaml"),
             [
                 "# Généré par Dockge-Enhanced — suivi ImageWatcher uniquement",
-                "# Le container est géré via docker run, pas docker compose.",
+                "# Le container est géré via docker create/cp/start, pas docker compose.",
                 "services:",
                 "  kula:",
                 `    image: ${KULA_IMAGE}`,
@@ -121,7 +163,8 @@ export class KulaManager {
 
     private async _removeStackDir(): Promise<void> {
         try {
-            await fs.rm(KULA_STACK_DIR, { recursive: true, force: true });
+            await fs.rm(KULA_STACK_DIR, { recursive: true,
+                force: true });
             console.log(`[KulaManager] Stack directory supprimé : ${KULA_STACK_DIR}`);
         } catch {
             // Non bloquant
@@ -151,6 +194,7 @@ export class KulaManager {
     }
 
     private async _doStart(): Promise<void> {
+        const hosts = normalizeKulaAllowedHosts(this.settings.allowedHosts);
         await this.stop();
 
         // Écrit le compose.yaml pour l'ImageWatcher
@@ -158,7 +202,7 @@ export class KulaManager {
 
         const port = this.settings.port ?? 27960;
         const args = [
-            "run", "-d",
+            "create",
             "--name", KULA_CONTAINER_NAME,
             "--pid", "host",
             ...(this.settings.networkMode === "host"
@@ -170,19 +214,36 @@ export class KulaManager {
         ];
 
         console.log(`[KulaManager] Démarrage du conteneur sur le port ${port}`);
+        const directory = await fs.mkdtemp(path.join(os.tmpdir(), "dockge-kula-"));
+        const config = path.join(directory, "config.yaml");
+        let created = false;
         try {
-            await docker(args);
+            // Copy through Docker: Dockge's filesystem paths need not exist on the daemon host.
+            // Preserve the image's defaults (storage, listen address, security, etc.).
+            await this.runDocker(args);
+            created = true;
+            await this.runDocker([ "cp", `${KULA_CONTAINER_NAME}:/app/config.yaml`, config ]);
+            await fs.writeFile(config, configureKulaHosts(await fs.readFile(config, "utf8"), hosts));
+            await fs.chmod(config, 0o644); // readable by the image's unprivileged Kula user
+            await this.runDocker([ "cp", config, `${KULA_CONTAINER_NAME}:/app/config.yaml` ]);
+            await this.runDocker([ "start", KULA_CONTAINER_NAME ]);
             console.log(`[KulaManager] Container démarré (port ${port})`);
         } catch (e) {
-            console.error(`[KulaManager] Échec docker run :`, e);
+            console.error("[KulaManager] Échec du démarrage :", e);
+            if (created) {
+                await this.runDocker([ "rm", "-f", KULA_CONTAINER_NAME ]).catch(() => {});
+            }
             throw e;
+        } finally {
+            await fs.rm(directory, { recursive: true,
+                force: true });
         }
     }
 
     async stop(): Promise<void> {
         try {
-            await docker([ "stop", KULA_CONTAINER_NAME ]);
-            await docker([ "rm", KULA_CONTAINER_NAME ]);
+            await this.runDocker([ "stop", KULA_CONTAINER_NAME ]);
+            await this.runDocker([ "rm", KULA_CONTAINER_NAME ]);
             console.log("[KulaManager] Container arrêté");
         } catch {
             // Container n'existait pas — normal
@@ -191,7 +252,7 @@ export class KulaManager {
 
     async getStatus(): Promise<KulaStatus> {
         try {
-            const stdout = await docker([ "inspect", "--format", "{{.State.Running}}", KULA_CONTAINER_NAME ]);
+            const stdout = await this.runDocker([ "inspect", "--format", "{{.State.Running}}", KULA_CONTAINER_NAME ]);
             return stdout.trim() === "true" ? "running" : "stopped";
         } catch {
             return "stopped";

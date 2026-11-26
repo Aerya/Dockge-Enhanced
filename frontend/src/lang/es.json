@@ -1,4 +1,6 @@
 {
+    "watcher.kula.allowedHosts": "Hosts permitidos",
+    "watcher.kula.allowedHostsHint": "Un nombre de host por línea o separado por comas (p. ej. server.example), sin protocolo, puerto, ruta ni comodín. Déjelo vacío para mantener la protección predeterminada de Kula. Al guardar se reinicia Kula si está activado. La URL personalizada solo cambia el enlace; añada también su nombre de host aquí.",
     "stackSecrets.title": "Gestores de secretos",
     "stackSecrets.experimental": "Bitwarden Secrets Manager es plenamente funcional; las otras soluciones son experimentales.",
     "stackSecrets.settingsHint": "Añada una conexión en la instancia que aloja las stacks y selecciónela en cada stack. Limite la cuenta de máquina a los secretos necesarios. Bitwarden se refiere aquí a Secrets Manager, no a la bóveda personal de contraseñas.",

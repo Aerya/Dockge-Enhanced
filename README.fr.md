@@ -65,6 +65,8 @@ Les évolutions majeures récentes sont regroupées ici afin de comprendre rapid
 
 ### 🆕 Novembre 2026
 
+**Kula : accès par DNS local :** Dans Monitoring, utilisez **Hôtes autorisés** pour ajouter des noms exacts comme `server.example`, un par ligne ou séparés par des virgules, sans protocole, port ni chemin. L’enregistrement redémarre Kula s’il est activé et conserve ses données. Une liste vide garde la protection par défaut ; les jokers sont refusés. L’URL personnalisée change uniquement le lien : ajoutez aussi son nom d’hôte. Configurez chaque instance liée séparément.
+
 
 **Gestionnaires de secrets par stack :** Associez Bitwarden Secrets Manager, 1Password, Doppler ou Infisical aux opérations Compose, sans recopier les valeurs récupérées dans `.env`. Bitwarden Secrets Manager est pleinement fonctionnel. 1Password, Doppler et Infisical restent expérimentaux, sous réserve de tests utilisateurs. Bitwarden nécessite son CLI officiel, installable depuis les paramètres. L’échec du fournisseur bloque l’opération ; l’état des conteneurs reste consultable. La sortie des commandes et la configuration résolue sont masquées. Docker conserve les variables d’environnement injectées. Configurez séparément chaque instance liée. [Gestionnaires de secrets par stack](docs/stack-secrets.fr.md). Correctif Bitwarden : le profil temporaire utilise le format TOML attendu par le CLI officiel, ce qui rétablit la récupération des secrets.
 **Défaut global pour les mises à jour d’images :** Dans Images, choisissez Manuelle, Immédiate ou Planifiée comme défaut global pour les images Compose actuelles et futures sans règle explicite. Activez ImageWatcher pour exécuter les mises à jour. Les exceptions par image et les réglages groupés par stack restent prioritaires ; choisissez Hériter du réglage global pour les retirer. Les services arrêtés héritent de la règle mais leur mise à jour est différée jusqu’à leur démarrage ; ils ne sont jamais démarrés automatiquement. Les exclusions Compose, pauses et créneaux de maintenance restent respectés. Chaque instance liée possède ses réglages.
@@ -733,7 +735,7 @@ La navigation des stacks, l'espace Logs/Compose, les indicateurs de ressources, 
 - PowerWatch et PowerWatch Hub : observation externe ou déploiement géré
 - PlugNPiN pour Nginx Proxy Manager, Pi-hole et AdGuard Home
 - Dozzle
-- Kula
+- Kula — Hôtes autorisés configurables pour Kula, avec protection contre le DNS rebinding conservée
 - Home Assistant
 
 ### Apparence & langues

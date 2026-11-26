@@ -1,4 +1,6 @@
 {
+    "watcher.kula.allowedHosts": "允许的主机",
+    "watcher.kula.allowedHostsHint": "每行输入一个主机名或用逗号分隔（如 server.example），不含协议、端口、路径或通配符。留空保留 Kula 的默认保护。保存时会重启已启用的 Kula。自定义 URL 只更改链接；请同时在此添加其主机名。",
     "stackSecrets.title": "密钥管理器",
     "stackSecrets.experimental": "Bitwarden Secrets Manager 功能完整可用，其他解决方案仍为实验性功能。",
     "stackSecrets.settingsHint": "在托管堆栈的实例上添加连接，然后为每个堆栈选择该连接。机器账户应仅有权读取所需密钥。此处的 Bitwarden 指 Secrets Manager，而非个人密码库。",

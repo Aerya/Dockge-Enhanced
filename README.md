@@ -64,6 +64,8 @@ The most important recent changes are grouped here so you can quickly see what h
 
 ### 🆕 November 2026
 
+**Kula: access through local DNS :** In Monitoring, use **Allowed hosts** to add exact hostnames such as `server.example`, one per line or separated by commas, without a protocol, port or path. Saving restarts enabled Kula and preserves its data. Empty lists keep Kula’s default protection; wildcards are rejected. The custom URL only changes the link: add its hostname too. Configure each linked instance separately.
+
 
 **Secret managers per stack :** Connect Bitwarden Secrets Manager, 1Password, Doppler or Infisical to Compose operations without copying retrieved values into `.env`. Bitwarden Secrets Manager is fully functional. 1Password, Doppler and Infisical remain experimental, subject to user testing. Bitwarden requires its official CLI, installable from Settings. Provider failure blocks the operation; container status remains available. Command output and resolved configuration are hidden. Docker still stores injected environment variables. Configure each linked instance separately. [Secret managers per stack](docs/stack-secrets.md). Bitwarden fix: the temporary profile uses the TOML format expected by the official CLI, restoring secret retrieval.
 **Global default for image updates :** In Images, choose Manual, Immediate or Scheduled as the global default for current and future Compose images without an explicit policy. Enable ImageWatcher to execute updates. Per-image and stack bulk exceptions take priority; choose Inherit global setting to remove them. Stopped services inherit the policy but their update is deferred until they run; they are never started automatically. Compose exclusions, pauses and the maintenance window still apply. Each linked instance owns its settings.
@@ -732,7 +734,7 @@ Stack navigation, the Logs/Compose workspace, resource indicators, health cards,
 - PowerWatch and PowerWatch Hub: external observation or managed deployment
 - PlugNPiN for Nginx Proxy Manager, Pi-hole and AdGuard Home
 - Dozzle
-- Kula
+- Kula — Configurable allowed hosts for Kula, retaining DNS rebinding protection
 - Home Assistant
 
 ### Appearance & languages

@@ -736,6 +736,16 @@
                         </select>
                     </div>
 
+                    <div class="col-12">
+                        <label for="kulaAllowedHosts" class="form-label small">{{ $t('watcher.kula.allowedHosts') }}</label>
+                        <textarea
+                            id="kulaAllowedHosts" v-model.lazy="kulaAllowedHostsText" rows="3"
+                            class="form-control form-control-sm" style="max-width:380px"
+                            placeholder="server.example" aria-describedby="kulaAllowedHostsHint"
+                        />
+                        <small id="kulaAllowedHostsHint" class="form-text">{{ $t('watcher.kula.allowedHostsHint') }}</small>
+                    </div>
+
                     <!-- URL personnalisée -->
                     <div class="col-12">
                         <label class="form-label small">{{ $t('watcher.kula.customUrl') }}</label>
@@ -1036,6 +1046,7 @@ type HealthAutoHealMode = "notify" | "restart_container" | "restart_service" | "
 type HealthActionStatus = "notified" | "success" | "failed" | "skipped";
 
 interface KulaSettings {
+    allowedHosts: string[];
     enabled: boolean;
     port: number;
     customUrl: string;
@@ -1425,10 +1436,17 @@ const clearingHealthEvents = ref(false);
 
 // ── Kula ──────────────────────────────────────────────────────────
 const kulaSettings = ref<KulaSettings>({
+    allowedHosts: [],
     enabled: false,
     port: 27960,
     customUrl: "",
     networkMode: "bridge",
+});
+const kulaAllowedHostsText = computed({
+    get: () => (kulaSettings.value.allowedHosts ?? []).join("\n"),
+    set: (value: string) => {
+        kulaSettings.value.allowedHosts = value.split(/[,\n]/).map(host => host.trim()).filter(Boolean);
+    },
 });
 const kulaStatus = ref<"running" | "stopped" | "error">("stopped");
 const savingKula = ref(false);
