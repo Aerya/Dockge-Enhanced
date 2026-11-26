@@ -1531,6 +1531,8 @@
     "watcher.kula.enableHint": "Startet den Kula-Container (CPU, RAM, Netzwerk, Festplatte, Container) automatisch beim Start.",
     "watcher.kula.port": "Port",
     "watcher.kula.networkMode": "Netzwerkmodus",
+    "watcher.kula.allowedHosts": "Erlaubte Hosts",
+    "watcher.kula.allowedHostsHint": "Ein Hostname pro Zeile oder durch Kommas getrennt (z. B. server.example), ohne Protokoll, Port, Pfad oder Platzhalter. Leer lassen, um Kulas Standardschutz beizubehalten. Speichern startet das aktivierte Kula neu. Die benutzerdefinierte URL ändert nur den Link; tragen Sie ihren Hostnamen auch hier ein.",
     "watcher.kula.customUrl": "Benutzerdefinierte URL (optional)",
     "watcher.kula.customUrlHint": "Für automatische URL leer lassen. Effektive URL:",
     "watcher.kula.running": "Wird ausgeführt",

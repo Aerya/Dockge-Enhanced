@@ -370,20 +370,6 @@
       "count": 1
     }
   },
-  "backend/watchers/kula-manager.ts": {
-    "@stylistic/no-multi-spaces": {
-      "count": 7
-    },
-    "@stylistic/object-property-newline": {
-      "count": 3
-    },
-    "@stylistic/quotes": {
-      "count": 1
-    },
-    "curly": {
-      "count": 1
-    }
-  },
   "backend/watchers/monitoring-watcher.ts": {
     "@stylistic/brace-style": {
       "count": 4
