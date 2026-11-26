@@ -1,6 +1,6 @@
 {
     "stackSecrets.title": "密钥管理器",
-    "stackSecrets.experimental": "实验性功能，仍需用户测试。Bitwarden Secrets Manager 也尚未经过真实环境验证。",
+    "stackSecrets.experimental": "Bitwarden Secrets Manager 功能完整可用，其他解决方案仍为实验性功能。",
     "stackSecrets.settingsHint": "在托管堆栈的实例上添加连接，然后为每个堆栈选择该连接。机器账户应仅有权读取所需密钥。此处的 Bitwarden 指 Secrets Manager，而非个人密码库。",
     "stackSecrets.provider": "提供商",
     "stackSecrets.url": "服务 HTTPS 地址",
@@ -22,7 +22,7 @@
     "stackSecrets.inUse": "仍有堆栈使用此连接。",
     "stackSecrets.configHidden": "此堆栈使用密钥管理器，解析后的配置已隐藏。",
     "stackSecrets.transferUnsupported": "不支持迁移或复制使用密钥管理器的堆栈。",
-    "releaseNews.item.stackSecrets": "每个堆栈可使用 Bitwarden Secrets Manager、1Password、Doppler 或 Infisical。此功能为实验性功能，所有提供商（包括 Bitwarden）都仍需用户测试。提供商失败时阻止 Compose 操作。密钥不会复制到 .env，但 Docker 仍保存注入容器的值。命令输出和解析后的配置会隐藏。Bitwarden 需要其官方 CLI，可从设置中安装。请同时更新关联实例。",
+    "releaseNews.item.stackSecrets": "每个堆栈可使用 Bitwarden Secrets Manager、1Password、Doppler 或 Infisical。Bitwarden 功能可用；其他提供商仍为实验性功能。提供商失败时阻止 Compose 操作。密钥不会复制到 .env，但 Docker 仍保存注入容器的值。命令输出和解析后的配置会隐藏。Bitwarden 需要其官方 CLI，可从设置中安装。请同时更新关联实例。",
     "releaseNews.item.globalImageAutoUpdate": "在镜像中为现有及未来镜像选择全局手动、立即或计划模式。单独设置优先；选择继承全局设置可移除例外。启用 ImageWatcher 并保存。已停止的服务保持停止，其更新将推迟。也支持环境变量，每个实例拥有自己的设置。",
     "watcher.status.auInherit": "继承全局设置",
     "watcher.img.defaultAutoUpdateHint": "适用于没有单独策略的现有及未来镜像，包括已停止的服务。启用 ImageWatcher 才会执行更新。不会启动已停止的服务，而是推迟其更新。每个镜像的单独设置优先。",
@@ -2943,5 +2943,6 @@
     "stackSecrets.bitwardenInstallHint": "镜像不包含 Bitwarden CLI。此按钮将在本实例上下载官方 2.1.0 版本，验证校验和并安装到数据卷。安装前请阅读其许可证。",
     "stackSecrets.license": "Bitwarden 许可证",
     "stackSecrets.installCli": "安装官方 Bitwarden CLI",
-    "stackSecrets.cliInstalled": "CLI 可用"
+    "stackSecrets.cliInstalled": "CLI 可用",
+    "releaseNews.item.bitwardenProfileFix": "Bitwarden Secrets Manager 功能完整可用。1Password、Doppler 和 Infisical 仍为实验性功能，有待用户测试。"
 }

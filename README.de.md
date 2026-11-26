@@ -65,7 +65,7 @@ Die wichtigsten kürzlichen Änderungen sind hier gruppiert, damit Sie schnell s
 ### 🆕 November 2026
 
 
-**Secret-Manager pro Stack :** Bitwarden Secrets Manager, 1Password, Doppler oder Infisical für Compose-Vorgänge verbinden, ohne abgerufene Werte in `.env` zu kopieren. Experimentell, vorbehaltlich Benutzertests; auch Bitwarden wartet auf reale Validierung und benötigt die optionale Installation seines offiziellen CLI über die Einstellungen. Anbieterfehler blockieren den Vorgang; der Containerstatus bleibt verfügbar. Befehlsausgaben und aufgelöste Konfigurationen werden ausgeblendet. Docker speichert weiterhin injizierte Umgebungsvariablen. Jede verknüpfte Instanz separat konfigurieren. [Secret-Manager pro Stack](docs/stack-secrets.de.md).
+**Secret-Manager pro Stack :** Bitwarden Secrets Manager, 1Password, Doppler oder Infisical für Compose-Vorgänge verbinden, ohne abgerufene Werte in `.env` zu kopieren. Bitwarden Secrets Manager ist voll funktionsfähig. 1Password, Doppler und Infisical bleiben experimentell und müssen noch von Benutzern getestet werden. Bitwarden benötigt sein offizielles CLI, das über die Einstellungen installiert werden kann. Anbieterfehler blockieren den Vorgang; der Containerstatus bleibt verfügbar. Befehlsausgaben und aufgelöste Konfigurationen werden ausgeblendet. Docker speichert weiterhin injizierte Umgebungsvariablen. Jede verknüpfte Instanz separat konfigurieren. [Secret-Manager pro Stack](docs/stack-secrets.de.md). Bitwarden-Korrektur: Das temporäre Profil verwendet das vom offiziellen CLI erwartete TOML-Format und ermöglicht wieder das Abrufen von Secrets.
 **Globaler Standard für Image-Updates :** Unter Images Manuell, Sofort oder Geplant als globalen Standard für aktuelle und zukünftige Compose-Images ohne eigene Regel wählen. ImageWatcher zum Aktualisieren aktivieren. Ausnahmen pro Image und Stack-Sammeleinstellungen haben Vorrang; Globale Einstellung übernehmen entfernt sie. Gestoppte Dienste erben die Regel, ihre Aktualisierung wird jedoch bis zum Start verschoben; sie werden niemals automatisch gestartet. Compose-Ausschlüsse, Pausen und Wartungsfenster gelten weiterhin. Jede verknüpfte Instanz hat eigene Einstellungen.
 
 **Auswahl der Selbstaktualisierung:** Die gewählte Aktualisierungsmethode bleibt beim Bearbeiten und Speichern erhalten. Statusaktualisierungen im Hintergrund können sie nicht durch eine ältere Antwort ersetzen; Speicherfehler bleiben sichtbar.
@@ -676,7 +676,7 @@ Die Stack-Navigation, der Logs/Compose-Arbeitsbereich, Ressourcenindikatoren, St
 
 ### Sicherheit & Authentifizierung
 
-- Secret-Manager pro Stack: vier experimentelle Anbieter, lokale Auflösung, verschlüsselte Verbindungstoken und blockierte Vorgänge bei Fehlern. [Secret-Manager pro Stack](docs/stack-secrets.de.md).
+- Secret-Manager pro Stack: funktionsfähige Bitwarden-Unterstützung und drei weitere experimentelle Anbieter, lokale Auflösung, verschlüsselte Verbindungstoken und blockierte Vorgänge bei Fehlern. [Secret-Manager pro Stack](docs/stack-secrets.de.md).
 - Lokale Konten mit optionaler TOTP-2FA, verschlüsselten Geheimnissen, Einmal-Wiederherstellungscodes und Sitzungswiderruf
 - Eingeschränkte lokale Konten mit Berechtigungen pro Instanz, Stack und Dienst sowie eigenem Arbeitsbereich ([Anleitung](docs/scoped-users.md)); vor einem Downgrade auf eine ältere Enhanced-Version deaktivieren
 - Trusted-Proxy-Authentifizierung aus ausdrücklich vertrauenswürdigen Netzwerken, Proxy-Identitäten werden lokalen Konten zugeordnet

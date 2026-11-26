@@ -3,8 +3,9 @@
 English · [Français](stack-secrets.fr.md) · [Deutsch](stack-secrets.de.md) · [Español](stack-secrets.es.md) · [简体中文](stack-secrets.zh-CN.md)
 
 Connect a stack to Bitwarden Secrets Manager, 1Password, Doppler or Infisical to retrieve secrets for Compose operations without copying them into its `.env` file.
+Bitwarden fix: the temporary profile uses the TOML format expected by the official CLI, restoring secret retrieval.
 
-**Experimental — subject to user testing.** Automated tests do not validate real accounts or services. Bitwarden Secrets Manager also awaits this validation. A successful connection test confirms retrieval, not application functionality.
+**Bitwarden Secrets Manager is fully functional. 1Password, Doppler and Infisical remain experimental, subject to user testing.** A successful connection test confirms retrieval, not application functionality.
 
 ## Setup
 

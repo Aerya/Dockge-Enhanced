@@ -3,8 +3,9 @@
 [English](stack-secrets.md) · [Français](stack-secrets.fr.md) · [Deutsch](stack-secrets.de.md) · Español · [简体中文](stack-secrets.zh-CN.md)
 
 Conecte una stack a Bitwarden Secrets Manager, 1Password, Doppler o Infisical para recuperar secretos durante las operaciones Compose sin copiarlos a su archivo `.env`.
+Corrección de Bitwarden: el perfil temporal utiliza el formato TOML que espera el CLI oficial, lo que restablece la recuperación de secretos.
 
-**Experimental — sujeto a pruebas de usuarios.** Los tests automatizados no validan cuentas ni servicios reales. Bitwarden Secrets Manager también espera esta validación. Una prueba de conexión correcta confirma la recuperación, no el funcionamiento de la aplicación.
+**Bitwarden Secrets Manager es plenamente funcional. 1Password, Doppler e Infisical siguen siendo experimentales, sujetos a pruebas de usuarios.** Una prueba de conexión correcta confirma la recuperación, no el funcionamiento de la aplicación.
 
 ## Configuración
 

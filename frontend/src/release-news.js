@@ -640,6 +640,10 @@ export const RELEASE_NEWS = [
         id: "2026-11-26-stack-secrets",
         items: [ "releaseNews.item.stackSecrets" ],
     },
+    {
+        id: "2026-11-26-bitwarden-profile-fix",
+        items: [ "releaseNews.item.bitwardenProfileFix" ],
+    },
 ];
 
 function currentReleaseNewsIds() {

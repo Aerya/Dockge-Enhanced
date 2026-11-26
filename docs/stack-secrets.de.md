@@ -3,8 +3,9 @@
 [English](stack-secrets.md) · [Français](stack-secrets.fr.md) · Deutsch · [Español](stack-secrets.es.md) · [简体中文](stack-secrets.zh-CN.md)
 
 Verbinden Sie einen Stack mit Bitwarden Secrets Manager, 1Password, Doppler oder Infisical. Secrets werden für Compose-Vorgänge abgerufen, ohne sie in die `.env`-Datei zu kopieren.
+Bitwarden-Korrektur: Das temporäre Profil verwendet das vom offiziellen CLI erwartete TOML-Format und ermöglicht wieder das Abrufen von Secrets.
 
-**Experimentell — vorbehaltlich Benutzertests.** Automatisierte Tests validieren keine echten Konten oder Dienste. Auch Bitwarden Secrets Manager wartet auf diese Validierung. Ein erfolgreicher Verbindungstest bestätigt den Abruf, nicht die Funktion der Anwendung.
+**Bitwarden Secrets Manager ist voll funktionsfähig. 1Password, Doppler und Infisical bleiben experimentell und müssen noch von Benutzern getestet werden.** Ein erfolgreicher Verbindungstest bestätigt den Abruf, nicht die Funktion der Anwendung.
 
 ## Einrichtung
 

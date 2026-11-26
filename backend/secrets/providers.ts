@@ -118,8 +118,7 @@ export async function resolveSecrets(connection: Connection, binding: Binding, o
                 const directory = await mkdtemp(path.join(os.tmpdir(), "dockge-bws-"));
                 try {
                     const config = path.join(directory, "config");
-                    await writeFile(config, JSON.stringify({ profiles: { dockge: { ...bitwardenEndpoints(connection.url),
-                        state_opt_out: "true" } } }), { mode: 0o600 });
+                    await writeFile(config, bitwardenProfile(connection.url), { mode: 0o600 });
                     const { stdout } = await exec(bitwardenExecutable(), [ "--config-file", config, "--profile", "dockge", "--output", "json", "secret", "list", binding.project ], {
                         env: { PATH: process.env.PATH,
                             BWS_ACCESS_TOKEN: connection.token },
@@ -150,4 +149,13 @@ export function bitwardenEndpoints(url: string) {
             server_identity: `https://identity.bitwarden.${suffix}` };
     }
     return { server_base: url };
+}
+
+/** bws reads TOML configuration, independently of its JSON output format. */
+export function bitwardenProfile(url: string): string {
+    const values = { ...bitwardenEndpoints(url),
+        state_opt_out: "true" };
+    return "[profiles.dockge]\n" + Object.entries(values)
+        .map(([ key, value ]) => `${key} = ${JSON.stringify(value)}`)
+        .join("\n") + "\n";
 }
