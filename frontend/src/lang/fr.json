@@ -1,6 +1,6 @@
 {
     "stackSecrets.title": "Gestionnaires de secrets",
-    "stackSecrets.experimental": "Expérimental — sous réserve de tests utilisateurs. Bitwarden Secrets Manager attend également une validation en conditions réelles.",
+    "stackSecrets.experimental": "Bitwarden Secrets Manager pleinement fonctionnel, expérimental pour les autres solutions.",
     "stackSecrets.settingsHint": "Ajoutez une connexion sur l’instance qui héberge vos stacks, puis sélectionnez-la dans chaque stack. Utilisez un compte machine limité aux secrets nécessaires. Bitwarden désigne ici Secrets Manager, pas le coffre de mots de passe personnel.",
     "stackSecrets.provider": "Fournisseur",
     "stackSecrets.url": "Adresse HTTPS du service",
@@ -22,7 +22,7 @@
     "stackSecrets.inUse": "Cette connexion est encore utilisée par une stack.",
     "stackSecrets.configHidden": "Configuration résolue masquée : cette stack utilise un gestionnaire de secrets.",
     "stackSecrets.transferUnsupported": "La migration et la réplication des stacks utilisant un gestionnaire de secrets ne sont pas prises en charge.",
-    "releaseNews.item.stackSecrets": "Gestionnaires de secrets par stack : Bitwarden Secrets Manager, 1Password, Doppler et Infisical. Expérimental, sous réserve de tests utilisateurs, y compris Bitwarden. L’échec du fournisseur bloque Compose. Les valeurs ne sont pas recopiées dans .env ; Docker conserve celles injectées dans les conteneurs. Sorties des commandes et configuration résolue masquées. Bitwarden nécessite son CLI officiel, installable depuis les paramètres. Mettez aussi les instances liées à jour.",
+    "releaseNews.item.stackSecrets": "Gestionnaires de secrets par stack : Bitwarden Secrets Manager, 1Password, Doppler et Infisical. Bitwarden fonctionnel ; autres fournisseurs expérimentaux. L’échec du fournisseur bloque Compose. Les valeurs ne sont pas recopiées dans .env ; Docker conserve celles injectées dans les conteneurs. Sorties des commandes et configuration résolue masquées. Bitwarden nécessite son CLI officiel, installable depuis les paramètres. Mettez aussi les instances liées à jour.",
     "releaseNews.item.globalImageAutoUpdate": "Dans Images, choisissez un mode global Manuelle, Immédiate ou Planifiée pour les images actuelles et futures. Les exceptions restent prioritaires ; « Hériter du réglage global » les retire. Activez ImageWatcher et enregistrez. Les services arrêtés restent arrêtés, leur mise à jour est différée. Configuration aussi possible par variables d’environnement, propre à chaque instance.",
     "watcher.status.auInherit": "Hériter du réglage global",
     "watcher.img.defaultAutoUpdateHint": "S’applique aux images actuelles et futures sans réglage spécifique, même si leurs services sont arrêtés. Activez ImageWatcher pour exécuter les mises à jour. Les services arrêtés ne sont pas démarrés : leur mise à jour est différée. Les exceptions par image restent prioritaires.",
@@ -3002,5 +3002,6 @@
     "stackSecrets.bitwardenInstallHint": "Le CLI Bitwarden n’est pas inclus dans l’image. Ce bouton télécharge la version officielle 2.1.0 sur cette instance, vérifie son empreinte et l’installe dans le volume de données. Consultez sa licence avant l’installation.",
     "stackSecrets.license": "Licence Bitwarden",
     "stackSecrets.installCli": "Installer le CLI officiel Bitwarden",
-    "stackSecrets.cliInstalled": "CLI disponible"
+    "stackSecrets.cliInstalled": "CLI disponible",
+    "releaseNews.item.bitwardenProfileFix": "Bitwarden Secrets Manager est pleinement fonctionnel. 1Password, Doppler et Infisical restent expérimentaux, sous réserve de tests utilisateurs."
 }

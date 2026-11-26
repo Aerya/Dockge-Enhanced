@@ -1,6 +1,6 @@
 {
     "stackSecrets.title": "Gestores de secretos",
-    "stackSecrets.experimental": "Experimental — sujeto a pruebas de usuarios. Bitwarden Secrets Manager también está pendiente de validación en condiciones reales.",
+    "stackSecrets.experimental": "Bitwarden Secrets Manager es plenamente funcional; las otras soluciones son experimentales.",
     "stackSecrets.settingsHint": "Añada una conexión en la instancia que aloja las stacks y selecciónela en cada stack. Limite la cuenta de máquina a los secretos necesarios. Bitwarden se refiere aquí a Secrets Manager, no a la bóveda personal de contraseñas.",
     "stackSecrets.provider": "Proveedor",
     "stackSecrets.url": "Dirección HTTPS del servicio",
@@ -22,7 +22,7 @@
     "stackSecrets.inUse": "Una stack todavía utiliza esta conexión.",
     "stackSecrets.configHidden": "Configuración resuelta oculta: esta stack utiliza un gestor de secretos.",
     "stackSecrets.transferUnsupported": "No se admite la migración ni la replicación de stacks con un gestor de secretos.",
-    "releaseNews.item.stackSecrets": "Gestores de secretos por stack: Bitwarden Secrets Manager, 1Password, Doppler e Infisical. Experimental, sujeto a pruebas de usuarios, también Bitwarden. Los fallos del proveedor bloquean Compose. Los valores no se copian a .env; Docker conserva los inyectados en contenedores. Salidas y configuración resuelta ocultas. Bitwarden requiere su CLI oficial, instalable desde los ajustes. Actualice también las instancias vinculadas.",
+    "releaseNews.item.stackSecrets": "Gestores de secretos por stack: Bitwarden Secrets Manager, 1Password, Doppler e Infisical. Bitwarden es funcional; los otros proveedores son experimentales. Los fallos del proveedor bloquean Compose. Los valores no se copian a .env; Docker conserva los inyectados en contenedores. Salidas y configuración resuelta ocultas. Bitwarden requiere su CLI oficial, instalable desde los ajustes. Actualice también las instancias vinculadas.",
     "releaseNews.item.globalImageAutoUpdate": "En Imágenes, elija un modo global Manual, Inmediata o Programada para imágenes actuales y futuras. Las excepciones tienen prioridad; Heredar ajuste global las elimina. Active ImageWatcher y guarde. Los servicios detenidos permanecen detenidos y su actualización se aplaza. También admite variables de entorno, con ajustes propios por instancia.",
     "watcher.status.auInherit": "Heredar ajuste global",
     "watcher.img.defaultAutoUpdateHint": "Se aplica a las imágenes actuales y futuras sin una regla específica, incluidos los servicios detenidos. Active ImageWatcher para ejecutar las actualizaciones. Los servicios detenidos no se inician: su actualización se aplaza. Las excepciones por imagen tienen prioridad.",
@@ -1928,5 +1928,6 @@
     "stackSecrets.bitwardenInstallHint": "El CLI de Bitwarden no se incluye en la imagen. Este botón descarga la versión oficial 2.1.0 en esta instancia, verifica su suma de comprobación y la instala en el volumen de datos. Consulte su licencia antes de instalarlo.",
     "stackSecrets.license": "Licencia de Bitwarden",
     "stackSecrets.installCli": "Instalar el CLI oficial de Bitwarden",
-    "stackSecrets.cliInstalled": "CLI disponible"
+    "stackSecrets.cliInstalled": "CLI disponible",
+    "releaseNews.item.bitwardenProfileFix": "Bitwarden Secrets Manager es plenamente funcional. 1Password, Doppler e Infisical siguen siendo experimentales, sujetos a pruebas de usuarios."
 }

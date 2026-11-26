@@ -5,7 +5,7 @@ import os from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
 import { configureSecrets, type Binding, type Connection } from "./store";
-import { secretEnvironment, resolveSecrets } from "./providers";
+import { secretEnvironment, resolveSecrets, bitwardenProfile } from "./providers";
 import { secretContext, secretStackPs, prepareSecrets, withSecretOperation } from "./runtime";
 import buffered, { execFile } from "../buffered-process";
 
@@ -187,7 +187,7 @@ test("Bitwarden uses stdin-free credentials in child env and a temporary non-sec
     const { directory } = await fixture(t);
     const executable = path.join(directory, "bws");
     await fs.writeFile(executable, `#!/bin/sh
-cat "$2" > "${directory}/profile.json"
+cat "$2" > "${directory}/profile.toml"
 printf '%s' "$BWS_ACCESS_TOKEN" > "${directory}/token.txt"
 printf '[{"key":"TOKEN","value":"%s"}]' "$2"
 `, { mode: 0o700 });
@@ -200,11 +200,12 @@ printf '[{"key":"TOKEN","value":"%s"}]' "$2"
         provider: "bitwarden",
         url: "https://vault.bitwarden.eu" }, { ...binding,
         project: "a".repeat(36) });
-    const profile = JSON.parse(await fs.readFile(path.join(directory, "profile.json"), "utf8"));
-    assert.equal(profile.profiles.dockge.state_opt_out, "true");
-    assert.equal(profile.profiles.dockge.server_api, "https://api.bitwarden.eu");
-    assert.equal(profile.profiles.dockge.server_identity, "https://identity.bitwarden.eu");
-    assert.ok(!JSON.stringify(profile).includes(connection.token));
+    const profile = await fs.readFile(path.join(directory, "profile.toml"), "utf8");
+    assert.match(profile, /^\[profiles\.dockge\]/);
+    assert.match(profile, /state_opt_out = "true"/);
+    assert.match(profile, /server_api = "https:\/\/api\.bitwarden\.eu"/);
+    assert.match(profile, /server_identity = "https:\/\/identity\.bitwarden\.eu"/);
+    assert.ok(!profile.includes(connection.token));
     assert.equal(await fs.readFile(path.join(directory, "token.txt"), "utf8"), connection.token);
     await assert.rejects(fs.access(values.TOKEN), /ENOENT/);
 });
@@ -230,4 +231,26 @@ test("a missing bare environment variable blocks creation before Docker can muta
     t.mock.method(globalThis, "fetch", async () => new Response(JSON.stringify({ DIFFERENT_SECRET: "value" })));
     await assert.rejects(promisify(execFile)("docker", [ "compose", "up", "-d" ], { cwd }), /stackSecrets.unavailable/);
     assert.deepEqual(await fs.readdir(cwd), [ "compose.yaml" ]);
+});
+
+test("official Bitwarden CLI reads the generated TOML profile", async t => {
+    const binary = process.env.BWS_TEST_BINARY;
+    if (!binary) {
+        t.skip("Set BWS_TEST_BINARY to verify with the official CLI");
+        return;
+    }
+    const directory = await fs.mkdtemp(path.join(os.tmpdir(), "dockge-bws-profile-test-"));
+    t.after(() => fs.rm(directory, { recursive: true,
+        force: true }));
+    for (const url of [ "https://vault.bitwarden.com", "https://vault.bitwarden.eu", "https://example.com/bitwarden" ]) {
+        const filename = path.join(directory, "config");
+        await fs.writeFile(filename, bitwardenProfile(url), { mode: 0o600 });
+        await promisify(execFile)(binary, [ "--config-file", filename, "--profile", "dockge", "config", "state-opt-out", "true" ], {
+            env: { PATH: process.env.PATH },
+            timeout: 10_000,
+        });
+        const saved = await fs.readFile(filename, "utf8");
+        assert.match(saved, /state_opt_out = "true"/);
+        assert.ok(saved.includes(url.includes("vault.") ? url.replace("vault.", "api.") : url));
+    }
 });

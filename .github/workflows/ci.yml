@@ -56,7 +56,9 @@ jobs:
 
       - name: Tests des gestionnaires de secrets
         if: steps.docs.outputs.docs_only != 'true'
-        run: npx tsx --test backend/secrets/*.test.ts
+        run: |
+          node --import tsx --input-type=module -e 'import { configureSecrets } from "./backend/secrets/store.ts"; import { installBitwardenCLI } from "./backend/secrets/bitwarden-cli.ts"; configureSecrets(process.env.RUNNER_TEMP + "/bws-tests"); await installBitwardenCLI();'
+          BWS_TEST_BINARY="$RUNNER_TEMP/bws-tests/secret-tools/bws" npx tsx --test backend/secrets/*.test.ts
 
       - name: Vérification ESLint
         if: steps.docs.outputs.docs_only != 'true'
