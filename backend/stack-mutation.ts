@@ -1,3 +1,4 @@
+import { withSecretOperation } from "./secrets/runtime";
 import { AsyncLocalStorage } from "node:async_hooks";
 import { requireLocalRuntime } from "./hub-mode";
 
@@ -52,7 +53,7 @@ export async function withStackMutation<T>(project: string, action: () => Promis
     const next = new Map(current);
     next.set(project, token);
     try {
-        return await context.run(next, action);
+        return await context.run(next, () => withSecretOperation(action));
     } finally {
         if (owners.get(project) === token) {
             owners.delete(project);

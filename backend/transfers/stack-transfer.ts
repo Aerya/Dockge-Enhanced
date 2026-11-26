@@ -1,3 +1,4 @@
+import { protectedStack } from "../secrets/runtime";
 import fs, { promises as fsAsync } from "node:fs";
 import path from "node:path";
 import { execFile } from "../buffered-process";
@@ -358,6 +359,9 @@ function resolvedMounts(config: Record<string, unknown>): Map<string, ParsedMoun
 
 export async function analyzeStackTransfer(server: DockgeServer, stackName: string, rules: StackTransferPathRule[] = []): Promise<StackTransferInventory> {
     const stack = await Stack.getStack(server, stackName);
+    if (protectedStack(stack.path)) {
+        throw new ValidationError("stackSecrets.transferUnsupported");
+    }
     if (stack.isExternal) {
         throw new ValidationError("External stacks cannot be transferred or replicated while the feature is in Beta");
     }

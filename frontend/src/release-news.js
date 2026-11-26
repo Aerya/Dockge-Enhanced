@@ -636,6 +636,10 @@ export const RELEASE_NEWS = [
         id: "2026-11-24-global-image-auto-update",
         items: [ "releaseNews.item.globalImageAutoUpdate" ],
     },
+    {
+        id: "2026-11-26-stack-secrets",
+        items: [ "releaseNews.item.stackSecrets" ],
+    },
 ];
 
 function currentReleaseNewsIds() {

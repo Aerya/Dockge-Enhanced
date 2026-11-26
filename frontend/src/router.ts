@@ -1,3 +1,4 @@
+const Secrets = () => import("./components/settings/Secrets.vue");
 import { createRouter, createWebHistory } from "vue-router";
 
 import Layout from "./layouts/Layout.vue";
@@ -236,6 +237,12 @@ const routes = [
                                 name: "settings-globalEnv",
                                 component: GlobalEnv,
                                 meta: { title: "GlobalEnv" },
+                            },
+                            {
+                                path: "secrets",
+                                name: "settings-secrets",
+                                component: Secrets,
+                                meta: { title: "stackSecrets.title" },
                             },
                             {
                                 path: "diagnostics",

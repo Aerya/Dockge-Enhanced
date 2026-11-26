@@ -70,6 +70,7 @@ export default {
                 security: {
                     title: this.$t("Security"),
                 },
+                secrets: { title: this.$t("stackSecrets.title") },
                 globalEnv: {
                     title: this.$t("GlobalEnv"),
                 },

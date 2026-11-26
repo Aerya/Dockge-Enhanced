@@ -64,6 +64,8 @@ The most important recent changes are grouped here so you can quickly see what h
 
 ### 🆕 November 2026
 
+
+**Secret managers per stack :** Connect Bitwarden Secrets Manager, 1Password, Doppler or Infisical to Compose operations without copying retrieved values into `.env`. Experimental, subject to user testing; Bitwarden also awaits real-world validation and requires optional installation of its official CLI from Settings. Provider failure blocks the operation; container status remains available. Command output and resolved configuration are hidden. Docker still stores injected environment variables. Configure each linked instance separately. [Secret managers per stack](docs/stack-secrets.md).
 **Global default for image updates :** In Images, choose Manual, Immediate or Scheduled as the global default for current and future Compose images without an explicit policy. Enable ImageWatcher to execute updates. Per-image and stack bulk exceptions take priority; choose Inherit global setting to remove them. Stopped services inherit the policy but their update is deferred until they run; they are never started automatically. Compose exclusions, pauses and the maintenance window still apply. Each linked instance owns its settings.
 
 **Self-update selection:** The update-method selector preserves the chosen mode while editing and saving. Background status refreshes cannot overwrite it with an older response; failed saves remain visible.
@@ -673,6 +675,8 @@ Stack navigation, the Logs/Compose workspace, resource indicators, health cards,
 - Reliable current-container discovery with custom Compose `hostname:` values, and a visible degraded state when verification is unavailable
 
 ### Security & authentication
+
+- Per-stack secret managers: four experimental providers, local resolution, encrypted connection tokens and fail-closed operations. [Secret managers per stack](docs/stack-secrets.md).
 - Local accounts with optional TOTP 2FA, encrypted secrets, single-use recovery codes and session revocation
 - Restricted local accounts with per-instance, per-stack and per-service permissions and a dedicated workspace ([guide](docs/scoped-users.md)); disable them before downgrading to an older Enhanced version
 - Trusted-proxy authentication with explicitly trusted networks and proxy identities mapped to local accounts

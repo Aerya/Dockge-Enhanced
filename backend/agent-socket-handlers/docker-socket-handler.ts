@@ -1,3 +1,4 @@
+import { registerSecrets } from "./secrets-socket-handler";
 import { collectBackupCoverage } from "../backup-coverage";
 import path from "node:path";
 import { runDeploymentPreview } from "../rollout-preview";
@@ -58,6 +59,7 @@ export function instanceSystemStatsResponse(
 export class DockerSocketHandler extends AgentSocketHandler {
     create(socket : DockgeSocket, server : DockgeServer, agentSocket : AgentSocket) {
         registerContainerFiles(server, socket, agentSocket);
+        registerSecrets(socket, server, agentSocket);
         registerCatalog(socket, agentSocket);
         // Do not call super.create()
         agentSocket.on("serviceLinks:stacks", async callback => {

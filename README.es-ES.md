@@ -64,6 +64,8 @@ Los cambios recientes más importantes se agrupan aquí para entender rápidamen
 
 ### 🆕 Noviembre de 2026
 
+
+**Gestores de secretos por stack :** Conecte Bitwarden Secrets Manager, 1Password, Doppler o Infisical a las operaciones Compose sin copiar los valores recuperados a `.env`. Experimental, sujeto a pruebas de usuarios; Bitwarden también espera validación real y requiere la instalación opcional de su CLI oficial desde los ajustes. Si falla el proveedor, se bloquea la operación; el estado de los contenedores sigue disponible. Se ocultan la salida de los comandos y la configuración resuelta. Docker conserva las variables de entorno inyectadas. Configure cada instancia vinculada por separado. [Gestores de secretos por stack](docs/stack-secrets.es.md).
 **Valor global para las actualizaciones de imágenes :** En Imágenes, elija Manual, Inmediata o Programada como valor global para las imágenes Compose actuales y futuras sin una regla explícita. Active ImageWatcher para ejecutar las actualizaciones. Las excepciones por imagen y los ajustes grupales por stack tienen prioridad; elija Heredar ajuste global para eliminarlos. Los servicios detenidos heredan la regla pero su actualización se aplaza hasta que se inicien; nunca se inician automáticamente. Se respetan las exclusiones Compose, las pausas y la ventana de mantenimiento. Cada instancia vinculada tiene sus propios ajustes.
 
 **Selección de actualización automática:** El selector conserva el modo elegido durante la edición y el guardado. La actualización del estado en segundo plano no puede sobrescribirlo con una respuesta anterior; los errores de guardado permanecen visibles.
@@ -675,6 +677,8 @@ La navegación, Logs/Compose, indicadores de recursos, tarjetas de salud, temas 
 - Detección fiable del contenedor actual con valores Compose `hostname:` personalizados, y estado degradado visible si la verificación no es posible
 
 ### Seguridad y autenticación
+
+- Gestores de secretos por stack: cuatro proveedores experimentales, resolución local, tokens de conexión cifrados y operaciones bloqueadas en caso de fallo. [Gestores de secretos por stack](docs/stack-secrets.es.md).
 - Cuentas locales con 2FA TOTP opcional, secretos cifrados, códigos de recuperación de un solo uso y revocación de sesiones
 - Cuentas locales con acceso limitado y permisos por instancia, stack y servicio, con espacio de trabajo dedicado ([guía](docs/scoped-users.md)); desactívelas antes de volver a una versión anterior de Enhanced
 - Autenticación por trusted proxy limitada a redes explícitamente autorizadas, con identidades del proxy asociadas a cuentas locales
