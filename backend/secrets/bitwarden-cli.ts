@@ -1,7 +1,7 @@
 import { createHash, randomUUID } from "node:crypto";
 import { promises as fs, existsSync } from "node:fs";
 import path from "node:path";
-import { execFile } from "node:child_process";
+import { execFile } from "../../extra/command-buffer.cjs";
 import { promisify } from "node:util";
 import { getSecretsStore, secretsError } from "./store";
 

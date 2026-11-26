@@ -1,5 +1,5 @@
 import { bitwardenExecutable } from "./bitwarden-cli";
-import { execFile } from "node:child_process";
+import { execFile } from "../../extra/command-buffer.cjs";
 import { mkdtemp, writeFile, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";

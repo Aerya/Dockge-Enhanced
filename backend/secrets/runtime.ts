@@ -1,4 +1,4 @@
-import { execFile } from "node:child_process";
+import { execFile } from "../../extra/command-buffer.cjs";
 import { promisify } from "node:util";
 import { AsyncLocalStorage } from "node:async_hooks";
 import path from "node:path";
