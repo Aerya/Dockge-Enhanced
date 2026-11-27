@@ -64,6 +64,8 @@ The most important recent changes are grouped here so you can quickly see what h
 
 ### 🆕 November 2026
 
+**Host Management (Beta) :** Optional and disabled by default, under `/watcher/hosts`: local host inventory, APT/Pacman updates, Debian/Ubuntu CVE analysis using the existing Trivy image, and restricted manual APT operations with local authorization. Reports are mounted read-only. Existing federation transports requests; old agents remain unavailable. Automatic updates, AUR, RPM/APK/Zypper and complete vendor coverage are unavailable. [→](docs/host-management.md).
+
 **1Password: new secrets API :** 1Password now uses `listSecrets` with revealed values instead of `getVariables`, scheduled for removal on January 20, 2027. The SDK is pinned to `0.0.0-credential-broker-dev-preview.4`. Update linked instances too.
 
 **Kula: access through local DNS :** In Monitoring, use **Allowed hosts** to add exact hostnames such as `server.example`, one per line or separated by commas, without a protocol, port or path. Saving restarts enabled Kula and preserves its data. Empty lists keep Kula’s default protection; wildcards are rejected. The custom URL only changes the link: add its hostname too. Configure each linked instance separately.
@@ -695,6 +697,8 @@ Stack navigation, the Logs/Compose workspace, resource indicators, health cards,
 - TLS trust-store checks after the eMudhra incident ([TLS checks](security/emudhra/README.md))
 
 ### Monitoring
+
+- **Host Management (Beta)** — Optional and disabled by default, under `/watcher/hosts`: local host inventory, APT/Pacman updates, Debian/Ubuntu CVE analysis using the existing Trivy image, and restricted manual APT operations with local authorization. Reports are mounted read-only. Existing federation transports requests; old agents remain unavailable. Automatic updates, AUR, RPM/APK/Zypper and complete vendor coverage are unavailable. [→](docs/host-management.md).
 - **Docker connection recovery** — `DOCKGE_DOCKER_RECOVERY_RETRIES` / `DOCKGE_DOCKER_RECOVERY_INTERVAL_SECONDS`
 - System, stack and container CPU, RAM and disk statistics, with a configurable status bar
 - Host system details, temperatures and monitored disk partitions
@@ -1163,6 +1167,9 @@ Commercial third-party clients are allowed by the license, but must not imply of
 ---
 
 ## Credits
+
+- [PatchMon](https://github.com/PatchMon/PatchMon) — System inventory, monitoring and update orchestration inspiration.
+- [PatchBase](https://github.com/patchbase/patchbase) — Package inventory, security advisory correlation and vulnerability detection inspiration.
 
 - Thanks to **yodadl**.
 

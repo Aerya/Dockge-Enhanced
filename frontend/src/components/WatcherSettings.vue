@@ -15,6 +15,10 @@
         <div class="shadow-box shadow-box-settings">
             <!-- ═══ TAB BAR ═══ -->
             <div class="watcher-tab-bar mb-4">
+                <button class="watcher-tab" :class="{ active: currentTab === 'hosts' }" @click="$router.push('/watcher/hosts')">
+                    <font-awesome-icon icon="server" class="watcher-tab-icon" />
+                    <span>{{ $t("hosts.title") }}</span>
+                </button>
                 <button
                     class="watcher-tab"
                     :class="{ active: currentTab === 'updates' }"

@@ -30,6 +30,7 @@ const Automation = () => import("./components/settings/Automation.vue");
 import About from "./components/settings/About.vue";
 
 // Watcher - Tabs
+import WatcherHostsTab from "./components/watcher/WatcherHostsTab.vue";
 import WatcherImagesTab from "./components/watcher/WatcherImagesTab.vue";
 import WatcherTrivyTab from "./components/watcher/WatcherTrivyTab.vue";
 import WatcherNotificationsTab from "./components/watcher/WatcherNotificationsTab.vue";
@@ -41,7 +42,7 @@ import StackSchedulerTab from "./components/StackSchedulerTab.vue";
 const DockerResources = () => import("./pages/DockerResources.vue");
 
 // Valid watcher tab slugs, used to map legacy /watcher?tab=X deep links
-const WATCHER_TABS = new Set([ "images", "updates", "scheduler", "trivy", "backup", "resources", "notifications", "monitoring", "audit" ]);
+const WATCHER_TABS = new Set([ "hosts", "images", "updates", "scheduler", "trivy", "backup", "resources", "notifications", "monitoring", "audit" ]);
 
 const routes = [
     {
@@ -126,6 +127,12 @@ const routes = [
                                     // query: {} drops the legacy ?tab=X from the redirected URL
                                     return { path: WATCHER_TABS.has(tab) ? `/watcher/${tab}` : "/watcher/images", query: {} };
                                 },
+                            },
+                            {
+                                path: "hosts",
+                                name: "watcher-hosts",
+                                component: WatcherHostsTab,
+                                meta: { title: "hosts.title" },
                             },
                             {
                                 path: "images",

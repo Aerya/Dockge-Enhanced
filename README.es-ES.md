@@ -64,6 +64,8 @@ Los cambios recientes más importantes se agrupan aquí para entender rápidamen
 
 ### 🆕 Noviembre de 2026
 
+**Gestión de hosts (Beta) :** Opcional y desactivado por defecto en `/watcher/hosts`: inventario local, actualizaciones APT/Pacman, análisis CVE Debian/Ubuntu con la imagen Trivy existente y operaciones APT manuales limitadas con autorización local. Los informes se montan en solo lectura. La federación existente transporta las solicitudes; los agentes antiguos permanecen no disponibles. No se ofrecen actualizaciones automáticas, AUR, RPM/APK/Zypper ni cobertura completa del proveedor. [→](docs/host-management.es.md).
+
 **1Password: nueva API de secretos :** 1Password utiliza ahora `listSecrets` con los valores revelados en lugar de `getVariables`, cuya retirada está prevista para el 20 de enero de 2027. El SDK se fija en `0.0.0-credential-broker-dev-preview.4`. Actualice también las instancias vinculadas.
 
 **Kula: acceso mediante DNS local :** En Monitoring, use **Hosts permitidos** para añadir nombres exactos como `server.example`, uno por línea o separados por comas, sin protocolo, puerto ni ruta. Al guardar se reinicia Kula si está activado y se conservan sus datos. Una lista vacía mantiene la protección predeterminada; se rechazan comodines. La URL personalizada solo cambia el enlace: añada también su nombre de host. Configure cada instancia vinculada por separado.
@@ -697,6 +699,8 @@ La navegación, Logs/Compose, indicadores de recursos, tarjetas de salud, temas 
 - Comprobaciones de los almacenes de certificados TLS tras el incidente de eMudhra ([comprobaciones TLS](security/emudhra/README.md))
 
 ### Monitorización
+
+- **Gestión de hosts (Beta)** — Opcional y desactivado por defecto en `/watcher/hosts`: inventario local, actualizaciones APT/Pacman, análisis CVE Debian/Ubuntu con la imagen Trivy existente y operaciones APT manuales limitadas con autorización local. Los informes se montan en solo lectura. La federación existente transporta las solicitudes; los agentes antiguos permanecen no disponibles. No se ofrecen actualizaciones automáticas, AUR, RPM/APK/Zypper ni cobertura completa del proveedor. [→](docs/host-management.es.md).
 - **Recuperación de la conexión Docker** — `DOCKGE_DOCKER_RECOVERY_RETRIES` / `DOCKGE_DOCKER_RECOVERY_INTERVAL_SECONDS`
 - Estadísticas de CPU, RAM y disco del sistema, los stacks y los contenedores, con barra de estado configurable
 - Detalles del sistema host, temperaturas y particiones de disco supervisadas
@@ -1165,6 +1169,9 @@ Los clientes de terceros comerciales están permitidos por la licencia, pero no 
 ---
 
 ## Créditos
+
+- [PatchMon](https://github.com/PatchMon/PatchMon) — Inspiración para inventario de sistemas, supervisión y orquestación de actualizaciones.
+- [PatchBase](https://github.com/patchbase/patchbase) — Inspiración para inventario de paquetes, correlación de avisos y detección de vulnerabilidades.
 
 - Gracias a **yodadl**.
 

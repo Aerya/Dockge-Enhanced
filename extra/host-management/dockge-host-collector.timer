@@ -1,0 +1,10 @@
+[Unit]
+Description=Collect host inventory every six hours (Beta)
+
+[Timer]
+OnBootSec=10min
+OnUnitActiveSec=6h
+RandomizedDelaySec=10min
+
+[Install]
+WantedBy=timers.target

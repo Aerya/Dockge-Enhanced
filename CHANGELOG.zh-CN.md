@@ -1,6 +1,8 @@
 # Dockge Enhanced 更新日志
 
 
+> **变更草案 — 主机管理（测试版）** — 位于 `/watcher/hosts`，可选且默认关闭：本地主机清单、APT/Pacman 更新、通过现有 Trivy 镜像进行 Debian/Ubuntu CVE 分析，以及需要本地授权的受限手动 APT 操作。报告只读挂载。请求使用现有联合通信；旧代理显示不可用。不支持自动更新、AUR、RPM/APK/Zypper 或完整厂商覆盖。
+
 > **Windows 11 / WSL2 验证：**提供安装指南，已测试 Compose 操作、Restic/Zerobyte 备份和关联实例。Windows 更新 sidecar 挂载及共享网络服务的顺序重启修复保留 Linux/Unraid 路径和权限。 [在 Windows 11 上使用 Docker Desktop（WSL2）](docs/windows.zh-CN.md). Windows 重启后，某些 WSL 挂载需要按指南手动恢复。
 
 完整的项目历史，最新条目在前。每个日期均为该变更合并到 `main` 的日期。合并到 `main` 的应用变更会由构建工作流发布为 `ghcr.io/aerya/dockge-enhanced:latest`；仅涉及文档的提交不会生成新镜像。仅存在于未合并 Pull Request 或测试镜像中的功能不会列在这里。

@@ -1,6 +1,8 @@
 # Changelog Dockge Enhanced
 
 
+> **Évolution préparée, pas encore publiée — Gestion des hôtes (Bêta)** — Optionnel et désactivé par défaut, dans `/watcher/hosts` : inventaire de l’hôte local, mises à jour APT/Pacman, analyse CVE Debian/Ubuntu avec l’image Trivy existante et opérations APT manuelles limitées avec autorisation locale. Les rapports sont montés en lecture seule. La fédération existante transporte les requêtes ; les anciens agents restent indisponibles. Mises à jour automatiques, AUR, RPM/APK/Zypper et couverture éditeur complète indisponibles.
+
 > **Validation Windows 11 / WSL2 :** guide d’installation, actions Compose, sauvegardes Restic/Zerobyte et instances liées testées. Les corrections du montage Windows du sidecar et du redémarrage des services partageant un réseau préservent les chemins et permissions Linux/Unraid. [Windows 11 avec Docker Desktop (WSL2)](docs/windows.fr.md). Après redémarrage Windows, certains montages WSL nécessitent une reprise manuelle décrite dans le guide.
 
 Historique complet du projet, du plus récent au plus ancien. Chaque date correspond à la fusion de la modification dans `main`. Les modifications applicatives fusionnées dans `main` sont publiées sous `ghcr.io/aerya/dockge-enhanced:latest` par le workflow de construction ; les commits purement documentaires ne produisent pas de nouvelle image. Les fonctionnalités présentes uniquement dans une pull request ouverte ou une image de test ne figurent pas ici.

@@ -1,0 +1,9 @@
+[Unit]
+Description=Check locally authorized host operations (Beta)
+
+[Timer]
+OnBootSec=1min
+OnUnitActiveSec=15s
+
+[Install]
+WantedBy=timers.target

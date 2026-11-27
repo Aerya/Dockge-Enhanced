@@ -1,3 +1,5 @@
+import { registerHosts } from "./hosts-socket-handler";
+import { HostManager } from "../hosts/manager";
 import { registerSecrets } from "./secrets-socket-handler";
 import { collectBackupCoverage } from "../backup-coverage";
 import path from "node:path";
@@ -60,6 +62,7 @@ export class DockerSocketHandler extends AgentSocketHandler {
     create(socket : DockgeSocket, server : DockgeServer, agentSocket : AgentSocket) {
         registerContainerFiles(server, socket, agentSocket);
         registerSecrets(socket, server, agentSocket);
+        registerHosts(socket, agentSocket);
         registerCatalog(socket, agentSocket);
         // Do not call super.create()
         agentSocket.on("serviceLinks:stacks", async callback => {
@@ -300,7 +303,7 @@ export class DockerSocketHandler extends AgentSocketHandler {
             }
         });
 
-        agentSocket.on("instanceHomeSummaryGet", (callback) => {
+        agentSocket.on("instanceHomeSummaryGet", async (callback) => {
             try {
                 checkLogin(socket);
                 const backup = BackupManager.getInstance();
@@ -314,6 +317,7 @@ export class DockerSocketHandler extends AgentSocketHandler {
                     CRITICAL: 4 };
                 callbackResult({ ok: true,
                     data: {
+                        hosts: await HostManager.instance.summary(),
                         images: { enabled: ImageWatcher.getInstance().settings.enabled,
                             count: [ ...imageStatusStore.values() ].filter(s => s.hasUpdate && !s.error).length },
                         backup: { enabled: backup.settings.enabled,

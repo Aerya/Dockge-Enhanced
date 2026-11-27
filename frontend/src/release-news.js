@@ -648,6 +648,7 @@ export const RELEASE_NEWS = [
         id: "2026-11-27-onepassword-list-secrets",
         items: [ "releaseNews.item.onePasswordListSecrets" ],
     },
+    { id: "2026-11-27-host-management-beta", items: [ "releaseNews.item.hostManagement" ] },
 ];
 
 function currentReleaseNewsIds() {

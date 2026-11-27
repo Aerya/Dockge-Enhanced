@@ -319,6 +319,16 @@ jobs:
         if: steps.docs.outputs.docs_only != 'true'
         run: npx tsx --test frontend/src/service-healthcheck.test.ts
 
+      - name: Tests Host Management (Bêta)
+        if: steps.docs.outputs.docs_only != 'true'
+        run: |
+          npx tsx --test backend/hosts/*.test.ts
+          python3 -m unittest discover -s extra/host-management -p 'test_*.py'
+          sudo --preserve-env=GITHUB_ACTIONS python3 extra/host-management/integration_apt.py
+          mkdir -p "$RUNNER_TEMP/host-reports"
+          python3 extra/host-management/collector.py --output "$RUNNER_TEMP/host-reports"
+          HOST_TEST_REPORT="$RUNNER_TEMP/host-reports/inventory.json" npx tsx backend/hosts/ci-smoke.ts
+
       - name: Build frontend (Vite)
         if: steps.docs.outputs.docs_only != 'true'
         run: npm run build:frontend

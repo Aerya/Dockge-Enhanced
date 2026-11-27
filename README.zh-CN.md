@@ -63,6 +63,8 @@ Dockge Enhanced 是 [Dockge](https://github.com/louislam/dockge) 的分支，通
 
 ### 🆕 2026 年 11 月
 
+**主机管理（测试版） :** 位于 `/watcher/hosts`，可选且默认关闭：本地主机清单、APT/Pacman 更新、通过现有 Trivy 镜像进行 Debian/Ubuntu CVE 分析，以及需要本地授权的受限手动 APT 操作。报告只读挂载。请求使用现有联合通信；旧代理显示不可用。不支持自动更新、AUR、RPM/APK/Zypper 或完整厂商覆盖。 [→](docs/host-management.zh-CN.md).
+
 **1Password：新的密钥 API :** 1Password 现在使用返回明文值的 `listSecrets`，替代计划于 2027 年 1 月 20 日移除的 `getVariables`。SDK 固定为 `0.0.0-credential-broker-dev-preview.4`。请同时更新关联实例。
 
 **Kula：通过本地 DNS 访问 :** 在 Monitoring 中使用 **允许的主机** 添加 `server.example` 等精确主机名，每行一个或用逗号分隔，不含协议、端口或路径。保存时会重启已启用的 Kula，并保留其数据。空列表保留默认保护；拒绝通配符。自定义 URL 只更改链接：请同时添加其主机名。每个关联实例需单独配置。
@@ -695,6 +697,8 @@ Stack 导航、Logs/Compose、资源指标、健康卡片、主题和移动端�
 - eMudhra 事件后的 TLS 证书库检查（[TLS 检查](security/emudhra/README.md)）
 
 ### 监控
+
+- **主机管理（测试版）** — 位于 `/watcher/hosts`，可选且默认关闭：本地主机清单、APT/Pacman 更新、通过现有 Trivy 镜像进行 Debian/Ubuntu CVE 分析，以及需要本地授权的受限手动 APT 操作。报告只读挂载。请求使用现有联合通信；旧代理显示不可用。不支持自动更新、AUR、RPM/APK/Zypper 或完整厂商覆盖。 [→](docs/host-management.zh-CN.md).
 - **Docker 连接恢复** — `DOCKGE_DOCKER_RECOVERY_RETRIES` / `DOCKGE_DOCKER_RECOVERY_INTERVAL_SECONDS`
 - 系统、Stack 和容器的 CPU、RAM 和磁盘统计，以及可配置的状态栏
 - 主机系统详情、温度和受监控磁盘分区
@@ -1166,6 +1170,9 @@ MIT 许可证允许商业第三方客户端，但未经许可不得暗示其与 
 ---
 
 ## 致谢
+
+- [PatchMon](https://github.com/PatchMon/PatchMon) — 为系统清单、监控和更新编排提供功能灵感。
+- [PatchBase](https://github.com/patchbase/patchbase) — 为软件包清单、安全公告关联和漏洞检测提供功能灵感。
 
 - 感谢 **yodadl**。
 
