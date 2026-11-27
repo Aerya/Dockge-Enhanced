@@ -49,7 +49,7 @@ APT::Architecture "amd64";
 APT::Sandbox::User "root";
 DPkg::Options {{ "--root={root}"; }};
 ''')
-    invoke(['/usr/bin/apt-get', '-c', str(config), 'update'])
+    invoke(['/usr/bin/apt-get', '-c', str(config), 'update'], env={**os.environ, 'APT_CONFIG': str(config)})
 
     def isolated_args(args):
         if args[0] == '/usr/bin/apt-get':
@@ -59,9 +59,10 @@ DPkg::Options {{ "--root={root}"; }};
         raise AssertionError('unexpected executable')
 
     def read_command(args, accepted=(0,)):
-        return invoke(isolated_args(args))
+        return invoke(isolated_args(args), env={**os.environ, 'APT_CONFIG': str(config)})
 
     def write_command(args, **kwargs):
+        kwargs['env'] = {**kwargs.get('env', {}), 'APT_CONFIG': str(config)}
         return real_run(isolated_args(args), **kwargs)
 
     policy = {'mode': 'manual', 'allowInstall': True, 'utcHours': list(range(24)), 'exclusions': []}

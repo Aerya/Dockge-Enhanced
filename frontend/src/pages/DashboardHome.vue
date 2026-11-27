@@ -410,7 +410,10 @@ export default {
             instanceHomeSummaries: {},
             refreshingHome: false,
             homeCards: [
-                { kind: "hosts", tab: "hosts", icon: "server", title: "hosts.title" },
+                { kind: "hosts",
+                    tab: "hosts",
+                    icon: "server",
+                    title: "hosts.title" },
                 { kind: "images",
                     tab: "images",
                     icon: "sync-alt",
