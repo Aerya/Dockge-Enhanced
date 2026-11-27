@@ -13,6 +13,8 @@
 
 > **PR 提案（合并后生效） — Kula：通过本地 DNS 访问** — 在 Monitoring 中使用 **允许的主机** 添加 `server.example` 等精确主机名，每行一个或用逗号分隔，不含协议、端口或路径。保存时会重启已启用的 Kula，并保留其数据。空列表保留默认保护；拒绝通配符。自定义 URL 只更改链接：请同时添加其主机名。每个关联实例需单独配置。
 
+**2026-11-27 — 1Password：新的密钥 API** — 1Password 使用其 SDK 的预览版本。 1Password 现在使用返回明文值的 `listSecrets`，替代计划于 2027 年 1 月 20 日移除的 `getVariables`。SDK 固定为 `0.0.0-credential-broker-dev-preview.4`。请同时更新关联实例。
+
 **2026-11-26 — 每个堆栈的密钥管理器** — 将 Bitwarden Secrets Manager、1Password、Doppler 或 Infisical 连接到 Compose 操作，不将读取的值复制到 `.env`。Bitwarden Secrets Manager 功能完整可用。1Password、Doppler 和 Infisical 仍为实验性功能，有待用户测试。 Bitwarden 需要其官方 CLI，可从设置中安装。提供商故障会阻止操作，容器状态仍可查看。命令输出和解析后的配置会隐藏。Docker 仍会保存注入的环境变量。请分别配置每个关联实例。 [每个堆栈的密钥管理器](docs/stack-secrets.zh-CN.md). Bitwarden 修复：临时配置使用官方 CLI 要求的 TOML 格式，恢复密钥读取。
 
 **2026-11-24 — 镜像更新的全局默认设置** — 在镜像中选择手动、立即或计划，作为没有单独策略的现有及未来 Compose 镜像的全局默认值。启用 ImageWatcher 才会执行更新。每个镜像的设置和堆栈批量设置优先；选择继承全局设置可移除这些例外。已停止的服务继承策略，但更新会推迟到服务运行后，绝不会自动启动服务。仍遵守 Compose 排除标签、暂停和维护窗口。每个关联实例拥有自己的设置。

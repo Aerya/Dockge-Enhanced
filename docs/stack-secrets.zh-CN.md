@@ -5,7 +5,7 @@
 将堆栈连接到 Bitwarden Secrets Manager、1Password、Doppler 或 Infisical，以便在执行 Compose 操作时读取密钥，无需将密钥复制到 `.env` 文件中。
 Bitwarden 修复：临时配置使用官方 CLI 要求的 TOML 格式，恢复密钥读取。
 
-**Bitwarden Secrets Manager 功能完整可用。1Password、Doppler 和 Infisical 仍为实验性功能，有待用户测试。**连接测试成功仅表示能够读取密钥，并不保证应用正常运行。
+**1Password 使用其 SDK 的预览版本。**连接测试成功仅表示能够读取密钥，并不保证应用正常运行。
 
 ## 配置
 
@@ -47,4 +47,4 @@ services:
 
 ## 来源
 
-[1Password Environments](https://developer.1password.com/docs/sdks/environments/) · [Doppler Service Tokens](https://docs.doppler.com/docs/service-tokens) · [Infisical Universal Auth](https://infisical.com/docs/documentation/platform/identities/universal-auth) · [Bitwarden CLI](https://bitwarden.com/help/secrets-manager-cli/) · [Bitwarden 许可证](https://github.com/bitwarden/sdk-sm/blob/bws-v2.1.0/LICENSE)
+[1Password Environments](https://www.1password.dev/environments/read-environment-variables) · [Doppler Service Tokens](https://docs.doppler.com/docs/service-tokens) · [Infisical Universal Auth](https://infisical.com/docs/documentation/platform/identities/universal-auth) · [Bitwarden CLI](https://bitwarden.com/help/secrets-manager-cli/) · [Bitwarden 许可证](https://github.com/bitwarden/sdk-sm/blob/bws-v2.1.0/LICENSE)

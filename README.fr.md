@@ -65,10 +65,12 @@ Les évolutions majeures récentes sont regroupées ici afin de comprendre rapid
 
 ### 🆕 Novembre 2026
 
+**1Password : nouvelle API de secrets :** 1Password utilise désormais `listSecrets` avec les valeurs révélées à la place de `getVariables`, dont la suppression est prévue le 20 janvier 2027. Le SDK est fixé à `0.0.0-credential-broker-dev-preview.4`. Mettez aussi les instances liées à jour.
+
 **Kula : accès par DNS local :** Dans Monitoring, utilisez **Hôtes autorisés** pour ajouter des noms exacts comme `server.example`, un par ligne ou séparés par des virgules, sans protocole, port ni chemin. L’enregistrement redémarre Kula s’il est activé et conserve ses données. Une liste vide garde la protection par défaut ; les jokers sont refusés. L’URL personnalisée change uniquement le lien : ajoutez aussi son nom d’hôte. Configurez chaque instance liée séparément.
 
 
-**Gestionnaires de secrets par stack :** Associez Bitwarden Secrets Manager, 1Password, Doppler ou Infisical aux opérations Compose, sans recopier les valeurs récupérées dans `.env`. Bitwarden Secrets Manager est pleinement fonctionnel. 1Password, Doppler et Infisical restent expérimentaux, sous réserve de tests utilisateurs. Bitwarden nécessite son CLI officiel, installable depuis les paramètres. L’échec du fournisseur bloque l’opération ; l’état des conteneurs reste consultable. La sortie des commandes et la configuration résolue sont masquées. Docker conserve les variables d’environnement injectées. Configurez séparément chaque instance liée. [Gestionnaires de secrets par stack](docs/stack-secrets.fr.md). Correctif Bitwarden : le profil temporaire utilise le format TOML attendu par le CLI officiel, ce qui rétablit la récupération des secrets.
+**Gestionnaires de secrets par stack :** Associez Bitwarden Secrets Manager, 1Password, Doppler ou Infisical aux opérations Compose, sans recopier les valeurs récupérées dans `.env`. 1Password utilise une préversion de son SDK. Bitwarden nécessite son CLI officiel, installable depuis les paramètres. L’échec du fournisseur bloque l’opération ; l’état des conteneurs reste consultable. La sortie des commandes et la configuration résolue sont masquées. Docker conserve les variables d’environnement injectées. Configurez séparément chaque instance liée. [Gestionnaires de secrets par stack](docs/stack-secrets.fr.md). Correctif Bitwarden : le profil temporaire utilise le format TOML attendu par le CLI officiel, ce qui rétablit la récupération des secrets.
 **Défaut global pour les mises à jour d’images :** Dans Images, choisissez Manuelle, Immédiate ou Planifiée comme défaut global pour les images Compose actuelles et futures sans règle explicite. Activez ImageWatcher pour exécuter les mises à jour. Les exceptions par image et les réglages groupés par stack restent prioritaires ; choisissez Hériter du réglage global pour les retirer. Les services arrêtés héritent de la règle mais leur mise à jour est différée jusqu’à leur démarrage ; ils ne sont jamais démarrés automatiquement. Les exclusions Compose, pauses et créneaux de maintenance restent respectés. Chaque instance liée possède ses réglages.
 
 **Choix de mise à jour automatique :** Le sélecteur de méthode conserve le mode choisi pendant l’édition et l’enregistrement. Le rafraîchissement du statut ne peut pas le remplacer par une ancienne réponse ; les erreurs d’enregistrement restent visibles.
@@ -679,7 +681,7 @@ La navigation des stacks, l'espace Logs/Compose, les indicateurs de ressources, 
 
 ### Sécurité & authentification
 
-- Gestionnaires de secrets par stack : Bitwarden fonctionnel, trois autres fournisseurs expérimentaux, résolution locale, jetons de connexion chiffrés et opérations bloquées en cas d’échec. [Gestionnaires de secrets par stack](docs/stack-secrets.fr.md).
+- Gestionnaires de secrets par stack : Bitwarden, 1Password, Doppler et Infisical, résolution locale, jetons de connexion chiffrés et opérations bloquées en cas d’échec. [Gestionnaires de secrets par stack](docs/stack-secrets.fr.md).
 - Comptes locaux avec 2FA TOTP facultative, secrets chiffrés, codes de récupération à usage unique et révocation des sessions
 - Comptes locaux limités avec permissions par instance, stack et service, et espace de travail dédié ([guide](docs/scoped-users.md)) ; désactivez-les avant de revenir à une ancienne version d’Enhanced
 - Authentification par trusted proxy limitée aux réseaux explicitement autorisés, avec identités du proxy associées aux comptes locaux

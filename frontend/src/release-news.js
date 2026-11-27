@@ -644,6 +644,10 @@ export const RELEASE_NEWS = [
         id: "2026-11-26-bitwarden-profile-fix",
         items: [ "releaseNews.item.bitwardenProfileFix" ],
     },
+    {
+        id: "2026-11-27-onepassword-list-secrets",
+        items: [ "releaseNews.item.onePasswordListSecrets" ],
+    },
 ];
 
 function currentReleaseNewsIds() {

@@ -5,7 +5,7 @@
 Verbinden Sie einen Stack mit Bitwarden Secrets Manager, 1Password, Doppler oder Infisical. Secrets werden für Compose-Vorgänge abgerufen, ohne sie in die `.env`-Datei zu kopieren.
 Bitwarden-Korrektur: Das temporäre Profil verwendet das vom offiziellen CLI erwartete TOML-Format und ermöglicht wieder das Abrufen von Secrets.
 
-**Bitwarden Secrets Manager ist voll funktionsfähig. 1Password, Doppler und Infisical bleiben experimentell und müssen noch von Benutzern getestet werden.** Ein erfolgreicher Verbindungstest bestätigt den Abruf, nicht die Funktion der Anwendung.
+**1Password verwendet eine Vorabversion seines SDKs.** Ein erfolgreicher Verbindungstest bestätigt den Abruf, nicht die Funktion der Anwendung.
 
 ## Einrichtung
 
@@ -47,4 +47,4 @@ Abgerufene Werte haben Vorrang bei der Compose-Interpolation. Literale Werte in 
 
 ## Quellen
 
-[1Password Environments](https://developer.1password.com/docs/sdks/environments/) · [Doppler Service Tokens](https://docs.doppler.com/docs/service-tokens) · [Infisical Universal Auth](https://infisical.com/docs/documentation/platform/identities/universal-auth) · [Bitwarden CLI](https://bitwarden.com/help/secrets-manager-cli/) · [Bitwarden-Lizenz](https://github.com/bitwarden/sdk-sm/blob/bws-v2.1.0/LICENSE)
+[1Password Environments](https://www.1password.dev/environments/read-environment-variables) · [Doppler Service Tokens](https://docs.doppler.com/docs/service-tokens) · [Infisical Universal Auth](https://infisical.com/docs/documentation/platform/identities/universal-auth) · [Bitwarden CLI](https://bitwarden.com/help/secrets-manager-cli/) · [Bitwarden-Lizenz](https://github.com/bitwarden/sdk-sm/blob/bws-v2.1.0/LICENSE)

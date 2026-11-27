@@ -17,6 +17,18 @@ async function main() {
     if (process.argv.includes("--runtime-only")) return;
 
     const requireApp = createRequire("/app/package.json");
+    const sdk = requireApp("@1password/sdk");
+    assert.equal(typeof sdk.createClient, "function");
+    const fixtureSecrets = [{ name: "SMOKE_SECRET", value: "fixture-value", concealed: false }];
+    const client = new sdk.Client({ id: "smoke", async invoke(config) {
+        assert.equal(config.invocation.parameters.name, "EnvironmentsListSecrets");
+        assert.deepEqual(config.invocation.parameters.parameters, {
+            environment_name_id: "smoke-environment", reveal: true,
+        });
+        return JSON.stringify(fixtureSecrets);
+    } });
+    assert.deepEqual(await client.environments.listSecrets("smoke-environment", true), fixtureSecrets);
+    console.log("1Password : chargement SDK/WASM et contrat listSecrets OK");
     const sqlite = requireApp("@louislam/sqlite3");
     const pty = requireApp("@homebridge/node-pty-prebuilt-multiarch");
     const directory = mkdtempSync(join(tmpdir(), "dockge-native-smoke-"));
