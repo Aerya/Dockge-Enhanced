@@ -8,6 +8,8 @@ import { type HostReport, inventoryHash } from "./report";
 
 const execute = promisify(execFile);
 const IMAGE = "ghcr.io/aquasecurity/trivy:latest";
+// Trivy templates receive Results. Keep only matching inputs, never verbose descriptions or package lists.
+const SCAN_TEMPLATE = '{{- $family := "" -}}{{- $results := list -}}{{- range . -}}{{- if eq .Class "os-pkgs" -}}{{- $family = .Type -}}{{- $vulns := list -}}{{- range .Vulnerabilities -}}{{- $vulns = append $vulns (dict "VulnerabilityID" .VulnerabilityID "PkgName" .PkgName "InstalledVersion" .InstalledVersion "FixedVersion" .FixedVersion "Severity" .Severity) -}}{{- end -}}{{- $results = append $results (dict "Class" .Class "Type" .Type "Vulnerabilities" $vulns) -}}{{- end -}}{{- end -}}{{- dict "SchemaVersion" 2 "Metadata" (dict "OS" (dict "Family" $family)) "Results" $results | toJson -}}';
 export interface HostFinding {
     id: string;
     pkg: string;
@@ -114,7 +116,7 @@ export async function scanHost(report: HostReport, docker: DockerCommand = async
         if (!Number.isFinite(Date.parse(db.UpdatedAt)) || Date.now() - Date.parse(db.UpdatedAt) > 72 * 3600000) {
             throw new Error("hosts.staleDatabase");
         }
-        const result = await docker([ "exec", name, "trivy", "rootfs", "--disable-telemetry", "--skip-version-check", "--scanners", "vuln", "--offline-scan", "--skip-db-update", "--skip-java-db-update", "--skip-check-update", "--format", "json", "--quiet", "/tmp/host" ]);
+        const result = await docker([ "exec", name, "trivy", "rootfs", "--disable-telemetry", "--skip-version-check", "--scanners", "vuln", "--offline-scan", "--skip-db-update", "--skip-java-db-update", "--skip-check-update", "--format", "template", "--template", SCAN_TEMPLATE, "--quiet", "/tmp/host" ]);
         return { state: "partial",
             scannedAt: new Date().toISOString(),
             fingerprint: inventoryHash(report),
