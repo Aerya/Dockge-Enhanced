@@ -1,7 +1,7 @@
 import { packageChanges } from "./history";
 import { AuditLogger } from "../audit-log";
-import { notifyHost } from "./notifications";
-import { hostOperationStatus } from "./operations";
+import { DEFAULT_HOST_EVENTS, HOST_EVENTS, notifyDetection, operationNotification, sendHostNotification, type HostNotificationEvents } from "./notifications";
+import { EMPTY_OPERATIONS, hostOperationStatus, type HostOperationEvent } from "./operations";
 import { scanHost, type HostSecurity } from "./security";
 import { hubOnly } from "../hub-mode";
 import { R } from "redbean-node";
@@ -14,12 +14,16 @@ export interface HostSettings {
     retentionDays: number;
     cveEnabled: boolean;
     notifications: boolean;
+    notificationEvents: HostNotificationEvents;
+    notificationSeverity: string;
 }
 export const HOST_DEFAULTS: HostSettings = { enabled: false,
     staleHours: 12,
     retentionDays: 90,
     cveEnabled: false,
-    notifications: false };
+    notifications: false,
+    notificationEvents: { ...DEFAULT_HOST_EVENTS },
+    notificationSeverity: "HIGH" };
 export function hostSettings(value: unknown): HostSettings {
     const s = value as HostSettings;
     if (!s || typeof s.enabled !== "boolean" || typeof s.cveEnabled !== "boolean" || typeof s.notifications !== "boolean" ||
@@ -27,11 +31,18 @@ export function hostSettings(value: unknown): HostSettings {
         !Number.isInteger(s.retentionDays) || s.retentionDays < 1 || s.retentionDays > 365) {
         throw new Error("hosts.invalidSettings");
     }
+    const notificationEvents = s.notificationEvents ?? DEFAULT_HOST_EVENTS;
+    if (!notificationEvents || HOST_EVENTS.some(k => typeof notificationEvents[k] !== "boolean") ||
+        ![ "LOW", "MEDIUM", "HIGH", "CRITICAL" ].includes(s.notificationSeverity ?? "HIGH")) {
+        throw new Error("hosts.invalidSettings");
+    }
     return { enabled: s.enabled,
         staleHours: s.staleHours,
         retentionDays: s.retentionDays,
         cveEnabled: s.cveEnabled,
-        notifications: s.notifications };
+        notifications: s.notifications,
+        notificationEvents: Object.fromEntries(HOST_EVENTS.map(k => [ k, notificationEvents[k] ])) as HostNotificationEvents,
+        notificationSeverity: s.notificationSeverity ?? "HIGH" };
 }
 export class HostManager {
     static instance = new HostManager();
@@ -44,14 +55,15 @@ export class HostManager {
 
     private scanning = false;
     private lastScan = 0;
+    private operationRead = 0;
     private timer: NodeJS.Timeout | null = null;
     start() {
         if (this.timer) {
             return;
         }
         this.timer = setInterval(() => {
-            void this.refresh().catch(() => {});
-        }, 60000);
+            void this.refresh().then(() => this.pollOperations()).catch(() => {});
+        }, 15000);
         this.timer.unref();
     }
 
@@ -62,6 +74,12 @@ export class HostManager {
 
     async save(value: unknown) {
         const config = hostSettings(value);
+        if (!config.enabled && this.report) {
+            const operations = await hostOperationStatus(this.report.hostId);
+            if (operations.schedule?.enabled || operations.result?.state === "running") {
+                throw new Error("hosts.scheduleActive");
+            }
+        }
         await Settings.set("hostManagement", config);
         if (!config.enabled) {
             this.report = null;
@@ -128,29 +146,64 @@ export class HostManager {
             this.failed = true;
         }
         if (settings.notifications) {
-            await notifyHost(this.failed ? "unavailable" : reportState(this.report, settings.staleHours), this.report?.reboot ?? "unknown", settings.cveEnabled ? this.security : { state: "unavailable",
-                findings: [] }).catch(() => {});
+            const host = this.report?.host ?? "";
+            const severity = [ "LOW", "MEDIUM", "HIGH", "CRITICAL" ];
+            const findings = settings.cveEnabled && this.security.fingerprint === (this.report ? inventoryHash(this.report) : "") ? this.security.findings : [];
+            const detections = {
+                updates: this.report?.packages.filter(p => p.available).map(p => `${p.name}: ${p.version} → ${p.available}`) ?? [],
+                security: findings.filter(v => severity.indexOf(v.severity) >= severity.indexOf(settings.notificationSeverity)).map(v => `${v.id} · ${v.pkg} · ${v.severity}`),
+                fix: findings.filter(v => v.fix === "available").map(v => `${v.id} · ${v.pkg} → ${v.fixed}`),
+                reboot: this.report?.reboot === "required" ? [ "reboot-required" ] : [],
+                collector: this.failed || reportState(this.report, settings.staleHours) !== "fresh" ? [ this.failed ? "unavailable" : reportState(this.report, settings.staleHours) ] : [],
+                securityData: settings.cveEnabled && (this.security.state === "unavailable" || Date.now() - Date.parse(this.security.scannedAt || "1970-01-01") > 48 * 3600000) ? [ "unavailable-or-stale" ] : [],
+            };
+            for (const kind of [ "updates", "security", "fix", "reboot", "collector", "securityData" ] as const) {
+                if (settings.notificationEvents[kind]) {
+                    await notifyDetection(kind, host, detections[kind]).catch(() => {});
+                }
+            }
         }
+    }
+
+    async pollOperations() {
+        if (Date.now() - this.operationRead < 10000) {
+            return;
+        }
+        this.operationRead = Date.now();
+        const settings = await this.settings();
+        if (!settings.enabled || !this.report) {
+            return;
+        }
+        const operations = await hostOperationStatus(this.report.hostId).catch(() => ({ ...EMPTY_OPERATIONS }));
+        for (const event of operations.events) {
+            const key = `${event.hostId}:${event.id}:${event.state}`;
+            await R.exec("INSERT OR IGNORE INTO host_operations (event_key, at, event, notified, audited) VALUES (?, ?, ?, 0, 0)", [ key, Math.floor(event.at * 1000), JSON.stringify(event) ]);
+        }
+        const rows = await R.getAll("SELECT * FROM host_operations WHERE notified = 0 OR audited = 0 ORDER BY at ASC LIMIT 20");
+        for (const row of rows) {
+            const event = JSON.parse(row.event) as HostOperationEvent;
+            if (!row.audited) {
+                await AuditLogger.getInstance().log({ action: `hosts.operation.${event.state}`,
+                    category: "host",
+                    target: event.id,
+                    status: event.state === "failed" ? "failure" : "success" });
+                await R.exec("UPDATE host_operations SET audited = 1 WHERE event_key = ?", [ row.event_key ]);
+            }
+            const kind = operationNotification(event);
+            if (!row.notified && (!kind || !settings.notifications || !settings.notificationEvents[kind] ||
+                await sendHostNotification(kind, this.report.host, "", event).catch(() => false))) {
+                await R.exec("UPDATE host_operations SET notified = 1 WHERE event_key = ?", [ row.event_key ]);
+            }
+        }
+        await R.exec("DELETE FROM host_operations WHERE at < ?", [ Date.now() - settings.retentionDays * 86400000 ]);
     }
 
     async snapshot() {
         await this.refresh();
         const settings = await this.settings();
         const report = settings.enabled ? this.report : null;
-        const operations = settings.enabled ? await hostOperationStatus(report?.hostId).catch(() => ({ manual: false,
-            result: null })) : { manual: false,
-            result: null };
-        if (operations.result && await Settings.get("hostLastOperation") !== operations.result.id) {
-            await AuditLogger.getInstance().log({ action: `hosts.operation.${operations.result.state}`,
-                category: "host",
-                target: operations.result.id,
-                status: operations.result.state === "failed" ? "failure" : "success" });
-            if (settings.notifications && operations.result.state === "failed") {
-                await notifyHost("operation-failed", "unknown", { state: "unavailable",
-                    findings: [] }, operations.result.id).catch(() => {});
-            }
-            await Settings.set("hostLastOperation", operations.result.id);
-        }
+        await this.pollOperations();
+        const operations = settings.enabled ? await hostOperationStatus(report?.hostId).catch(() => ({ ...EMPTY_OPERATIONS })) : { ...EMPTY_OPERATIONS };
         return { protocol: 1,
             settings,
             report: report ? { ...report,
@@ -161,6 +214,7 @@ export class HostManager {
             state: !settings.enabled ? "disabled" : this.failed ? "unavailable" : reportState(report, settings.staleHours),
             collectorFailed: settings.enabled && this.failed,
             operations,
+            operationHistory: settings.enabled ? (await R.getAll("SELECT event FROM host_operations ORDER BY at DESC LIMIT 100")).map(r => JSON.parse(r.event)) : [],
             modes: [ "disabled", "monitor" ],
             security: !settings.cveEnabled || !report || this.security.fingerprint !== inventoryHash(report) ? { state: "unavailable",
                 findings: [] } : {
@@ -188,10 +242,10 @@ export class HostManager {
             ...packageChanges(parseReport(JSON.parse(previous.report)).packages, parseReport(JSON.parse(current.report)).packages) };
     }
 
-    async operationAuthority() {
+    async operationAuthority(cancelSchedule = false) {
         await this.refresh();
         const settings = await this.settings();
-        if (!settings.enabled || this.failed || !this.report || this.report.provider !== "apt" || reportState(this.report, settings.staleHours) !== "fresh") {
+        if (!settings.enabled || !this.report || this.report.provider !== "apt" || (!cancelSchedule && (this.failed || reportState(this.report, settings.staleHours) !== "fresh"))) {
             throw new Error("hosts.operationsUnavailable");
         }
         return this.report.hostId;

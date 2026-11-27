@@ -64,7 +64,7 @@ The most important recent changes are grouped here so you can quickly see what h
 
 ### 🆕 November 2026
 
-**Host Updates (Beta) :** Optional and disabled by default, under `/watcher/hosts`: local host inventory, APT/Pacman updates, Debian/Ubuntu CVE analysis using the existing Trivy image, and restricted manual APT operations with local authorization. Reports are mounted read-only. Existing federation transports requests; old agents remain unavailable. Automatic updates, AUR, RPM/APK/Zypper and complete vendor coverage are unavailable. [→](docs/host-management.md). The Host Updates tab is always visible; only monitoring is disabled by default. Updates groups Dockge-Enhanced, Docker Images and Host Updates (Beta) in three visible subtabs. Eight main tabs remain; existing URLs and remote-instance links are preserved.
+**Host Updates (Beta) :** Optional and disabled by default, under `/watcher/hosts`: Debian/Ubuntu and Arch/Garuda inventory and update detection, Debian/Ubuntu CVE analysis, manual or scheduled APT updates after local installation and authorization. Profiles: all permitted updates, security only, conservative, security and conservative. Configurable detection and operation notifications. Read-only reports and existing federation transport. Arch/Garuda remain monitoring-only; AUR, RPM/APK/Zypper, fleet operations and complete CVE coverage remain unavailable. [→](docs/host-management.md). The Host Updates tab is always visible; only monitoring is disabled by default. Updates groups Dockge-Enhanced, Docker Images and Host Updates (Beta) in three visible subtabs. Eight main tabs remain; existing URLs and remote-instance links are preserved.
 
 **1Password: new secrets API :** 1Password now uses `listSecrets` with revealed values instead of `getVariables`, scheduled for removal on January 20, 2027. The SDK is pinned to `0.0.0-credential-broker-dev-preview.4`. Update linked instances too.
 
@@ -698,7 +698,7 @@ Stack navigation, the Logs/Compose workspace, resource indicators, health cards,
 
 ### Monitoring
 
-- **Host Updates (Beta)** — Optional and disabled by default, under `/watcher/hosts`: local host inventory, APT/Pacman updates, Debian/Ubuntu CVE analysis using the existing Trivy image, and restricted manual APT operations with local authorization. Reports are mounted read-only. Existing federation transports requests; old agents remain unavailable. Automatic updates, AUR, RPM/APK/Zypper and complete vendor coverage are unavailable. [→](docs/host-management.md). The Host Updates tab is always visible; only monitoring is disabled by default.
+- **Host Updates (Beta)** — Optional and disabled by default, under `/watcher/hosts`: Debian/Ubuntu and Arch/Garuda inventory and update detection, Debian/Ubuntu CVE analysis, manual or scheduled APT updates after local installation and authorization. Profiles: all permitted updates, security only, conservative, security and conservative. Configurable detection and operation notifications. Read-only reports and existing federation transport. Arch/Garuda remain monitoring-only; AUR, RPM/APK/Zypper, fleet operations and complete CVE coverage remain unavailable. [→](docs/host-management.md). The Host Updates tab is always visible; only monitoring is disabled by default.
 - **Docker connection recovery** — `DOCKGE_DOCKER_RECOVERY_RETRIES` / `DOCKGE_DOCKER_RECOVERY_INTERVAL_SECONDS`
 - System, stack and container CPU, RAM and disk statistics, with a configurable status bar
 - Host system details, temperatures and monitored disk partitions

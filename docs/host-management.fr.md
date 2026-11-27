@@ -2,7 +2,7 @@
 
 [English](host-management.md) · [Français](host-management.fr.md) · [Deutsch](host-management.de.md) · [Español](host-management.es.md) · [简体中文](host-management.zh-CN.md)
 
-Optionnel et désactivé par défaut, dans `/watcher/hosts` : inventaire de l’hôte local, mises à jour APT/Pacman, analyse CVE Debian/Ubuntu avec l’image Trivy existante et opérations APT manuelles limitées avec autorisation locale. Les rapports sont montés en lecture seule. La fédération existante transporte les requêtes ; les anciens agents restent indisponibles. Mises à jour automatiques, AUR, RPM/APK/Zypper et couverture éditeur complète indisponibles.
+Optionnel et désactivé par défaut, dans `/watcher/hosts` : inventaire et détection des mises à jour Debian/Ubuntu et Arch/Garuda, analyse CVE Debian/Ubuntu, mises à jour APT manuelles ou programmées après installation et autorisation locales. Profils : toutes les mises à jour autorisées, sécurité uniquement, prudent, sécurité et prudent. Notifications configurables pour les détections et les opérations. Rapports en lecture seule, transport par la fédération existante. Arch/Garuda restent en surveillance seule ; AUR, RPM/APK/Zypper, opérations de parc et couverture CVE complète restent indisponibles.
 
 L’onglet Mises à jour des hôtes reste toujours visible ; seule la surveillance est désactivée par défaut.
 
@@ -48,14 +48,14 @@ sudo systemctl daemon-reload
 
 [PatchBase](https://github.com/patchbase/patchbase) — Inspiration pour l’inventaire des paquets, la corrélation avec les avis de sécurité et la détection des vulnérabilités.
 
-## Exécuteur APT manuel
+## Exécuteur APT local
 
-Manual doit être activé localement : installer l’exécuteur séparément, choisir les heures UTC et exclusions dans la politique appartenant à root. La politique par défaut refuse toute installation. Requêtes valables deux minutes ; simulations valables cinq minutes, recalculées avant installation. L’approbation est consommée avant exécution. Aucun shell, redémarrage, ajout de dépendance, suppression ou planning automatique exposé. Les verrous APT natifs restent actifs. Les configurations existantes sont conservées ; vérifier ensuite localement les fichiers .dpkg-dist. Ne pas arrêter un gestionnaire en cours d’écriture ; désactiver le timer empêche les nouvelles requêtes. Une transaction interrompue ou échouée nécessite un diagnostic local avec dpkg --audit et la procédure de récupération de la distribution. Aucun rollback universel. Un administrateur/hub compromis peut demander les mises à jour permises localement ; une compromission root de l’hôte est hors de cette frontière de confiance.
+Manual doit être activé localement : installer l’exécuteur séparément, choisir les heures UTC et exclusions dans la politique appartenant à root. La politique par défaut refuse toute installation. Requêtes valables deux minutes ; simulations valables cinq minutes, recalculées avant installation. L’approbation est consommée avant exécution. Aucun shell, redémarrage, ajout de dépendance ou suppression exposé. Les verrous APT natifs restent actifs. Les configurations existantes sont conservées ; vérifier ensuite localement les fichiers .dpkg-dist. Ne pas arrêter un gestionnaire en cours d’écriture ; désactiver le timer empêche les nouvelles requêtes. Une transaction interrompue ou échouée nécessite un diagnostic local avec dpkg --audit et la procédure de récupération de la distribution. Aucun rollback universel. Un administrateur/hub compromis peut demander les mises à jour permises localement ; une compromission root de l’hôte est hors de cette frontière de confiance.
 
-Utiliser un répertoire de requêtes appartenant à l’UID du processus Enhanced (adapter 1000). Lui seul est accessible en écriture ; les rapports d’opération restent en lecture seule. Ne jamais monter /etc/dockge-host ou l’état de l’exécuteur dans Enhanced. Le transport utilise les agents directs/inversés existants et vérifie les droits administrateur aux deux extrémités. Hub-only peut lire l’inventaire mais ne lance pas Trivy. Agent-only conserve les mêmes RPC. Les notifications réutilisent les canaux ImageWatcher, sont désactivées par défaut, dédupliquées et limitées à une par heure. Planification de parc, sélection sécurité uniquement et mises à jour individuelles indisponibles.
+Utiliser un répertoire de requêtes appartenant à l’UID du processus Enhanced (adapter 1000). Lui seul est accessible en écriture ; les rapports d’opération restent en lecture seule. Ne jamais monter /etc/dockge-host ou l’état de l’exécuteur dans Enhanced. Le transport utilise les agents directs/inversés existants et vérifie les droits administrateur aux deux extrémités. Hub-only peut lire l’inventaire mais ne lance pas Trivy. Agent-only conserve les mêmes RPC. Les notifications et la programmation par hôte sont détaillées ci-dessous. Les opérations de parc et la sélection individuelle de paquets restent indisponibles.
 
 ```sh
-sudo install -m 0644 extra/host-management/executor.py /usr/local/lib/dockge-host/
+sudo install -m 0644 extra/host-management/executor.py extra/host-management/apt_provider.py /usr/local/lib/dockge-host/
 sudo install -d -m 0700 /etc/dockge-host /var/lib/dockge-host-executor
 sudo install -d -m 0755 /var/lib/dockge-host-operations
 sudo install -d -m 0700 -o 1000 /var/lib/dockge-host-requests
@@ -69,6 +69,10 @@ sudo systemctl enable --now dockge-host-executor.timer
 {
   "mode": "manual",
   "allowInstall": true,
+  "allowAutomatic": false,
+  "allowedScopes": ["security", "conservative", "security-conservative"],
+  "conservativePackages": [],
+  "refreshMetadata": false,
   "utcHours": [2, 3],
   "exclusions": ["example-package"]
 }
@@ -91,3 +95,15 @@ sudo systemctl disable --now dockge-host-executor.timer
 sudo rm /etc/systemd/system/dockge-host-executor.timer /etc/systemd/system/dockge-host-executor.service
 sudo systemctl daemon-reload
 ```
+
+## Profils, programmation et notifications
+
+Aucune mise à jour n’est garantie sans risque de rupture. **Sécurité uniquement** sélectionne les versions des dépôts de sécurité officiels et approuvés Debian/Ubuntu avec les comparaisons natives APT. Cela ne dépend pas de la détection CVE Trivy et n’inclut pas ESM ni les dépôts tiers. **Prudent** exige une liste locale `conservativePackages`, refuse les paquets essentiels/importants et les principales familles critiques (noyau, démarrage, réseau, pilotes, Docker, bases de données). Une liste vide ne met rien à jour. **Sécurité et prudent** applique les deux restrictions. Les dépendances hors sélection, nouveaux paquets, suppressions et paquets gelés sont refusés. Une dépendance supplémentaire peut donc bloquer toute l’opération. Le profil `all` doit aussi être autorisé explicitement dans `allowedScopes` ; il n’est pas prudent.
+
+Arch/Garuda et les distributions rolling-release peuvent rencontrer des ruptures de dépendances, pilotes ou applications et nécessiter une intervention manuelle. Lire les annonces de la distribution, sauvegarder et privilégier une mise à jour complète selon sa procédure (par exemple `garuda-update`). Les mises à jour partielles, de sécurité uniquement et automatiques des rolling-release ne sont pas proposées dans cette bêta.
+
+Installer aussi `apt_provider.py` et le paquet système `python3-apt` pour les profils ciblés. L’exécuteur utilise `/usr/bin/python3`. `mode: manual` autorise simulation puis approbation manuelle. Pour programmer sur Debian/Ubuntu à version fixe, l’administrateur local doit choisir `mode: automatic`, `allowInstall: true`, `allowAutomatic: true`, les `allowedScopes` et les heures `utcHours`. La politique reste locale et inaccessible au hub. `refreshMetadata: true` autorise explicitement le rafraîchissement APT avant les simulations et travaux programmés ; son échec interdit l’installation. Sinon seuls les index déjà présents sont utilisés.
+
+Dans Configuration, choisir les jours et l’heure UTC ainsi que le profil, puis enregistrer. L’exécuteur local recalcule le plan à chaque exécution et vérifie sa politique. Un créneau ne s’exécute qu’une fois ; après cinq minutes de retard, il est ignoré, sans rattrapage ni nouvelle tentative automatique après échec. Le planning continue même si le hub est déconnecté. Désactiver et enregistrer le planning avant de désactiver la surveillance. Révoquer la politique locale ou désactiver le timer empêche les nouveaux travaux ; ne jamais interrompre APT/dpkg en cours. Aucun redémarrage automatique, changement de version de distribution ni rollback universel.
+
+Les notifications utilisent les canaux Discord/Apprise configurés dans Notifications. Leur activation est indépendante et désactivée par défaut. Choisir les événements : mises à jour, vulnérabilités avec seuil de gravité, correctifs disponibles, redémarrage nécessaire, collecteur ou données de sécurité anciens/indisponibles, démarrage, réussite, échec et modification du planning. Les événements d’installation indiquent le mode manuel/automatique, le profil et le nombre de paquets. Les alertes de détection sont dédupliquées et espacées d’une heure par type ; les opérations ne sont pas soumises à cette limite. La surveillance et l’envoi fonctionnent sans page ouverte. Les envois échoués sont réessayés tant que l’événement est conservé et les notifications actives ; un envoi réussi sur au moins un canal est considéré livré. L’exécuteur conserve les 100 derniers événements pour récupération après déconnexion ; Enhanced conserve l’historique selon sa rétention (90 jours par défaut). Ce tampon n’est pas un journal illimité.

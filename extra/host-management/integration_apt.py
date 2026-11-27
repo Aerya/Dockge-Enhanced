@@ -9,6 +9,7 @@ import time
 from pathlib import Path
 from unittest.mock import patch
 import executor
+import apt_provider
 
 if os.environ.get('GITHUB_ACTIONS') != 'true' or os.geteuid() != 0:
     raise SystemExit('Only run as root on the disposable GitHub Actions VM')
@@ -36,6 +37,7 @@ with tempfile.TemporaryDirectory(prefix='dockge-apt-test-') as temp:
         content = output.read_bytes()
         entries.append((package / 'DEBIAN/control').read_text() + f'Filename: {output.name}\nSize: {len(content)}\nSHA256: {hashlib.sha256(content).hexdigest()}\n')
     (repo / 'Packages').write_text('\n'.join(entries))
+    (repo / 'Release').write_text('Origin: Debian\nLabel: Debian-Security\nSuite: oldstable-security\nCodename: bookworm-security\nArchitectures: amd64\nDescription: disposable security repository\n')
     invoke(['dpkg', '--root=' + str(root), '--install', str(repo / 'dockge-host-test_1.0.deb')])
     (base / 'apt/etc/apt/sources.list').write_text(f'deb [trusted=yes] file:{repo} ./\n')
     config = base / 'apt.conf'
@@ -83,4 +85,40 @@ DPkg::Options {{ "--root={root}"; }};
             raise AssertionError('replayed approval accepted')
         except FileNotFoundError:
             pass
-print('Isolated APT simulation, approved install and replay refusal passed')
+    # Re-open the same isolated APT configuration through python-apt: real native version/origin selection.
+    import apt
+    import apt_pkg
+    apt_pkg.init_config()
+    apt_pkg.read_config_file(apt_pkg.config, str(config))
+    apt_pkg.init_system()
+    assert apt_pkg.version_compare('1:1.0-1+deb12u2', '1:1.0-1+deb12u1') > 0
+    assert apt_pkg.version_compare('2:1.0', '1:99.0') > 0
+    invoke(['dpkg', '--root=' + str(root), '--install', str(repo / 'dockge-host-test_1.0.deb')])
+    security_candidates = lambda scope, exclusions=(), allowed=(): apt_provider.select_versions(apt.Cache(), apt_pkg.version_compare, 'debian', 'bookworm', scope, exclusions, allowed)
+    with patch.object(executor, 'STATE', state), patch('apt_provider.candidates', side_effect=security_candidates):
+        security_policy = {**policy, 'allowedScopes': ['security', 'security-conservative'], 'conservativePackages': ['dockge-host-test']}
+        security_request = {**request, 'scope': 'security'}
+        plan = executor.process(security_request, security_policy, read_command)
+        assert len(plan['packages']) == 1, plan
+        conservative = executor.simulate(read_command, scope='security-conservative', allowed=['dockge-host-test'])
+        assert conservative['packages'] == plan['packages']
+        (state / 'plan.json').write_text(json.dumps(plan))
+        with patch('executor.subprocess.run', side_effect=write_command):
+            result = executor.process({**security_request, 'action': 'install', 'approved': True, 'plan': plan['plan']}, security_policy, read_command)
+        assert result['state'] == 'complete', result
+        invoke(['dpkg', '--root=' + str(root), '--install', str(repo / 'dockge-host-test_1.0.deb')])
+        outbox = base / 'operations'
+        outbox.mkdir()
+        schedule = {'enabled': True, 'days': list(range(7)), 'hour': 2, 'minute': 0, 'scope': 'security'}
+        (state / 'schedule.json').write_text(json.dumps(schedule))
+        automatic_policy = {**security_policy, 'mode': 'automatic', 'allowAutomatic': True}
+        import datetime
+        scheduled = datetime.datetime(2026, 11, 30, 2, 1, tzinfo=datetime.timezone.utc)
+        with patch.object(executor, 'OUTBOX', outbox), patch('apt_provider.stable_system', return_value=True), patch('executor.subprocess.run', side_effect=write_command):
+            executor.run_schedule(automatic_policy, scheduled, run=read_command)
+            executor.run_schedule(automatic_policy, scheduled, run=read_command)
+        events = json.loads((outbox / 'events.json').read_text())
+        assert [e['state'] for e in events] == ['running', 'complete'], events
+        assert all(e['automatic'] for e in events)
+        assert invoke(['/usr/bin/dpkg-query', '--admindir=' + str(root / 'var/lib/dpkg'), '-W', '-f=${Version}', 'dockge-host-test']) == '2.0'
+print('Isolated APT all/security/conservative simulation, manual/automatic installs and replay refusal passed')

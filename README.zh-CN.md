@@ -63,7 +63,7 @@ Dockge Enhanced 是 [Dockge](https://github.com/louislam/dockge) 的分支，通
 
 ### 🆕 2026 年 11 月
 
-**主机更新（测试版） :** 位于 `/watcher/hosts`，可选且默认关闭：本地主机清单、APT/Pacman 更新、通过现有 Trivy 镜像进行 Debian/Ubuntu CVE 分析，以及需要本地授权的受限手动 APT 操作。报告只读挂载。请求使用现有联合通信；旧代理显示不可用。不支持自动更新、AUR、RPM/APK/Zypper 或完整厂商覆盖。 [→](docs/host-management.zh-CN.md). 主机更新标签页始终可见；默认仅禁用监控功能。 更新分为 Dockge-Enhanced、Docker 镜像和主机更新（测试版）三个可见子标签页。保留八个主标签页，现有 URL 和远程实例链接保持有效。
+**主机更新（测试版） :** 位于 `/watcher/hosts`，可选且默认关闭：Debian/Ubuntu 和 Arch/Garuda 清单与更新检测、Debian/Ubuntu CVE 分析，以及需要本地安装和授权的手动或计划 APT 更新。提供全部已授权更新、仅安全、审慎、安全且审慎四种策略，可配置检测和操作通知。报告只读，使用现有联合通信。Arch/Garuda 仅支持监控；不支持 AUR、RPM/APK/Zypper、主机群操作或完整 CVE 覆盖。 [→](docs/host-management.zh-CN.md). 主机更新标签页始终可见；默认仅禁用监控功能。 更新分为 Dockge-Enhanced、Docker 镜像和主机更新（测试版）三个可见子标签页。保留八个主标签页，现有 URL 和远程实例链接保持有效。
 
 **1Password：新的密钥 API :** 1Password 现在使用返回明文值的 `listSecrets`，替代计划于 2027 年 1 月 20 日移除的 `getVariables`。SDK 固定为 `0.0.0-credential-broker-dev-preview.4`。请同时更新关联实例。
 
@@ -698,7 +698,7 @@ Stack 导航、Logs/Compose、资源指标、健康卡片、主题和移动端�
 
 ### 监控
 
-- **主机更新（测试版）** — 位于 `/watcher/hosts`，可选且默认关闭：本地主机清单、APT/Pacman 更新、通过现有 Trivy 镜像进行 Debian/Ubuntu CVE 分析，以及需要本地授权的受限手动 APT 操作。报告只读挂载。请求使用现有联合通信；旧代理显示不可用。不支持自动更新、AUR、RPM/APK/Zypper 或完整厂商覆盖。 [→](docs/host-management.zh-CN.md). 主机更新标签页始终可见；默认仅禁用监控功能。
+- **主机更新（测试版）** — 位于 `/watcher/hosts`，可选且默认关闭：Debian/Ubuntu 和 Arch/Garuda 清单与更新检测、Debian/Ubuntu CVE 分析，以及需要本地安装和授权的手动或计划 APT 更新。提供全部已授权更新、仅安全、审慎、安全且审慎四种策略，可配置检测和操作通知。报告只读，使用现有联合通信。Arch/Garuda 仅支持监控；不支持 AUR、RPM/APK/Zypper、主机群操作或完整 CVE 覆盖。 [→](docs/host-management.zh-CN.md). 主机更新标签页始终可见；默认仅禁用监控功能。
 - **Docker 连接恢复** — `DOCKGE_DOCKER_RECOVERY_RETRIES` / `DOCKGE_DOCKER_RECOVERY_INTERVAL_SECONDS`
 - 系统、Stack 和容器的 CPU、RAM 和磁盘统计，以及可配置的状态栏
 - 主机系统详情、温度和受监控磁盘分区

@@ -41,8 +41,10 @@ export function registerHosts(socket: DockgeSocket, agent: AgentSocket) {
                         throw new Error("hosts.expired");
                     }
                     const { connectionNonce: _nonce, ...operation } = payload;
-                    const hostId = await HostManager.instance.operationAuthority();
-                    if (!(await hostOperationStatus(hostId)).manual) {
+                    const cancelling = operation.action === "schedule" && (operation.schedule as { enabled?: boolean })?.enabled === false;
+                    const hostId = await HostManager.instance.operationAuthority(cancelling);
+                    const capability = await hostOperationStatus(hostId);
+                    if ((!cancelling && !capability.manual) || (operation.action === "schedule" && (operation.schedule as { enabled?: boolean })?.enabled && !capability.automatic)) {
                         throw new Error("hosts.operationsUnavailable");
                     }
                     await AuditLogger.getInstance().logFromSocket(socket, { action: "hosts.operation.request",
