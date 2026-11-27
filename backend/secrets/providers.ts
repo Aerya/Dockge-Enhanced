@@ -59,19 +59,28 @@ async function json<T>(url: string, init: RequestInit): Promise<T> {
         await reader.cancel();
     }
 }
-async function readOnePassword(token: string, environment: string) {
-    const sdk = await import("@1password/sdk");
-    const client = await sdk.createClient({ auth: token,
+type OnePasswordClientFactory = (options: { auth: string;
+    integrationName: string;
+    integrationVersion: string }) => Promise<{ environments: {
+    listSecrets(environment: string, reveal: boolean): Promise<import("@1password/sdk").EnvironmentSecret[]>;
+} }>;
+
+export async function readOnePassword(token: string, environment: string, createClient?: OnePasswordClientFactory) {
+    const factory = createClient ?? (await import("@1password/sdk")).createClient;
+    const client = await factory({ auth: token,
         integrationName: "Dockge-Enhanced",
         integrationVersion: "1.5.4" });
-    return client.environments.getVariables(environment);
+    return client.environments.listSecrets(environment, true);
 }
 export async function resolveSecrets(connection: Connection, binding: Binding, onePassword = readOnePassword): Promise<Record<string, string>> {
     try {
         switch (connection.provider) {
             case "onepassword": {
                 const data = await onePassword(connection.token, binding.environment);
-                return secretEnvironment(data.variables.map(variable => [ variable.name, variable.value ]));
+                if (!Array.isArray(data) || data.some(secret => secret.concealed !== false)) {
+                    throw secretsError();
+                }
+                return secretEnvironment(data.map(secret => [ secret.name, secret.value ]));
             }
             case "doppler": {
                 const url = new URL("https://api.doppler.com/v3/configs/config/secrets/download");

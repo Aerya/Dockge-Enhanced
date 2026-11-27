@@ -1,7 +1,7 @@
 <template>
     <div class="my-4">
         <h4>{{ $t('stackSecrets.title') }}</h4>
-        <p class="alert alert-warning">{{ $t('stackSecrets.experimental') }}</p>
+        <p class="text-muted small">{{ $t('stackSecrets.onePasswordPreview') }}</p>
         <p>{{ $t('stackSecrets.settingsHint') }}</p>
         <label for="secrets-instance" class="form-label">{{ $t('configTools.instance') }}</label>
         <select id="secrets-instance" v-model="endpoint" class="form-select mb-3" :disabled="busy">

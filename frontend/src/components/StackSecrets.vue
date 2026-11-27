@@ -2,7 +2,7 @@
     <details class="shadow-box big-padding mb-3" @toggle="opened">
         <summary>{{ $t('stackSecrets.title') }}</summary>
         <div class="mt-3">
-            <p class="alert alert-warning">{{ $t('stackSecrets.experimental') }}</p>
+            <p class="text-muted small">{{ $t('stackSecrets.onePasswordPreview') }}</p>
             <p>{{ $t('stackSecrets.stackHint') }}</p>
             <div v-if="message" class="alert" :class="failed ? 'alert-danger' : 'alert-success'" role="status">{{ message }}</div>
             <form @submit.prevent="save">

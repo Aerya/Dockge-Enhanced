@@ -5,7 +5,7 @@
 Conecte una stack a Bitwarden Secrets Manager, 1Password, Doppler o Infisical para recuperar secretos durante las operaciones Compose sin copiarlos a su archivo `.env`.
 Corrección de Bitwarden: el perfil temporal utiliza el formato TOML que espera el CLI oficial, lo que restablece la recuperación de secretos.
 
-**Bitwarden Secrets Manager es plenamente funcional. 1Password, Doppler e Infisical siguen siendo experimentales, sujetos a pruebas de usuarios.** Una prueba de conexión correcta confirma la recuperación, no el funcionamiento de la aplicación.
+**1Password utiliza una versión preliminar de su SDK.** Una prueba de conexión correcta confirma la recuperación, no el funcionamiento de la aplicación.
 
 ## Configuración
 
@@ -47,4 +47,4 @@ Los valores recuperados tienen prioridad para la interpolación Compose. Los val
 
 ## Fuentes
 
-[1Password Environments](https://developer.1password.com/docs/sdks/environments/) · [Doppler Service Tokens](https://docs.doppler.com/docs/service-tokens) · [Infisical Universal Auth](https://infisical.com/docs/documentation/platform/identities/universal-auth) · [Bitwarden CLI](https://bitwarden.com/help/secrets-manager-cli/) · [Licencia Bitwarden](https://github.com/bitwarden/sdk-sm/blob/bws-v2.1.0/LICENSE)
+[1Password Environments](https://www.1password.dev/environments/read-environment-variables) · [Doppler Service Tokens](https://docs.doppler.com/docs/service-tokens) · [Infisical Universal Auth](https://infisical.com/docs/documentation/platform/identities/universal-auth) · [Bitwarden CLI](https://bitwarden.com/help/secrets-manager-cli/) · [Licencia Bitwarden](https://github.com/bitwarden/sdk-sm/blob/bws-v2.1.0/LICENSE)

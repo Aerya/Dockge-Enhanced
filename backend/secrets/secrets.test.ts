@@ -5,7 +5,7 @@ import os from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
 import { configureSecrets, type Binding, type Connection } from "./store";
-import { secretEnvironment, resolveSecrets, bitwardenProfile } from "./providers";
+import { secretEnvironment, resolveSecrets, readOnePassword, bitwardenProfile } from "./providers";
 import { secretContext, secretStackPs, prepareSecrets, withSecretOperation } from "./runtime";
 import buffered, { execFile } from "../buffered-process";
 
@@ -172,16 +172,33 @@ test("status bypasses provider and interpolated Compose, preserving service and 
     assert.ok(calls.every(args => !args.includes("compose")));
 });
 
-test("1Password passes the service token and Environment ID; UI masking does not erase values", async () => {
+test("1Password requests revealed secrets from listSecrets using the service token and Environment ID", async () => {
     const values = await resolveSecrets({ ...connection,
-        provider: "onepassword" }, binding, async (token, environment) => {
-        assert.equal(token, connection.token);
-        assert.equal(environment, binding.environment);
-        return { variables: [{ name: "TOKEN",
-            value: "actual-secret",
-            masked: true }] };
-    });
+        provider: "onepassword" }, binding, (token, environment) => readOnePassword(token, environment, async options => {
+        assert.equal(options.auth, connection.token);
+        return { environments: { async listSecrets(id, reveal) {
+            assert.equal(id, binding.environment);
+            assert.equal(reveal, true);
+            return [{ name: "TOKEN",
+                value: "actual-secret",
+                concealed: false }];
+        } } };
+    }));
     assert.equal(values.TOKEN, "actual-secret");
+});
+test("1Password blocks concealed, malformed or empty responses and hides provider errors", async () => {
+    const provider = { ...connection,
+        provider: "onepassword" as const };
+    for (const response of [[], [{ name: "TOKEN",
+        value: "hidden",
+        concealed: true }],
+    [{ name: "TOKEN",
+        concealed: false }], { variables: [] }]) {
+        await assert.rejects(resolveSecrets(provider, binding, async () => response as never));
+    }
+    await assert.rejects(resolveSecrets(provider, binding, async () => {
+        throw new Error("sensitive-provider-error");
+    }), error => error instanceof Error && !error.message.includes("sensitive-provider-error"));
 });
 test("Bitwarden uses stdin-free credentials in child env and a temporary non-secret profile without state", async t => {
     const { directory } = await fixture(t);

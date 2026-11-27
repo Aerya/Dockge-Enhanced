@@ -1,6 +1,6 @@
 {
     "stackSecrets.title": "Secret-Manager",
-    "stackSecrets.experimental": "Bitwarden Secrets Manager ist voll funktionsfähig; die anderen Lösungen sind experimentell.",
+    "stackSecrets.onePasswordPreview": "1Password verwendet eine Vorabversion seines SDKs.",
     "stackSecrets.settingsHint": "Erstellen Sie eine Verbindung auf der Instanz Ihrer Stacks und wählen Sie sie pro Stack aus. Beschränken Sie das Maschinenkonto auf die benötigten Secrets. Bitwarden bezeichnet hier Secrets Manager, nicht den persönlichen Passworttresor.",
     "stackSecrets.provider": "Anbieter",
     "stackSecrets.url": "HTTPS-Adresse des Dienstes",
@@ -22,7 +22,7 @@
     "stackSecrets.inUse": "Ein Stack verwendet diese Verbindung noch.",
     "stackSecrets.configHidden": "Aufgelöste Konfiguration ausgeblendet: Dieser Stack verwendet einen Secret-Manager.",
     "stackSecrets.transferUnsupported": "Migration und Replikation von Stacks mit Secret-Manager werden nicht unterstützt.",
-    "releaseNews.item.stackSecrets": "Secret-Manager pro Stack: Bitwarden Secrets Manager, 1Password, Doppler und Infisical. Bitwarden ist funktionsfähig; andere Anbieter sind experimentell. Anbieterfehler blockieren Compose-Vorgänge. Werte werden nicht in .env kopiert; Docker behält die injizierten Containerwerte. Befehlsausgaben und aufgelöste Konfigurationen werden ausgeblendet. Bitwarden benötigt sein offizielles CLI, installierbar über die Einstellungen. Auch verknüpfte Instanzen aktualisieren.",
+    "releaseNews.item.stackSecrets": "Secret-Manager pro Stack: Bitwarden Secrets Manager, 1Password, Doppler und Infisical. 1Password verwendet eine Vorabversion seines SDKs. Anbieterfehler blockieren Compose-Vorgänge. Werte werden nicht in .env kopiert; Docker behält die injizierten Containerwerte. Befehlsausgaben und aufgelöste Konfigurationen werden ausgeblendet. Bitwarden benötigt sein offizielles CLI, installierbar über die Einstellungen. Auch verknüpfte Instanzen aktualisieren.",
     "releaseNews.item.globalImageAutoUpdate": "Unter Images einen globalen Modus Manuell, Sofort oder Geplant für aktuelle und zukünftige Images wählen. Eigene Ausnahmen haben Vorrang; Globale Einstellung übernehmen entfernt sie. ImageWatcher aktivieren und speichern. Gestoppte Dienste bleiben gestoppt; ihr Update wird verschoben. Umgebungsvariablen werden ebenfalls unterstützt, mit eigenen Einstellungen je Instanz.",
     "watcher.status.auInherit": "Globale Einstellung übernehmen",
     "watcher.img.defaultAutoUpdateHint": "Gilt für aktuelle und zukünftige Images ohne eigene Regel, auch bei gestoppten Diensten. ImageWatcher zum Aktualisieren aktivieren. Gestoppte Dienste werden nicht gestartet: ihre Aktualisierung wird verschoben. Ausnahmen pro Image haben Vorrang.",
@@ -3009,5 +3009,6 @@
     "stackSecrets.license": "Bitwarden-Lizenz",
     "stackSecrets.installCli": "Offizielles Bitwarden-CLI installieren",
     "stackSecrets.cliInstalled": "CLI verfügbar",
-    "releaseNews.item.bitwardenProfileFix": "Bitwarden Secrets Manager ist voll funktionsfähig. 1Password, Doppler und Infisical bleiben experimentell und müssen noch von Benutzern getestet werden."
+    "releaseNews.item.bitwardenProfileFix": "Bitwarden Secrets Manager verwendet das vom offiziellen CLI erwartete TOML-Profil.",
+    "releaseNews.item.onePasswordListSecrets": "1Password verwendet eine Vorabversion seines SDKs. 1Password verwendet jetzt listSecrets mit offengelegten Werten statt getVariables, das am 20. Januar 2027 entfernt werden soll. Das SDK ist auf 0.0.0-credential-broker-dev-preview.4 festgelegt. Aktualisieren Sie auch verknüpfte Instanzen."
 }
