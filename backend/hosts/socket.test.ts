@@ -13,7 +13,7 @@ test("every host RPC refuses anonymous and restricted users before I/O", async t
     for (const userID of [ undefined, 42 ]) {
         const agent = new AgentSocket();
         registerHosts({ userID } as DockgeSocket, agent);
-        for (const event of [ "hosts:capabilities", "hosts:get", "hosts:settings", "hosts:operation" ]) {
+        for (const event of [ "hosts:capabilities", "hosts:get", "hosts:settings", "hosts:operation", "hosts:packages" ]) {
             const result = await new Promise<{ ok: boolean }>(resolve => agent.call(event, { command: "never-execute" }, resolve));
             assert.equal(result.ok, false);
             assert.ok(!JSON.stringify(result).includes("never-execute"));
@@ -59,4 +59,32 @@ test("alerts deduplicate stable results without inventory timestamps", () => {
     assert.equal(hostAlertKey("fresh", "unknown", security), hostAlertKey("fresh", "unknown", { ...security,
         scannedAt: "changed" }));
     assert.notEqual(hostAlertKey("fresh", "unknown", security), hostAlertKey("stale", "unknown", security));
+});
+
+test("existing federation proxy carries host capabilities to direct and reverse endpoints", async t => {
+    const { AgentProxySocketHandler } = await import("../socket-handlers/agent-proxy-socket-handler");
+    t.mock.method(R, "findOne", async () => ({ role: "admin" }));
+    const remote = new AgentSocket();
+    registerHosts({ userID: 7 } as DockgeSocket, remote);
+    let listener: (...args: unknown[]) => Promise<void>;
+    const endpoints: string[] = [];
+    const socket = { userID: 7,
+        endpoint: "",
+        on: (_event: string, handler: typeof listener) => {
+            listener = handler;
+        },
+        instanceManager: { emitToEndpoint: async (endpoint: string, event: string, ...args: unknown[]) => {
+            endpoints.push(endpoint);
+            remote.call(event, ...args);
+        } } } as unknown as DockgeSocket;
+    new AgentProxySocketHandler().create2(socket, {} as never, new AgentSocket());
+    for (const endpoint of [ "direct.example", "reverse://fixture" ]) {
+        const response = await new Promise<{ ok: boolean;
+            data: { protocol: number } }>(resolve => {
+            void listener!(endpoint, "hosts:capabilities", {}, resolve);
+        });
+        assert.equal(response.ok, true);
+        assert.equal(response.data.protocol, 1);
+    }
+    assert.deepEqual(endpoints, [ "direct.example", "reverse://fixture" ]);
 });

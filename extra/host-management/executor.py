@@ -10,7 +10,7 @@ import stat
 import subprocess
 import time
 from pathlib import Path
-from collector import command, write_report
+from collector import command, write_report, host_identity
 
 POLICY = Path('/etc/dockge-host/policy.json')
 INBOX = Path('/var/lib/dockge-host-requests')
@@ -38,7 +38,7 @@ def safe_json(path, root=False, maximum=65536):
 
 def validate_request(request, now=None):
     now = time.time() if now is None else now
-    if not isinstance(request, dict) or set(request) - {'id', 'action', 'expires', 'plan', 'approved'}:
+    if not isinstance(request, dict) or set(request) - {'id', 'action', 'expires', 'plan', 'approved', 'hostId'}:
         raise ValueError('invalid request')
     if not re.fullmatch(r'[a-f0-9]{32}', str(request.get('id', ''))):
         raise ValueError('invalid id')
@@ -46,6 +46,8 @@ def validate_request(request, now=None):
         raise ValueError('invalid operation')
     if not now < request['expires'] <= now + 300:
         raise ValueError('expired')
+    if request.get('hostId') != host_identity():
+        raise ValueError('wrong host')
     if request['action'] == 'install' and (request.get('approved') is not True or not re.fullmatch(r'[a-f0-9]{64}', str(request.get('plan', '')))):
         raise ValueError('approval required')
     return request
@@ -119,6 +121,9 @@ def process(request, policy, run=command, execute=install):
 def main():
     if os.geteuid() != 0 or Path('/.dockerenv').exists() or Path('/run/.containerenv').exists():
         raise ValueError('run locally as root')
+    release = dict(line.split('=', 1) for line in Path('/etc/os-release').read_text().splitlines() if '=' in line)
+    if release.get('ID', '').strip('\"') not in ('debian', 'ubuntu'):
+        raise ValueError('unsupported distribution')
     policy = safe_json(POLICY, root=True)
     # Directories must be provisioned locally; requests is the only writable mount in Enhanced.
     for directory in (STATE, OUTBOX):
@@ -128,7 +133,7 @@ def main():
     lock = os.open(STATE / 'lock', os.O_WRONLY | os.O_CREAT | os.O_NOFOLLOW, 0o600)
     try:
         fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        write_report(OUTBOX, {'schemaVersion': 1, 'expires': time.time() + 60,
+        write_report(OUTBOX, {'schemaVersion': 1, 'hostId': host_identity(), 'expires': time.time() + 60,
                              'manual': policy.get('mode') == 'manual' and policy.get('allowInstall') is True,
                              'automatic': False}, 'capabilities.json')
         for file in sorted(INBOX.glob('*.json'))[:20]:
@@ -159,6 +164,7 @@ def main():
             except Exception:
                 pass
             write_report(OUTBOX, result)
+            write_report(OUTBOX, result, request['id'] + '.json')
             # Expired ids cannot be replayed, so markers can be pruned after one day.
         for marker in STATE.glob('*.used'):
             if marker.stat().st_mtime < time.time() - 86400:

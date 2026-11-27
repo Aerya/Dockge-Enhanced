@@ -11,6 +11,7 @@ import { queueHostOperation } from "./operations";
 const fixture = (): HostReport => ({ schemaVersion: 1,
     collectedAt: new Date().toISOString(),
     host: "test-host",
+    hostId: "a".repeat(64),
     os: "debian",
     osVersion: "12",
     osName: "Debian 12",

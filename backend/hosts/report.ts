@@ -16,6 +16,7 @@ export interface HostReport {
     schemaVersion: 1;
     collectedAt: string;
     host: string;
+    hostId: string;
     os: string;
     osVersion: string;
     osName: string;
@@ -33,7 +34,7 @@ export const MAX_REPORT = 16 * 1024 * 1024;
 const text = (v: unknown, max = 200): v is string => typeof v === "string" && v.length <= max && !/[\x00-\x1f\x7f]/.test(v);
 export function parseReport(value: unknown, now = Date.now()): HostReport {
     const r = value as HostReport;
-    if (!r || r.schemaVersion !== 1 || !text(r.collectedAt) || !Number.isFinite(Date.parse(r.collectedAt)) || Date.parse(r.collectedAt) > now + 300000 ||
+    if (!r || r.schemaVersion !== 1 || !/^[a-f0-9]{64}$/.test(r.hostId) || !text(r.collectedAt) || !Number.isFinite(Date.parse(r.collectedAt)) || Date.parse(r.collectedAt) > now + 300000 ||
         ![ r.host, r.os, r.osVersion, r.osName, r.arch, r.kernel ].every(v => text(v)) ||
         !Number.isFinite(r.uptime) || r.uptime < 0 || typeof r.complete !== "boolean" ||
         ![ "apt", "pacman", "unsupported" ].includes(r.provider) || ![ "cached", "refreshed", "unavailable" ].includes(r.metadata) ||
@@ -43,7 +44,7 @@ export function parseReport(value: unknown, now = Date.now()): HostReport {
     }
     const keys = new Set<string>();
     const packages = r.packages.map(p => {
-        if (!p || !text(p.name) || !/^[A-Za-z0-9][A-Za-z0-9+_.:@~-]*$/.test(p.name) ||
+        if (!p || !/^[A-Za-z0-9][A-Za-z0-9+_.:@~-]{0,199}$/.test(p.source) || !/^[A-Za-z0-9][A-Za-z0-9+_.:@~-]{0,199}$/.test(p.arch) || !text(p.name) || !/^[A-Za-z0-9][A-Za-z0-9+_.:@~-]*$/.test(p.name) ||
             ![ p.version, p.arch, p.source, p.sourceVersion ].every(v => text(v)) || !p.version ||
             (p.available !== null && (!text(p.available) || !p.available)) || ![ "unknown", "repository", "foreign" ].includes(p.origin)) {
             throw new Error("hosts.invalidReport");
@@ -65,6 +66,7 @@ export function parseReport(value: unknown, now = Date.now()): HostReport {
     return { schemaVersion: 1,
         collectedAt: r.collectedAt,
         host: r.host,
+        hostId: r.hostId,
         os: r.os,
         osVersion: r.osVersion,
         osName: r.osName,

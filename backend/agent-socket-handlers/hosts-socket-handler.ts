@@ -6,7 +6,7 @@ import { HostManager } from "../hosts/manager";
 import { AuditLogger } from "../audit-log";
 
 export function registerHosts(socket: DockgeSocket, agent: AgentSocket) {
-    for (const event of [ "hosts:capabilities", "hosts:get", "hosts:settings", "hosts:operation" ]) {
+    for (const event of [ "hosts:capabilities", "hosts:get", "hosts:settings", "hosts:operation", "hosts:packages" ]) {
         agent.on(event, async (request, callback) => {
             if (typeof callback !== "function") {
                 return;
@@ -22,14 +22,20 @@ export function registerHosts(socket: DockgeSocket, agent: AgentSocket) {
                             modes: [ "disabled", "monitor" ] } });
                     return;
                 }
+                if (event === "hosts:packages") {
+                    callback({ ok: true,
+                        data: await HostManager.instance.packages(request) });
+                    return;
+                }
                 if (event === "hosts:operation") {
-                    if (!(await HostManager.instance.settings()).enabled || !(await hostOperationStatus()).manual) {
+                    const hostId = await HostManager.instance.operationAuthority();
+                    if (!(await hostOperationStatus(hostId)).manual) {
                         throw new Error("hosts.operationsUnavailable");
                     }
                     await AuditLogger.getInstance().logFromSocket(socket, { action: "hosts.operation.request",
                         category: "host",
                         status: "success" });
-                    const data = await queueHostOperation(request);
+                    const data = await queueHostOperation(request, hostId);
                     callback({ ok: true,
                         data });
                     return;

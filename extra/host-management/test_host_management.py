@@ -50,10 +50,10 @@ class CollectorTests(unittest.TestCase):
 
 class ExecutorTests(unittest.TestCase):
     def request(self, **values):
-        return {'id': 'a' * 32, 'action': 'simulate', 'expires': time.time() + 60, **values}
+        return {'hostId': executor.host_identity(), 'id': 'a' * 32, 'action': 'simulate', 'expires': time.time() + 60, **values}
 
     def test_expiry_injection_and_approval(self):
-        for values in ({'expires': 0}, {'expires': time.time() + 1000}, {'action': 'shell'}, {'id': '../x'},
+        for values in ({'hostId': 'b' * 64}, {'expires': 0}, {'expires': time.time() + 1000}, {'action': 'shell'}, {'id': '../x'},
                        {'command': 'id'}, {'action': 'install', 'plan': 'b' * 64}, {'action': 'install', 'approved': True, 'plan': '$(id)'}):
             with self.assertRaises(ValueError):
                 executor.validate_request(self.request(**values))

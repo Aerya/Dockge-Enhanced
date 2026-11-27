@@ -4,11 +4,11 @@ import { lstat, open, rename, unlink } from "node:fs/promises";
 import path from "node:path";
 
 /** No commands or executable paths are accepted over RPC. Local policy is never writable here. */
-export async function queueHostOperation(value: unknown) {
+export async function queueHostOperation(value: unknown, hostId?: string) {
     const request = value as { action?: unknown;
         plan?: unknown;
         approved?: unknown };
-    if (!request || ![ "simulate", "install" ].includes(String(request.action)) ||
+    if (!hostId || !/^[a-f0-9]{64}$/.test(hostId) || !request || ![ "simulate", "install" ].includes(String(request.action)) ||
         Object.keys(request).some(k => ![ "action", "plan", "approved" ].includes(k)) ||
         (request.action === "install" && (request.approved !== true || typeof request.plan !== "string" || !/^[a-f0-9]{64}$/.test(request.plan)))) {
         throw new Error("hosts.invalidOperation");
@@ -27,6 +27,7 @@ export async function queueHostOperation(value: unknown) {
     const file = await open(temporary, constants.O_WRONLY | constants.O_CREAT | constants.O_EXCL | constants.O_NOFOLLOW, 0o600);
     try {
         await file.writeFile(JSON.stringify({ id,
+            hostId,
             action: request.action,
             plan: request.plan,
             approved: request.approved,
@@ -44,7 +45,7 @@ export async function queueHostOperation(value: unknown) {
         expires: Date.now() + 120000 };
 }
 
-export async function hostOperationStatus() {
+export async function hostOperationStatus(hostId?: string) {
     const directory = process.env.DOCKGE_HOST_OPERATION_REPORT_DIR;
     if (!directory) {
         return { manual: false,
@@ -72,7 +73,7 @@ export async function hostOperationStatus() {
         }
     };
     const cap = await read("capabilities.json");
-    const manual = cap.schemaVersion === 1 && cap.manual === true && Number.isFinite(cap.expires) && cap.expires > Date.now() / 1000 && cap.expires < Date.now() / 1000 + 120;
+    const manual = !!hostId && cap.hostId === hostId && cap.schemaVersion === 1 && cap.manual === true && Number.isFinite(cap.expires) && cap.expires > Date.now() / 1000 && cap.expires < Date.now() / 1000 + 120;
     let result = null;
     try {
         const r = await read("inventory.json");

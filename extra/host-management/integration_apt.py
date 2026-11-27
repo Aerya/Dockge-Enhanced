@@ -66,7 +66,7 @@ DPkg::Options {{ "--root={root}"; }};
         return real_run(isolated_args(args), **kwargs)
 
     policy = {'mode': 'manual', 'allowInstall': True, 'utcHours': list(range(24)), 'exclusions': []}
-    request = {'id': 'a' * 32, 'action': 'simulate', 'expires': time.time() + 120}
+    request = {'hostId': executor.host_identity(), 'id': 'a' * 32, 'action': 'simulate', 'expires': time.time() + 120}
     with patch.object(executor, 'STATE', state):
         plan = executor.process(request, policy, read_command)
         assert plan['packages'] == [{'name': 'dockge-host-test', 'installed': '1.0', 'version': '2.0'}], plan

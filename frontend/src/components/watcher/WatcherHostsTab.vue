@@ -50,8 +50,8 @@
                     <dt class="col-sm-4">{{ $t('hosts.collectedAt') }}</dt><dd class="col-sm-8">{{ date(snapshot.report.collectedAt) }}</dd>
                     <dt class="col-sm-4">{{ $t('hosts.metadata') }}</dt><dd class="col-sm-8">{{ $t('hosts.metadata.' + snapshot.report.metadata) }}</dd>
                     <dt class="col-sm-4">{{ $t('hosts.reboot') }}</dt><dd class="col-sm-8">{{ $t('hosts.reboot.' + snapshot.report.reboot) }}</dd>
-                    <dt class="col-sm-4">{{ $t('hosts.packages') }}</dt><dd class="col-sm-8">{{ snapshot.report.packages.length }}</dd>
-                    <dt class="col-sm-4">{{ $t('hosts.updates') }}</dt><dd class="col-sm-8">{{ snapshot.report.packages.filter(p => p.available).length }}</dd>
+                    <dt class="col-sm-4">{{ $t('hosts.packages') }}</dt><dd class="col-sm-8">{{ snapshot.report.packageCount }}</dd>
+                    <dt class="col-sm-4">{{ $t('hosts.updates') }}</dt><dd class="col-sm-8">{{ snapshot.report.updateCount }}</dd>
                 </dl>
                 <template v-if="section === 'packages'">
                     <div v-if="snapshot.operations.manual" class="border rounded p-3 mb-3">
@@ -85,6 +85,9 @@
 export default {
     data() {
         return { snapshot: null,
+            packageRows: [],
+            packageGeneration: 0,
+            searchTimer: null,
             approved: false,
             pending: null,
             pollTimer: null,
@@ -99,13 +102,19 @@ export default {
     },
     computed: {
         packages() {
-            return (this.snapshot?.report?.packages || []).filter(p => (!this.updatesOnly || p.available) &&
-                `${p.name} ${p.version} ${p.origin}`.toLowerCase().includes(this.search.toLowerCase()))
-                .sort((a, b) => a.name.localeCompare(b.name)).slice(0, 500);
+            return this.packageRows;
         },
         history() {
             return (this.snapshot?.history || []).map(e => ({ ...e,
                 value: JSON.parse(e.summary) }));
+        },
+    },
+    watch: {
+        search() {
+            this.searchPackages();
+        },
+        updatesOnly() {
+            this.searchPackages();
         },
     },
     mounted() {
@@ -115,8 +124,21 @@ export default {
     beforeUnmount() {
         this.generation++;
         clearInterval(this.pollTimer);
+        clearTimeout(this.searchTimer);
+        this.packageGeneration++;
     },
     methods: {
+        searchPackages() {
+            clearTimeout(this.searchTimer);
+            const generation = ++this.packageGeneration;
+            this.searchTimer = setTimeout(async () => {
+                const rows = await this.request("hosts:packages", { search: this.search,
+                    updatesOnly: this.updatesOnly });
+                if (generation === this.packageGeneration && rows) {
+                    this.packageRows = rows;
+                }
+            }, 250);
+        },
         async poll() {
             if (this.busy || !this.snapshot) {
                 return;
@@ -184,6 +206,7 @@ export default {
             }
             this.snapshot = snapshot;
             this.settings = { ...snapshot.settings };
+            this.searchPackages();
         },
         async save() {
             this.busy = true;

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Optional, network-free host inventory. Run on the host, never inside Enhanced."""
+import hashlib
 import argparse
 import datetime
 import json
@@ -73,6 +74,13 @@ def pacman(run=command):
 PROVIDERS = {"apt": apt, "pacman": pacman}
 
 
+def host_identity():
+    value = Path('/etc/machine-id').read_text().strip()
+    if not re.fullmatch(r'[a-f0-9]{32}', value):
+        raise RuntimeError('host identity unavailable')
+    return hashlib.sha256(('dockge-host-v1:' + value).encode()).hexdigest()
+
+
 def collect():
     if Path("/.dockerenv").exists() or Path("/run/.containerenv").exists() or os.environ.get("container"):
         raise RuntimeError("collector must run on the host")
@@ -86,7 +94,7 @@ def collect():
     if len(packages) > 100000 or any(not PACKAGE.fullmatch(p["name"]) for p in packages):
         raise RuntimeError("invalid inventory")
     return dict(schemaVersion=1, collectedAt=datetime.datetime.now(datetime.timezone.utc).isoformat(),
-                host=platform.node(), os=release.get("ID", "unknown"), osVersion=release.get("VERSION_ID", ""),
+                host=platform.node(), hostId=host_identity(), os=release.get("ID", "unknown"), osVersion=release.get("VERSION_ID", ""),
                 osName=release.get("PRETTY_NAME", "unknown"), arch=platform.machine(), kernel=platform.release(),
                 uptime=float(Path("/proc/uptime").read_text().split()[0]), provider=provider,
                 metadata=freshness, complete=provider in PROVIDERS, packages=packages,

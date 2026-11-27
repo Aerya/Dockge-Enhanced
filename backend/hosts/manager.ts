@@ -1,3 +1,4 @@
+import { AuditLogger } from "../audit-log";
 import { notifyHost } from "./notifications";
 import { hostOperationStatus } from "./operations";
 import { scanHost, type HostSecurity } from "./security";
@@ -135,35 +136,73 @@ export class HostManager {
         await this.refresh();
         const settings = await this.settings();
         const report = settings.enabled ? this.report : null;
+        const operations = settings.enabled ? await hostOperationStatus(report?.hostId).catch(() => ({ manual: false,
+            result: null })) : { manual: false,
+            result: null };
+        if (operations.result && await Settings.get("hostLastOperation") !== operations.result.id) {
+            await AuditLogger.getInstance().log({ action: `hosts.operation.${operations.result.state}`,
+                category: "host",
+                target: operations.result.id,
+                status: operations.result.state === "failed" ? "failure" : "success" });
+            await Settings.set("hostLastOperation", operations.result.id);
+        }
         return { protocol: 1,
             settings,
-            report,
+            report: report ? { ...report,
+                packages: report.packages.slice(0, 500),
+                packageCount: report.packages.length,
+                updateCount: report.packages.filter(p => p.available).length } : null,
             state: !settings.enabled ? "disabled" : this.failed ? "unavailable" : reportState(report, settings.staleHours),
             collectorFailed: settings.enabled && this.failed,
-            operations: settings.enabled ? await hostOperationStatus().catch(() => ({ manual: false,
-                result: null })) : { manual: false,
-                result: null },
+            operations,
             modes: [ "disabled", "monitor" ],
             security: !settings.cveEnabled || !report || this.security.fingerprint !== inventoryHash(report) ? { state: "unavailable",
                 findings: [] } : {
                 ...this.security,
+                findings: this.security.findings.slice(0, 500),
+                totalFindings: this.security.findings.length,
                 state: Date.now() - Date.parse(this.security.scannedAt || "") > 48 * 3600000 ? "stale" : this.security.state },
             scanning: this.scanning,
             history: settings.enabled ? await R.getAll("SELECT collected_at, fingerprint, summary FROM host_history ORDER BY collected_at DESC LIMIT 100") : [] };
     }
 
+    async operationAuthority() {
+        await this.refresh();
+        const settings = await this.settings();
+        if (!settings.enabled || this.failed || !this.report || this.report.provider !== "apt" || reportState(this.report, settings.staleHours) !== "fresh") {
+            throw new Error("hosts.operationsUnavailable");
+        }
+        return this.report.hostId;
+    }
+
+    async packages(value: unknown) {
+        const request = value as { search?: unknown;
+            updatesOnly?: unknown };
+        if (!request || typeof request.search !== "string" || request.search.length > 200 || typeof request.updatesOnly !== "boolean") {
+            throw new Error("hosts.invalidOperation");
+        }
+        if (!(await this.settings()).enabled) {
+            return [];
+        }
+        await this.refresh();
+        const query = request.search.toLowerCase();
+        return (this.report?.packages || []).filter(p => (!request.updatesOnly || p.available) &&
+            `${p.name} ${p.version} ${p.arch} ${p.origin}`.toLowerCase().includes(query))
+            .sort((a, b) => a.name.localeCompare(b.name)).slice(0, 500);
+    }
+
     async summary() {
         const s = await this.snapshot();
-        const updates = s.report?.packages.filter(p => p.available).length ?? null;
+        const updates = s.report?.updateCount ?? null;
         return { enabled: s.settings.enabled,
             protocol: 1,
             hosts: s.report ? 1 : 0,
             state: s.state,
             count: s.state === "fresh" ? updates : null,
             updates,
-            security: s.security.state === "unavailable" ? null : s.security.findings.filter(v => v.fix === "available").length,
-            critical: s.security.state === "unavailable" ? null : s.security.findings.filter(v => v.severity === "CRITICAL").length,
-            high: s.security.state === "unavailable" ? null : s.security.findings.filter(v => v.severity === "HIGH").length,
+            security: s.security.state === "unavailable" ? null : this.security.findings.filter(v => v.fix === "available").length,
+            critical: s.security.state === "unavailable" ? null : this.security.findings.filter(v => v.severity === "CRITICAL").length,
+            high: s.security.state === "unavailable" ? null : this.security.findings.filter(v => v.severity === "HIGH").length,
             reboot: s.report?.reboot === "required" ? 1 : null };
     }
 }
