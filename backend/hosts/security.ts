@@ -1,5 +1,5 @@
 import { randomUUID, createHash } from "node:crypto";
-import { mkdtemp, mkdir, writeFile, rm } from "node:fs/promises";
+import { mkdtemp, mkdir, writeFile, rm, chmod } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
@@ -87,16 +87,26 @@ export async function scanHost(report: HostReport, docker: DockerCommand = async
     const name = `dockge-host-scan-${randomUUID()}`;
     const cache = "dockge-host-trivy-db";
     try {
-        await mkdir(path.join(directory, "etc"));
-        await mkdir(path.join(directory, "var/lib/dpkg"), { recursive: true });
-        await writeFile(path.join(directory, "etc/os-release"), metadata.os);
-        await writeFile(path.join(directory, "var/lib/dpkg/status"), metadata.status);
+        const payload = path.join(directory, "payload");
+        for (const relative of [ "", "etc", "var", "var/lib", "var/lib/dpkg" ]) {
+            const target = path.join(payload, relative);
+            await mkdir(target, { recursive: true });
+            await chmod(target, 0o755);
+        }
+        const files = { "etc/os-release": metadata.os,
+            "var/lib/dpkg/status": metadata.status,
+            ...(report.os === "debian" ? { "etc/debian_version": `${report.osVersion}\n` } : {}) };
+        for (const [ relative, content ] of Object.entries(files)) {
+            const target = path.join(payload, relative);
+            await writeFile(target, content);
+            await chmod(target, 0o644);
+        }
         // Same Trivy image as the existing image scanner; only advisory DB download has network access.
         await docker([ "pull", IMAGE ]);
         await docker([ "run", "--rm", "--name", `${name}-db`, "--cap-drop", "ALL", "--security-opt", "no-new-privileges", "--memory", "1g", "--cpus", "1", "-v", `${cache}:/root/.cache/trivy`, IMAGE, "image", "--download-db-only", "--quiet" ]);
         await docker([ "create", "--name", name, "--network", "none", "--cap-drop", "ALL", "--security-opt", "no-new-privileges", "--memory", "1g", "--cpus", "1", "-v", `${cache}:/root/.cache/trivy:ro`, "--entrypoint", "sh", IMAGE, "-c", "sleep 900" ]);
         await docker([ "start", name ]);
-        await docker([ "cp", `${directory}/.`, `${name}:/tmp/host` ]);
+        await docker([ "cp", `${payload}/.`, `${name}:/tmp/host` ]);
         const database = await docker([ "exec", name, "cat", "/root/.cache/trivy/db/metadata.json" ]);
         const db = JSON.parse(database);
         if (!Number.isFinite(Date.parse(db.UpdatedAt)) || Date.now() - Date.parse(db.UpdatedAt) > 72 * 3600000) {
