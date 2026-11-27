@@ -25,6 +25,7 @@
             </template>
             <template v-else-if="section === 'security'">
                 <p>{{ $t('hosts.security.' + snapshot.security.state) }}</p>
+                <p v-if="snapshot.security.totalFindings">{{ $t('hosts.securityLimit', { count: snapshot.security.totalFindings }) }}</p>
                 <p v-if="snapshot.scanning">{{ $t('hosts.scanning') }}</p>
                 <p v-if="snapshot.security.scannedAt">{{ date(snapshot.security.scannedAt) }}</p>
                 <div class="table-responsive">
@@ -57,7 +58,7 @@
                     <dt class="col-sm-4">{{ $t('hosts.updates') }}</dt><dd class="col-sm-8">{{ snapshot.report.updateCount }}</dd>
                 </dl>
                 <template v-if="section === 'packages'">
-                    <div v-if="snapshot.operations.manual" class="border rounded p-3 mb-3">
+                    <div v-if="snapshot.operations.manual && snapshot.state === 'fresh'" class="border rounded p-3 mb-3">
                         <p>{{ $t('hosts.manualWarning') }}</p>
                         <button class="btn btn-outline-primary" :disabled="busy || pending" @click="operate('simulate')">{{ $t('hosts.simulate') }}</button>
                         <p v-if="pending">{{ $t('hosts.pending') }}</p>
@@ -113,6 +114,11 @@ export default {
         },
     },
     watch: {
+        section() {
+            if (this.section === "packages") {
+                this.searchPackages();
+            }
+        },
         search() {
             this.searchPackages();
         },
@@ -154,7 +160,11 @@ export default {
             if (snapshot.operations.result?.plan !== this.snapshot.operations.result?.plan) {
                 this.approved = false;
             }
+            const changedInventory = snapshot.report?.collectedAt !== this.snapshot.report?.collectedAt;
             this.snapshot = snapshot;
+            if (changedInventory) {
+                this.searchPackages();
+            }
             if (this.pending && (snapshot.operations.result?.id === this.pending.id || Date.now() > this.pending.expires)) {
                 this.pending = null;
             }
@@ -223,6 +233,7 @@ export default {
             if (snapshot) {
                 this.snapshot = snapshot;
                 this.settings = { ...snapshot.settings };
+                this.searchPackages();
             }
         },
     },

@@ -160,7 +160,7 @@ export class HostManager {
             security: !settings.cveEnabled || !report || this.security.fingerprint !== inventoryHash(report) ? { state: "unavailable",
                 findings: [] } : {
                 ...this.security,
-                findings: this.security.findings.slice(0, 500),
+                findings: [ ...this.security.findings ].sort((a, b) => [ "CRITICAL", "HIGH", "MEDIUM", "LOW", "UNKNOWN" ].indexOf(a.severity) - [ "CRITICAL", "HIGH", "MEDIUM", "LOW", "UNKNOWN" ].indexOf(b.severity)).slice(0, 500),
                 totalFindings: this.security.findings.length,
                 state: Date.now() - Date.parse(this.security.scannedAt || "") > 48 * 3600000 ? "stale" : this.security.state },
             scanning: this.scanning,

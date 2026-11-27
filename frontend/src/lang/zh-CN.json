@@ -3013,5 +3013,6 @@
     "hosts.notifications": "使用现有 ImageWatcher 通知渠道（去重，最多每小时一次）",
     "hosts.kernelPackages": "已安装内核软件包",
     "hosts.repositories": "仓库主机 / 名称（已脱敏）",
-    "hosts.uptime": "运行时间（小时）"
+    "hosts.uptime": "运行时间（小时）",
+    "hosts.securityLimit": "共 {count} 项发现；最多显示 500 项。"
 }

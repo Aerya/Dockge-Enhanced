@@ -31,7 +31,7 @@ export function debianMetadata(report: HostReport) {
         throw new Error("hosts.unsupported");
     }
     return {
-        os: `ID=${report.os}\nVERSION_ID="${report.osVersion}"\n`,
+        os: `NAME="${report.os === "ubuntu" ? "Ubuntu" : "Debian GNU/Linux"}"\nID=${report.os}\nVERSION_ID="${report.osVersion}"\n`,
         status: report.packages.map(p => `Package: ${p.name.split(":")[0]}\nStatus: install ok installed\nArchitecture: ${p.arch}\nVersion: ${p.version}\nSource: ${p.source} (${p.sourceVersion})\nDescription: host inventory metadata\n`).join("\n"),
     };
 }
@@ -103,7 +103,7 @@ export async function scanHost(report: HostReport, docker: DockerCommand = async
         }
         // Same Trivy image as the existing image scanner; only advisory DB download has network access.
         await docker([ "pull", IMAGE ]);
-        await docker([ "run", "--rm", "--name", `${name}-db`, "--cap-drop", "ALL", "--security-opt", "no-new-privileges", "--memory", "1g", "--cpus", "1", "-v", `${cache}:/root/.cache/trivy`, IMAGE, "image", "--download-db-only", "--quiet" ]);
+        await docker([ "run", "--rm", "--name", `${name}-db`, "--cap-drop", "ALL", "--security-opt", "no-new-privileges", "--memory", "1g", "--cpus", "1", "-v", `${cache}:/root/.cache/trivy`, IMAGE, "image", "--download-db-only", "--disable-telemetry", "--skip-version-check", "--quiet" ]);
         await docker([ "create", "--name", name, "--network", "none", "--cap-drop", "ALL", "--security-opt", "no-new-privileges", "--memory", "1g", "--cpus", "1", "-v", `${cache}:/root/.cache/trivy:ro`, "--entrypoint", "sh", IMAGE, "-c", "sleep 900" ]);
         await docker([ "start", name ]);
         await docker([ "cp", `${payload}/.`, `${name}:/tmp/host` ]);
@@ -112,7 +112,7 @@ export async function scanHost(report: HostReport, docker: DockerCommand = async
         if (!Number.isFinite(Date.parse(db.UpdatedAt)) || Date.now() - Date.parse(db.UpdatedAt) > 72 * 3600000) {
             throw new Error("hosts.staleDatabase");
         }
-        const result = await docker([ "exec", name, "trivy", "rootfs", "--scanners", "vuln", "--offline-scan", "--skip-db-update", "--skip-java-db-update", "--skip-check-update", "--format", "json", "--quiet", "/tmp/host" ]);
+        const result = await docker([ "exec", name, "trivy", "rootfs", "--disable-telemetry", "--skip-version-check", "--scanners", "vuln", "--offline-scan", "--skip-db-update", "--skip-java-db-update", "--skip-check-update", "--format", "json", "--quiet", "/tmp/host" ]);
         return { state: "partial",
             scannedAt: new Date().toISOString(),
             fingerprint: inventoryHash(report),

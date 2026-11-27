@@ -3076,5 +3076,6 @@
     "hosts.notifications": "Bestehende ImageWatcher-Kanäle benachrichtigen (dedupliziert, höchstens stündlich)",
     "hosts.kernelPackages": "Installierte Kernelpakete",
     "hosts.repositories": "Quellenhosts / Namen (bereinigt)",
-    "hosts.uptime": "Laufzeit (Stunden)"
+    "hosts.uptime": "Laufzeit (Stunden)",
+    "hosts.securityLimit": "{count} Befunde; maximal 500 angezeigt."
 }

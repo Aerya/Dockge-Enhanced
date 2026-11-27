@@ -3076,5 +3076,6 @@
     "hosts.notifications": "Notify through existing ImageWatcher channels (deduplicated, at most hourly)",
     "hosts.kernelPackages": "Installed kernel packages",
     "hosts.repositories": "Repository hosts / names (sanitized)",
-    "hosts.uptime": "Uptime (hours)"
+    "hosts.uptime": "Uptime (hours)",
+    "hosts.securityLimit": "{count} findings; up to 500 displayed."
 }
