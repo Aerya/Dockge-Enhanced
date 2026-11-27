@@ -152,6 +152,12 @@ jobs:
         if: steps.docs.outputs.docs_only != 'true'
         run: npx tsx --test frontend/src/service-resource-limits.test.ts frontend/src/service-resource-limits-ui.test.js
 
+      - name: Tests des overrides Compose pendant les mises à jour
+        if: steps.docs.outputs.docs_only != 'true'
+        env:
+          RUN_DOCKER_COMPOSE_UPDATE_TEST: "1"
+        run: npx tsx --test backend/compose-invocation.test.ts
+
       - name: Tests du nom de fichier Compose des nouvelles stacks
         if: steps.docs.outputs.docs_only != 'true'
         run: npx tsx --test backend/stack-compose-filename.test.ts backend/stack-compose-project-name.test.ts

@@ -1,3 +1,4 @@
+import { composeInvocation, managedComposeEnvFiles } from "./compose-invocation";
 import { DockgeServer } from "./dockge-server";
 import { resolvedStackUrls } from "./stack-url-environment";
 import { resolveContainerShell, withShellCreation } from "./container-shell";
@@ -1417,29 +1418,12 @@ export class Stack {
     }
 
     getComposeOptions(command : string, ...extraOptions : string[]) {
-        //--env-file ./../global.env --env-file .env
-        const externalFiles = this.isExternal && this._externalConfigFiles?.length
-            ? this._externalConfigFiles.flatMap((file) => [ "-f", file ])
-            : [];
-        const externalEnvFiles = this.isExternal && this._externalEnvFiles?.length
-            ? this._externalEnvFiles.flatMap((file) => [ "--env-file", file ])
-            : [];
-        let options = [
-            "compose",
-            ...(this.isExternal ? [ "--project-directory", this.path ] : []),
-            ...(this._externalProject ? [ "--project-name", this._externalProject ] : []),
-            ...externalEnvFiles,
-            ...externalFiles,
-            command,
-            ...extraOptions,
-        ];
-        if (!this.isExternal && fs.existsSync(path.join(this.server.stacksDir, "global.env"))) {
-            if (fs.existsSync(path.join(this.path, ".env"))) {
-                options.splice(1, 0, "--env-file", "./.env");
-            }
-            options.splice(1, 0, "--env-file", path.resolve(this.server.stacksDir, "global.env"));
-        }
-        return options;
+        return composeInvocation(
+            path.join(this.path, this._composeFileName ?? "compose.yaml"), [ command, ...extraOptions ],
+            this._externalProject, this.isExternal ? this._externalConfigFiles : undefined,
+            this.isExternal ? this.path : undefined,
+            this.isExternal ? this._externalEnvFiles : managedComposeEnvFiles(this.server.stacksDir, this.path), false,
+        ).args;
     }
 
     /** Read-only preview of the commands used by the stack action buttons. */
@@ -1882,24 +1866,7 @@ export class Stack {
             if (await isSelfUpdateBlockingImageMutations(this.server.config.dataDir)) {
                 throw new Error("Self-update is active; retry later");
             }
-            const compose: ComposeRun = async (args, timeout, override) => {
-                if (!override || this.isExternal) {
-                    return transport.compose(args, timeout, override);
-                }
-                const files = [ path.join(this.path, this._composeFileName) ];
-                const implicitOverride = path.join(this.path, COMPOSE_OVERRIDE_FILE);
-                if (fs.existsSync(implicitOverride)) {
-                    files.push(implicitOverride);
-                }
-                const explicit = rolloutTransport([ ...this.getComposeOptions("config").slice(0, -1), ...files.flatMap(file => [ "-f", file ]) ], this.path);
-                // Do not silently drop COMPOSE_FILE or nonstandard implicit overrides.
-                const expected = JSON.parse(await transport.compose([ "config", "--format", "json" ], 30_000));
-                const actual = JSON.parse(await explicit.compose([ "config", "--format", "json" ], 30_000));
-                if (JSON.stringify(expected) !== JSON.stringify(actual)) {
-                    throw new Error("Rollout: Compose file chain differs; explicit multi-file configuration required");
-                }
-                return explicit.compose(args, timeout, override);
-            };
+            const compose: ComposeRun = transport.compose;
             const plan = await prepareRollout(compose, transport.docker, names, { stateDir: path.join(this.server.config.dataDir, "rolling-updates"),
                 projectPath: path.resolve(this.path) });
             if (!plan) {
