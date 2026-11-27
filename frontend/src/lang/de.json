@@ -3077,5 +3077,6 @@
     "hosts.kernelPackages": "Installierte Kernelpakete",
     "hosts.repositories": "Quellenhosts / Namen (bereinigt)",
     "hosts.uptime": "Laufzeit (Stunden)",
-    "hosts.securityLimit": "{count} Befunde; maximal 500 angezeigt."
+    "hosts.securityLimit": "{count} Befunde; maximal 500 angezeigt.",
+    "hosts.held": "Zurückgehalten"
 }

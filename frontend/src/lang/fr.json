@@ -3073,5 +3073,6 @@
     "hosts.kernelPackages": "Paquets de noyaux installés",
     "hosts.repositories": "Hôtes / noms des dépôts (expurgés)",
     "hosts.uptime": "Uptime (heures)",
-    "hosts.securityLimit": "{count} résultats ; affichage limité à 500."
+    "hosts.securityLimit": "{count} résultats ; affichage limité à 500.",
+    "hosts.held": "Bloqué"
 }

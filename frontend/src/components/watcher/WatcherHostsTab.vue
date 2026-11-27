@@ -76,7 +76,7 @@
                     <div class="table-responsive">
                         <table class="table">
                             <thead><tr><th>{{ $t('hosts.package') }}</th><th>{{ $t('hosts.installed') }}</th><th>{{ $t('hosts.available') }}</th><th>{{ $t('hosts.origin') }}</th></tr></thead>
-                            <tbody><tr v-for="p in packages" :key="p.name + p.arch"><td>{{ p.name }} · {{ p.arch }}</td><td>{{ p.version }}</td><td>{{ p.available || '—' }}</td><td>{{ $t('hosts.origin.' + p.origin) }}</td></tr></tbody>
+                            <tbody><tr v-for="p in packages" :key="p.name + p.arch"><td>{{ p.name }} · {{ p.arch }}</td><td>{{ p.version }}</td><td>{{ p.available || '—' }}</td><td>{{ $t('hosts.origin.' + p.origin) }} <span v-if="p.held" class="badge bg-secondary">{{ $t('hosts.held') }}</span></td></tr></tbody>
                         </table>
                     </div>
                     <p>{{ $t('hosts.resultLimit') }}</p>

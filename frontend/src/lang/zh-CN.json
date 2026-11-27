@@ -3014,5 +3014,6 @@
     "hosts.kernelPackages": "已安装内核软件包",
     "hosts.repositories": "仓库主机 / 名称（已脱敏）",
     "hosts.uptime": "运行时间（小时）",
-    "hosts.securityLimit": "共 {count} 项发现；最多显示 500 项。"
+    "hosts.securityLimit": "共 {count} 项发现；最多显示 500 项。",
+    "hosts.held": "已锁定"
 }

@@ -3077,5 +3077,6 @@
     "hosts.kernelPackages": "Installed kernel packages",
     "hosts.repositories": "Repository hosts / names (sanitized)",
     "hosts.uptime": "Uptime (hours)",
-    "hosts.securityLimit": "{count} findings; up to 500 displayed."
+    "hosts.securityLimit": "{count} findings; up to 500 displayed.",
+    "hosts.held": "Held"
 }

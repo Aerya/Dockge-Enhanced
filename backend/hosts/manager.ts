@@ -199,7 +199,7 @@ export class HostManager {
             protocol: 1,
             hosts: s.report ? 1 : 0,
             state: s.state,
-            count: s.state === "fresh" ? updates : null,
+            count: s.state === "fresh" && ((updates ?? 0) > 0 || s.report?.metadata === "refreshed") ? updates : null,
             updates,
             security: s.security.state === "unavailable" ? null : this.security.findings.filter(v => v.fix === "available").length,
             critical: s.security.state === "unavailable" ? null : this.security.findings.filter(v => v.severity === "CRITICAL").length,

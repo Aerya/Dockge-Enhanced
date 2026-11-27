@@ -1999,5 +1999,6 @@
     "hosts.kernelPackages": "Paquetes de núcleo instalados",
     "hosts.repositories": "Hosts / nombres de repositorios (depurados)",
     "hosts.uptime": "Tiempo activo (horas)",
-    "hosts.securityLimit": "{count} hallazgos; se muestran hasta 500."
+    "hosts.securityLimit": "{count} hallazgos; se muestran hasta 500.",
+    "hosts.held": "Retenido"
 }

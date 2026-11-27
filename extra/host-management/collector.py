@@ -37,9 +37,9 @@ def apt(run=command):
     packages = []
     for line in run(["dpkg-query", "-W", "-f=${db:Status-Abbrev}\t${binary:Package}\t${Version}\t${Architecture}\t${source:Package}\t${source:Version}\\n"]).splitlines():
         parts = line.split("\t")
-        if len(parts) == 6 and parts[0].startswith("ii"):
-            _, name, version, arch, source, source_version = parts
-            packages.append(dict(name=name, version=version, arch=arch, source=source or name.split(":")[0], sourceVersion=source_version or version, origin="unknown", available=None))
+        if len(parts) == 6 and parts[0][1:2] == "i":
+            status, name, version, arch, source, source_version = parts
+            packages.append(dict(name=name, version=version, held=status.startswith("h"), arch=arch, source=source or name.split(":")[0], sourceVersion=source_version or version, origin="unknown", available=None))
     updates = {}
     for line in run(["apt-get", "--simulate", "-o", "Debug::NoLocking=1", "upgrade"]).splitlines():
         match = re.match(r"^Inst (\S+) (?:\[[^]]+\] )?\((\S+)", line)

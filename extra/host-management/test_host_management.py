@@ -12,10 +12,11 @@ class CollectorTests(unittest.TestCase):
     def test_debian_source_multiarch_and_epoch(self):
         def run(args, accepted=(0,)):
             if args[0] == 'dpkg-query':
-                return 'ii \tlibssl3:amd64\t1:3.0.11-1~deb12u1\tamd64\topenssl\t1:3.0.11-1~deb12u1\nrc \told\t1\tall\told\t1\n'
+                return 'ii \tlibssl3:amd64\t1:3.0.11-1~deb12u1\tamd64\topenssl\t1:3.0.11-1~deb12u1\nhi \theld-package\t1\tall\theld-package\t1\nrc \told\t1\tall\told\t1\n'
             return 'Inst libssl3 [1:3.0.11-1~deb12u1] (1:3.0.11-1~deb12u2 Debian:12 [amd64])\n'
         packages, freshness = collector.apt(run)
-        self.assertEqual(len(packages), 1)
+        self.assertEqual(len(packages), 2)
+        self.assertTrue(packages[1]["held"])
         self.assertEqual(packages[0]['source'], 'openssl')
         self.assertEqual(packages[0]['available'], '1:3.0.11-1~deb12u2')
         self.assertEqual(freshness, 'cached')

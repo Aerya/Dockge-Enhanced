@@ -95,7 +95,7 @@ export async function scanHost(report: HostReport, docker: DockerCommand = async
         }
         const files = { "etc/os-release": metadata.os,
             "var/lib/dpkg/status": metadata.status,
-            ...(report.os === "debian" ? { "etc/debian_version": `${report.osVersion}\n` } : {}) };
+            ...(report.os === "debian" ? { "etc/debian_version": `${report.osVersion}\n` } : { "etc/lsb-release": `DISTRIB_ID=Ubuntu\nDISTRIB_RELEASE=${report.osVersion}\n` }) };
         for (const [ relative, content ] of Object.entries(files)) {
             const target = path.join(payload, relative);
             await writeFile(target, content);

@@ -5,6 +5,7 @@ import { createHash } from "node:crypto";
 
 export interface HostPackage {
     name: string;
+    held?: boolean;
     version: string;
     arch: string;
     source: string;
@@ -59,6 +60,7 @@ export function parseReport(value: unknown, now = Date.now()): HostReport {
         }
         keys.add(key);
         return { name: p.name,
+            held: p.held === true,
             version: p.version,
             arch: p.arch,
             source: p.source,
