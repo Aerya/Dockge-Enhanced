@@ -2050,7 +2050,7 @@
     "hosts.operation.complete": "Operación completada",
     "hosts.operation.failed": "Operación fallida o rechazada por política local",
     "releaseNews.item.hostManagement": "Actualizaciones: Dockge-Enhanced, Imágenes Docker y Actualizaciones de hosts (Beta), siempre visibles. Perfiles de seguridad/prudente manuales o programados con autorización local, notificaciones configurables y avisos de riesgos rolling-release. Sin garantía de riesgo cero.",
-    "hosts.notifications": "Notificar mediante canales ImageWatcher existentes (sin duplicados, máximo cada hora)",
+    "hosts.notifications": "Activar avisos mediante los canales configurados en Notificaciones",
     "hosts.kernelPackages": "Paquetes de núcleo instalados",
     "hosts.repositories": "Hosts / nombres de repositorios (depurados)",
     "hosts.uptime": "Tiempo activo (horas)",

@@ -3057,7 +3057,7 @@
     "hosts.operation.complete": "操作完成",
     "hosts.operation.failed": "操作失败或被本地策略拒绝",
     "releaseNews.item.hostManagement": "更新分为始终可见的 Dockge-Enhanced、Docker 镜像和主机更新（测试版）。主机支持经本地授权的手动或计划安全/审慎策略、可配置通知和滚动发行版风险提示。不保证零风险。",
-    "hosts.notifications": "使用现有 ImageWatcher 通知渠道（去重，最多每小时一次）",
+    "hosts.notifications": "通过“通知”中配置的渠道启用通知",
     "hosts.kernelPackages": "已安装内核软件包",
     "hosts.repositories": "仓库主机 / 名称（已脱敏）",
     "hosts.uptime": "运行时间（小时）",

@@ -7,7 +7,7 @@
             <button v-for="item in sections" :key="item" class="btn btn-sm" :class="section === item ? 'btn-primary' : 'btn-outline-secondary'" @click="section = item">{{ $t('hosts.' + item) }}</button>
         </div>
         <template v-if="snapshot">
-            <p v-if="snapshot.report?.provider === 'pacman' || ['opensuse-tumbleweed', 'manjaro', 'endeavouros', 'garuda', 'arch'].includes(snapshot.report?.os)" class="alert alert-warning">{{ $t('hosts.rollingWarning') }}</p>
+            <p v-if="snapshot.report?.rolling || snapshot.report?.provider === 'pacman' || ['opensuse-tumbleweed', 'manjaro', 'endeavouros', 'garuda', 'arch'].includes(snapshot.report?.os)" class="alert alert-warning">{{ $t('hosts.rollingWarning') }}</p>
             <p class="alert alert-info">{{ $t('hosts.riskWarning') }}</p>
             <div class="alert" :class="snapshot.state === 'fresh' ? 'alert-info' : 'alert-warning'">{{ $t('hosts.state.' + snapshot.state) }}</div>
             <template v-if="!snapshot.settings.enabled || section === 'configuration'">

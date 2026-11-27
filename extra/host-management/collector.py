@@ -154,7 +154,7 @@ def collect():
     release = {}
     for line in Path("/etc/os-release").read_text().splitlines():
         key, sep, value = line.partition("=")
-        if sep and key in ("ID", "VERSION_ID", "PRETTY_NAME", "ID_LIKE"):
+        if sep and key in ("ID", "VERSION_ID", "PRETTY_NAME", "ID_LIKE", "RELEASE_TYPE"):
             release[key] = value.strip('"\'')[:200]
     provider = "apt" if shutil.which("dpkg-query") and shutil.which("apt-get") else "pacman" if shutil.which("pacman") else "unsupported"
     packages, freshness = apt(distribution=release.get("ID")) if provider == "apt" else PROVIDERS[provider]() if provider in PROVIDERS else ([], "unavailable")
@@ -162,6 +162,7 @@ def collect():
         raise RuntimeError("invalid inventory")
     return dict(schemaVersion=1, collectedAt=datetime.datetime.now(datetime.timezone.utc).isoformat(),
                 host=platform.node(), hostId=host_identity(), os=release.get("ID", "unknown"), osVersion=release.get("VERSION_ID", ""),
+                rolling=release.get("RELEASE_TYPE") == "rolling" or release.get("ID") in ("arch", "garuda", "manjaro", "endeavouros", "opensuse-tumbleweed", "gentoo", "void", "solus", "kali") or bool(re.search(r"rolling|tumbleweed|\bsid\b|unstable", release.get("PRETTY_NAME", ""), re.I)),
                 osName=release.get("PRETTY_NAME", "unknown"), arch=platform.machine(), kernel=platform.release(),
                 uptime=float(Path("/proc/uptime").read_text().split()[0]), provider=provider,
                 repositories=repositories(provider) if provider in PROVIDERS else None,

@@ -3116,7 +3116,7 @@
     "hosts.operation.complete": "Opération terminée",
     "hosts.operation.failed": "Opération échouée ou refusée par la politique locale",
     "releaseNews.item.hostManagement": "Mises à jour : Dockge-Enhanced, Images Docker et Mises à jour des hôtes (Bêta), toujours visibles. Hôtes : profils sécurité/prudent manuels ou programmés avec autorisation locale, notifications configurables et avertissement sur les risques rolling-release. Aucun risque zéro garanti.",
-    "hosts.notifications": "Notifier via les canaux ImageWatcher existants (dédupliqué, au plus horaire)",
+    "hosts.notifications": "Activer les notifications via les canaux configurés dans Notifications",
     "hosts.kernelPackages": "Paquets de noyaux installés",
     "hosts.repositories": "Hôtes / noms des dépôts (expurgés)",
     "hosts.uptime": "Uptime (heures)",

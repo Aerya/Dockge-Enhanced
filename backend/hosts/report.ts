@@ -21,6 +21,7 @@ export interface HostReport {
     os: string;
     osVersion: string;
     osName: string;
+    rolling?: boolean;
     arch: string;
     kernel: string;
     uptime: number;
@@ -38,7 +39,7 @@ export function parseReport(value: unknown, now = Date.now()): HostReport {
     const r = value as HostReport;
     if (!r || r.schemaVersion !== 1 || !/^[a-f0-9]{64}$/.test(r.hostId) || !text(r.collectedAt) || !Number.isFinite(Date.parse(r.collectedAt)) || Date.parse(r.collectedAt) > now + 300000 ||
         ![ r.host, r.os, r.osVersion, r.osName, r.arch, r.kernel ].every(v => text(v)) ||
-        !Number.isFinite(r.uptime) || r.uptime < 0 || typeof r.complete !== "boolean" ||
+        (r.rolling !== undefined && typeof r.rolling !== "boolean") || !Number.isFinite(r.uptime) || r.uptime < 0 || typeof r.complete !== "boolean" ||
         ![ "apt", "pacman", "unsupported" ].includes(r.provider) || ![ "cached", "refreshed", "unavailable" ].includes(r.metadata) ||
         ![ "required", "unknown" ].includes(r.reboot) || !Array.isArray(r.packages) || r.packages.length > 100000 ||
         !Array.isArray(r.capabilities) || r.capabilities.some(v => ![ "inventory", "updates" ].includes(v))) {
@@ -76,6 +77,7 @@ export function parseReport(value: unknown, now = Date.now()): HostReport {
         os: r.os,
         osVersion: r.osVersion,
         osName: r.osName,
+        rolling: r.rolling === true,
         arch: r.arch,
         kernel: r.kernel,
         uptime: r.uptime,

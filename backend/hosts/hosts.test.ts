@@ -45,6 +45,10 @@ test("reports preserve source versions and never confuse freshness with update a
     const report = parseReport(fixture());
     assert.equal(report.packages[0].sourceVersion, "1:3.0.11-1~deb12u1");
     assert.equal(reportState(null), "unavailable");
+    assert.equal(parseReport({ ...report,
+        rolling: true }).rolling, true);
+    assert.throws(() => parseReport({ ...report,
+        rolling: "false" }));
     assert.equal(reportState(report), "fresh");
     assert.equal(reportState({ ...report,
         complete: false }), "partial");

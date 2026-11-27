@@ -13,7 +13,7 @@ def distribution():
 
 def stable_system():
     data = dict(line.split('=', 1) for line in Path('/etc/os-release').read_text().splitlines() if '=' in line)
-    return data.get('ID', '').strip('"') in ('debian', 'ubuntu') and bool(re.fullmatch(r'[0-9]+(?:\.[0-9]+)*', data.get('VERSION_ID', '').strip('"')))
+    return data.get('RELEASE_TYPE', '').strip('"') != 'rolling' and data.get('ID', '').strip('"') in ('debian', 'ubuntu') and bool(re.fullmatch(r'[0-9]+(?:\.[0-9]+)*', data.get('VERSION_ID', '').strip('"')))
 
 
 def supported_origin(origin, distro, codename, security=False):

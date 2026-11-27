@@ -3120,7 +3120,7 @@
     "hosts.operation.complete": "Vorgang abgeschlossen",
     "hosts.operation.failed": "Vorgang fehlgeschlagen oder lokal abgelehnt",
     "releaseNews.item.hostManagement": "Updates: Dockge-Enhanced, Docker-Images und Host-Updates (Beta), immer sichtbar. Hosts: manuelle oder geplante Sicherheits-/Vorsichtig-Profile mit lokaler Freigabe, konfigurierbare Benachrichtigungen und Rolling-Release-Risikohinweise. Keine Risikofreiheitsgarantie.",
-    "hosts.notifications": "Bestehende ImageWatcher-Kanäle benachrichtigen (dedupliziert, höchstens stündlich)",
+    "hosts.notifications": "Benachrichtigungen über die unter Benachrichtigungen eingerichteten Kanäle aktivieren",
     "hosts.kernelPackages": "Installierte Kernelpakete",
     "hosts.repositories": "Quellenhosts / Namen (bereinigt)",
     "hosts.uptime": "Laufzeit (Stunden)",
