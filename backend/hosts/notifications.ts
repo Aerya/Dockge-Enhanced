@@ -9,8 +9,8 @@ export function hostAlertKey(state: string, reboot: string, security: HostSecuri
     return createHash("sha256").update(JSON.stringify([ state, reboot, security.state,
         security.findings.filter(v => [ "HIGH", "CRITICAL" ].includes(v.severity)).map(v => `${v.id}:${v.pkg}:${v.fix}`).sort() ])).digest("hex");
 }
-export async function notifyHost(state: string, reboot: string, security: HostSecurity) {
-    const key = hostAlertKey(state, reboot, security);
+export async function notifyHost(state: string, reboot: string, security: HostSecurity, eventId = "") {
+    const key = hostAlertKey(state + eventId, reboot, security);
     const previous = await Settings.get("hostAlert");
     if (previous?.key === key || (previous?.at && Date.now() - previous.at < 3600000)) {
         return;

@@ -33,7 +33,7 @@ def command(args, accepted=(0,)):
         return output.read(MAX_OUTPUT).decode("utf-8", errors="strict")
 
 
-def apt(run=command):
+def apt(run=command, distribution=None):
     packages = []
     for line in run(["dpkg-query", "-W", "-f=${db:Status-Abbrev}\t${binary:Package}\t${Version}\t${Architecture}\t${source:Package}\t${source:Version}\\n"]).splitlines():
         parts = line.split("\t")
@@ -47,6 +47,37 @@ def apt(run=command):
             updates[match[1]] = match[2]
     for item in packages:
         item["available"] = updates.get(item["name"], updates.get(item["name"].split(":")[0]))
+    # Only current installed versions with an unambiguous public vendor mirror are classified.
+    # Unrecognized mirrors remain unknown; no repository credentials are retained.
+    try:
+        for offset in range(0, len(packages), 200):
+            batch = packages[offset:offset + 200]
+            if any(not PACKAGE.fullmatch(p['name']) for p in batch):
+                raise ValueError('invalid package')
+            policy = run(['apt-cache', 'policy', *[p['name'] for p in batch]])
+            origins = {}
+            current = None
+            installed = False
+            for line in policy.splitlines():
+                if line and not line[0].isspace() and line.endswith(':'):
+                    current = line[:-1]
+                    origins.setdefault(current, set())
+                    installed = False
+                elif re.match(r'^\s*\*\*\* ', line):
+                    installed = True
+                elif re.match(r'^\s+\S+ \d+$', line) and 'http' not in line and '/var/' not in line:
+                    installed = False
+                elif installed and current:
+                    for token in line.split():
+                        if token.startswith(('http://', 'https://')):
+                            host = (urlsplit(token).hostname or '').lower()
+                            origins[current].add(host)
+            for item in batch:
+                hosts = origins.get(item['name'], origins.get(item['name'].split(':')[0], set()))
+                if hosts and all((distribution == 'debian' and h in ('deb.debian.org', 'security.debian.org')) or (distribution == 'ubuntu' and (h in ('archive.ubuntu.com', 'security.ubuntu.com', 'ports.ubuntu.com') or h.endswith('.archive.ubuntu.com'))) for h in hosts):
+                    item['origin'] = 'official'
+    except (RuntimeError, ValueError, OSError, subprocess.TimeoutExpired):
+        pass
     return packages, "cached"
 
 
@@ -126,7 +157,7 @@ def collect():
         if sep and key in ("ID", "VERSION_ID", "PRETTY_NAME", "ID_LIKE"):
             release[key] = value.strip('"\'')[:200]
     provider = "apt" if shutil.which("dpkg-query") and shutil.which("apt-get") else "pacman" if shutil.which("pacman") else "unsupported"
-    packages, freshness = PROVIDERS[provider]() if provider in PROVIDERS else ([], "unavailable")
+    packages, freshness = apt(distribution=release.get("ID")) if provider == "apt" else PROVIDERS[provider]() if provider in PROVIDERS else ([], "unavailable")
     if len(packages) > 100000 or any(not PACKAGE.fullmatch(p["name"]) for p in packages):
         raise RuntimeError("invalid inventory")
     return dict(schemaVersion=1, collectedAt=datetime.datetime.now(datetime.timezone.utc).isoformat(),

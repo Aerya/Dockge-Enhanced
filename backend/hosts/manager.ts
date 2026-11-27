@@ -1,3 +1,4 @@
+import { packageChanges } from "./history";
 import { AuditLogger } from "../audit-log";
 import { notifyHost } from "./notifications";
 import { hostOperationStatus } from "./operations";
@@ -5,7 +6,7 @@ import { scanHost, type HostSecurity } from "./security";
 import { hubOnly } from "../hub-mode";
 import { R } from "redbean-node";
 import { Settings } from "../settings";
-import { inventoryHash, readReport, reportState, type HostReport } from "./report";
+import { inventoryHash, parseReport, readReport, reportState, type HostReport } from "./report";
 
 export interface HostSettings {
     enabled: boolean;
@@ -144,6 +145,10 @@ export class HostManager {
                 category: "host",
                 target: operations.result.id,
                 status: operations.result.state === "failed" ? "failure" : "success" });
+            if (settings.notifications && operations.result.state === "failed") {
+                await notifyHost("operation-failed", "unknown", { state: "unavailable",
+                    findings: [] }, operations.result.id).catch(() => {});
+            }
             await Settings.set("hostLastOperation", operations.result.id);
         }
         return { protocol: 1,
@@ -165,6 +170,22 @@ export class HostManager {
                 state: Date.now() - Date.parse(this.security.scannedAt || "") > 48 * 3600000 ? "stale" : this.security.state },
             scanning: this.scanning,
             history: settings.enabled ? await R.getAll("SELECT collected_at, fingerprint, summary FROM host_history ORDER BY collected_at DESC LIMIT 100") : [] };
+    }
+
+    async history(value: unknown) {
+        const timestamp = (value as { timestamp?: unknown })?.timestamp;
+        if (typeof timestamp !== "number" || !Number.isSafeInteger(timestamp) || !(await this.settings()).enabled) {
+            throw new Error("hosts.invalidOperation");
+        }
+        const current = await R.getRow("SELECT report FROM host_inventory WHERE fingerprint = (SELECT fingerprint FROM host_history WHERE collected_at = ?)", [ timestamp ]);
+        const previous = await R.getRow("SELECT report FROM host_inventory WHERE fingerprint = (SELECT fingerprint FROM host_history WHERE collected_at < ? ORDER BY collected_at DESC LIMIT 1)", [ timestamp ]);
+        if (!current || !previous) {
+            return { baseline: false,
+                changes: [],
+                total: 0 };
+        }
+        return { baseline: true,
+            ...packageChanges(parseReport(JSON.parse(previous.report)).packages, parseReport(JSON.parse(current.report)).packages) };
     }
 
     async operationAuthority() {

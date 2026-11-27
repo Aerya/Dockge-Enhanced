@@ -3015,5 +3015,9 @@
     "hosts.repositories": "仓库主机 / 名称（已脱敏）",
     "hosts.uptime": "运行时间（小时）",
     "hosts.securityLimit": "共 {count} 项发现；最多显示 500 项。",
-    "hosts.held": "已锁定"
+    "hosts.held": "已锁定",
+    "hosts.origin.official": "官方仓库",
+    "hosts.originUnverified": "来源未核实；潜在匹配",
+    "hosts.changes": "软件包变更 {count} 项（最多显示 500 项）",
+    "hosts.noBaseline": "未保留之前的基准清单"
 }

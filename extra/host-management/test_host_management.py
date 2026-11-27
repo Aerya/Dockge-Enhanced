@@ -21,6 +21,18 @@ class CollectorTests(unittest.TestCase):
         self.assertEqual(packages[0]['available'], '1:3.0.11-1~deb12u2')
         self.assertEqual(freshness, 'cached')
 
+    def test_apt_origin_only_for_installed_official_version(self):
+        def run(args, accepted=(0,)):
+            if args[0] == 'dpkg-query':
+                return 'ii \tpkg\t1\tamd64\tpkg\t1\n'
+            if args[0] == 'apt-cache':
+                return "pkg:\n  Version table:\n     2 500\n        500 https://deb.debian.org/debian stable/main amd64 Packages\n *** 1 100\n        100 /var/lib/dpkg/status\n        500 https://private.example/debian stable/main amd64 Packages\n"
+            return ''
+        self.assertEqual(collector.apt(run, 'debian')[0][0]['origin'], 'unknown')
+        def official(args, accepted=(0,)):
+            return run(args).replace('private.example', 'deb.debian.org')
+        self.assertEqual(collector.apt(official, 'debian')[0][0]['origin'], 'official')
+
     def test_pacman_foreign_and_non_destructive_fallback(self):
         calls = []
         def run(args, accepted=(0,)):

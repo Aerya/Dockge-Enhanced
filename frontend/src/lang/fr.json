@@ -3074,5 +3074,9 @@
     "hosts.repositories": "Hôtes / noms des dépôts (expurgés)",
     "hosts.uptime": "Uptime (heures)",
     "hosts.securityLimit": "{count} résultats ; affichage limité à 500.",
-    "hosts.held": "Bloqué"
+    "hosts.held": "Bloqué",
+    "hosts.origin.official": "Dépôt officiel",
+    "hosts.originUnverified": "Origine non vérifiée ; correspondance potentielle",
+    "hosts.changes": "{count} modifications de paquets (500 affichées au maximum)",
+    "hosts.noBaseline": "Aucun inventaire de référence conservé"
 }

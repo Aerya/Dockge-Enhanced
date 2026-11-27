@@ -3078,5 +3078,9 @@
     "hosts.repositories": "Repository hosts / names (sanitized)",
     "hosts.uptime": "Uptime (hours)",
     "hosts.securityLimit": "{count} findings; up to 500 displayed.",
-    "hosts.held": "Held"
+    "hosts.held": "Held",
+    "hosts.origin.official": "Official repository",
+    "hosts.originUnverified": "Origin unverified; potential match",
+    "hosts.changes": "{count} package changes (up to 500 shown)",
+    "hosts.noBaseline": "No retained baseline for this inventory"
 }

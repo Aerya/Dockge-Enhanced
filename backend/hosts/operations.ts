@@ -1,6 +1,6 @@
 import { randomBytes } from "node:crypto";
 import { constants } from "node:fs";
-import { lstat, open, rename, unlink } from "node:fs/promises";
+import { lstat, open, readdir, rename, unlink } from "node:fs/promises";
 import path from "node:path";
 
 /** No commands or executable paths are accepted over RPC. Local policy is never writable here. */
@@ -19,6 +19,9 @@ export async function queueHostOperation(value: unknown, hostId?: string) {
     }
     const info = await lstat(directory);
     if (!info.isDirectory() || info.isSymbolicLink() || (info.mode & 0o002)) {
+        throw new Error("hosts.operationsUnavailable");
+    }
+    if ((await readdir(directory)).filter(name => name.endsWith(".json")).length >= 100) {
         throw new Error("hosts.operationsUnavailable");
     }
     const id = randomBytes(16).toString("hex");

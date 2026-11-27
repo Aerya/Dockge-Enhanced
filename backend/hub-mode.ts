@@ -14,7 +14,7 @@ export function requireLocalRuntime(): void {
 }
 
 const HUB_LOCAL_RPC = new Set([
-    "hosts:capabilities", "hosts:get", "hosts:settings", "hosts:operation", "hosts:packages",
+    "hosts:capabilities", "hosts:get", "hosts:settings", "hosts:operation", "hosts:packages", "hosts:history",
     "appCatalogList", "appCatalogDraft", "appCatalogSources", "appCatalogBrowse", "appCatalogSourceDraft",
 ]);
 

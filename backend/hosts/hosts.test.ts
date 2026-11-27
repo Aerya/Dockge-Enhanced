@@ -142,3 +142,14 @@ test("operation RPC payload does not accept shell commands or implicit approval"
         approved: true,
         plan: "$(id)" }));
 });
+
+test("package history detects additions, removals and changed distribution versions without SemVer", async () => {
+    const { packageChanges } = await import("./history");
+    const before = fixture().packages;
+    const after = [ { ...before[0],
+        version: "2:1.0~rc1-1" }, { ...before[0],
+        name: "new" } ];
+    assert.equal(packageChanges(before, after).total, 2);
+    assert.equal(packageChanges(before, []).changes[0].after, null);
+    assert.equal(packageChanges(before, before).total, 0);
+});

@@ -3078,5 +3078,9 @@
     "hosts.repositories": "Quellenhosts / Namen (bereinigt)",
     "hosts.uptime": "Laufzeit (Stunden)",
     "hosts.securityLimit": "{count} Befunde; maximal 500 angezeigt.",
-    "hosts.held": "Zurückgehalten"
+    "hosts.held": "Zurückgehalten",
+    "hosts.origin.official": "Offizielle Quelle",
+    "hosts.originUnverified": "Herkunft ungeprüft; möglicher Treffer",
+    "hosts.changes": "{count} Paketänderungen (maximal 500 angezeigt)",
+    "hosts.noBaseline": "Kein vorheriges Inventar gespeichert"
 }

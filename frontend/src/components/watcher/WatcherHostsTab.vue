@@ -31,7 +31,7 @@
                 <div class="table-responsive">
                     <table class="table">
                         <thead><tr><th>{{ $t('hosts.cve') }}</th><th>{{ $t('hosts.package') }}</th><th>{{ $t('hosts.installed') }}</th><th>{{ $t('hosts.fixed') }}</th><th>{{ $t('hosts.severity') }}</th></tr></thead>
-                        <tbody><tr v-for="v in snapshot.security.findings" :key="v.id + v.pkg"><td><a :href="v.url" target="_blank" rel="noopener noreferrer">{{ v.id }}</a></td><td>{{ v.pkg }}</td><td>{{ v.installed }}</td><td>{{ v.fixed || '—' }} · {{ $t('hosts.fix.' + v.fix) }}</td><td>{{ v.severity }}</td></tr></tbody>
+                        <tbody><tr v-for="v in snapshot.security.findings" :key="v.id + v.pkg"><td><a :href="v.url" target="_blank" rel="noopener noreferrer">{{ v.id }}</a></td><td>{{ v.pkg }} <small v-if="v.status === 'indeterminate'">{{ $t('hosts.originUnverified') }}</small></td><td>{{ v.installed }}</td><td>{{ v.fixed || '—' }} · {{ $t('hosts.fix.' + v.fix) }}</td><td>{{ v.severity }}</td></tr></tbody>
                     </table>
                 </div>
             </template>
@@ -39,8 +39,12 @@
                 <div class="table-responsive">
                     <table class="table">
                         <thead><tr><th>{{ $t('hosts.collectedAt') }}</th><th>{{ $t('hosts.packages') }}</th><th>{{ $t('hosts.updates') }}</th></tr></thead>
-                        <tbody><tr v-for="entry in history" :key="entry.collected_at"><td>{{ date(entry.collected_at) }}</td><td>{{ entry.value.packages }}</td><td>{{ entry.value.updates }}</td></tr></tbody>
+                        <tbody><tr v-for="entry in history" :key="entry.collected_at"><td><button class="btn btn-link" @click="showChanges(entry.collected_at)">{{ date(entry.collected_at) }}</button></td><td>{{ entry.value.packages }}</td><td>{{ entry.value.updates }}</td></tr></tbody>
                     </table>
+                </div>
+                <div v-if="historyChanges">
+                    <p>{{ $t(historyChanges.baseline ? 'hosts.changes' : 'hosts.noBaseline', { count: historyChanges.total }) }}</p>
+                    <ul><li v-for="p in historyChanges.changes" :key="p.name + p.arch">{{ p.name }} · {{ p.arch }}: {{ p.before || '—' }} → {{ p.after || '—' }}</li></ul>
                 </div>
             </template>
             <template v-else-if="snapshot.report">
@@ -89,6 +93,8 @@
 export default {
     data() {
         return { snapshot: null,
+            connectionNonce: null,
+            historyChanges: null,
             packageRows: [],
             packageGeneration: 0,
             searchTimer: null,
@@ -137,6 +143,9 @@ export default {
         this.packageGeneration++;
     },
     methods: {
+        async showChanges(timestamp) {
+            this.historyChanges = await this.request("hosts:history", { timestamp: Number(timestamp) });
+        },
         searchPackages() {
             clearTimeout(this.searchTimer);
             const generation = ++this.packageGeneration;
@@ -171,8 +180,10 @@ export default {
         },
         async operate(action) {
             this.busy = true;
-            const response = await this.request("hosts:operation", action === "simulate" ? { action } : {
+            const response = await this.request("hosts:operation", action === "simulate" ? { action,
+                connectionNonce: this.connectionNonce } : {
                 action,
+                connectionNonce: this.connectionNonce,
                 approved: this.approved,
                 plan: this.snapshot.operations.result?.plan,
             });
@@ -190,10 +201,21 @@ export default {
         async request(event, payload) {
             return new Promise(resolve => {
                 const timer = setTimeout(() => resolve(null), 10000);
-                this.$root.emitAgent("", event, payload, response => {
+                const callback = response => {
                     clearTimeout(timer);
                     resolve(response?.ok ? response.data : null);
-                });
+                };
+                if (event === "hosts:operation") {
+                    const socket = this.$root.getSocket();
+                    if (!socket.connected) {
+                        clearTimeout(timer);
+                        resolve(null);
+                        return;
+                    }
+                    socket.volatile.emit("agent", "", event, payload, callback);
+                } else {
+                    this.$root.emitAgent("", event, payload, callback);
+                }
             });
         },
         async load() {
@@ -208,6 +230,7 @@ export default {
                 this.busy = false;
                 return;
             }
+            this.connectionNonce = caps.connectionNonce;
             const snapshot = await this.request("hosts:get", {});
             if (generation !== this.generation) {
                 return;

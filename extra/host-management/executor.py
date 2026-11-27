@@ -169,6 +169,9 @@ def main():
         for marker in STATE.glob('*.used'):
             if marker.stat().st_mtime < time.time() - 86400:
                 marker.unlink()
+        for report in OUTBOX.glob('*.json'):
+            if re.fullmatch(r'[a-f0-9]{32}\.json', report.name) and report.lstat().st_mtime < time.time() - 90 * 86400:
+                report.unlink()
     finally:
         os.close(lock)
 

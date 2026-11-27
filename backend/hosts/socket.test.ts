@@ -13,7 +13,7 @@ test("every host RPC refuses anonymous and restricted users before I/O", async t
     for (const userID of [ undefined, 42 ]) {
         const agent = new AgentSocket();
         registerHosts({ userID } as DockgeSocket, agent);
-        for (const event of [ "hosts:capabilities", "hosts:get", "hosts:settings", "hosts:operation", "hosts:packages" ]) {
+        for (const event of [ "hosts:capabilities", "hosts:get", "hosts:settings", "hosts:operation", "hosts:packages", "hosts:history" ]) {
             const result = await new Promise<{ ok: boolean }>(resolve => agent.call(event, { command: "never-execute" }, resolve));
             assert.equal(result.ok, false);
             assert.ok(!JSON.stringify(result).includes("never-execute"));
@@ -87,4 +87,25 @@ test("existing federation proxy carries host capabilities to direct and reverse 
         assert.equal(response.data.protocol, 1);
     }
     assert.deepEqual(endpoints, [ "direct.example", "reverse://fixture" ]);
+});
+
+
+test("a previous connection cannot replay a host operation", async t => {
+    t.mock.method(R, "findOne", async () => ({ role: "admin" }));
+    const oldAgent = new AgentSocket();
+    const newAgent = new AgentSocket();
+    registerHosts({ userID: 42 } as DockgeSocket, oldAgent);
+    registerHosts({ userID: 42 } as DockgeSocket, newAgent);
+    const caps = await new Promise<{ data: { connectionNonce: string } }>(resolve => oldAgent.call("hosts:capabilities", {}, resolve));
+    const authority = t.mock.method(HostManager.instance, "operationAuthority", async () => {
+        throw new Error("authority must not be read");
+    });
+    const result = await new Promise<{ ok: boolean;
+        msg: string }>(resolve => newAgent.call("hosts:operation", {
+        action: "simulate",
+        connectionNonce: caps.data.connectionNonce,
+    }, resolve));
+    assert.equal(result.ok, false);
+    assert.equal(result.msg, "hosts.unavailable");
+    assert.equal(authority.mock.callCount(), 0);
 });

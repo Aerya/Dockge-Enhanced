@@ -2000,5 +2000,9 @@
     "hosts.repositories": "Hosts / nombres de repositorios (depurados)",
     "hosts.uptime": "Tiempo activo (horas)",
     "hosts.securityLimit": "{count} hallazgos; se muestran hasta 500.",
-    "hosts.held": "Retenido"
+    "hosts.held": "Retenido",
+    "hosts.origin.official": "Repositorio oficial",
+    "hosts.originUnverified": "Origen no verificado; coincidencia potencial",
+    "hosts.changes": "{count} cambios de paquetes (máximo 500 mostrados)",
+    "hosts.noBaseline": "No se conserva un inventario anterior"
 }

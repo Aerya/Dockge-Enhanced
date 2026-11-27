@@ -10,7 +10,7 @@ export interface HostPackage {
     arch: string;
     source: string;
     sourceVersion: string;
-    origin: "unknown" | "repository" | "foreign";
+    origin: "unknown" | "official" | "repository" | "foreign";
     available: string | null;
 }
 export interface HostReport {
@@ -51,7 +51,7 @@ export function parseReport(value: unknown, now = Date.now()): HostReport {
     const packages = r.packages.map(p => {
         if (!p || !/^[A-Za-z0-9][A-Za-z0-9+_.:@~-]{0,199}$/.test(p.source) || !/^[A-Za-z0-9][A-Za-z0-9+_.:@~-]{0,199}$/.test(p.arch) || !text(p.name) || !/^[A-Za-z0-9][A-Za-z0-9+_.:@~-]*$/.test(p.name) ||
             ![ p.version, p.arch, p.source, p.sourceVersion ].every(v => text(v)) || !p.version ||
-            (p.available !== null && (!text(p.available) || !p.available)) || ![ "unknown", "repository", "foreign" ].includes(p.origin)) {
+            (p.available !== null && (!text(p.available) || !p.available)) || ![ "unknown", "official", "repository", "foreign" ].includes(p.origin)) {
             throw new Error("hosts.invalidReport");
         }
         const key = `${p.name}:${p.arch}`;

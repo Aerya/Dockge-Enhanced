@@ -15,7 +15,7 @@ export interface HostFinding {
     fixed: string;
     severity: string;
     url: string;
-    status: "vulnerable";
+    status: "vulnerable" | "indeterminate";
     fix: "available" | "published" | "none";
 }
 export interface HostSecurity {
@@ -47,6 +47,8 @@ export function parseHostScan(value: unknown, report: HostReport): HostFinding[]
         !scan.Results.some(r => r.Class === "os-pkgs" && r.Type === report.os)) {
         throw new Error("hosts.invalidScan");
     }
+    const canonical = (version: string) => version.replace(/^(\d+):/, (_whole, epoch: string) => BigInt(epoch) === 0n ? "" : `${BigInt(epoch)}:`);
+    const packages = new Map(report.packages.map(p => [ `${p.name.split(":")[0]}@${canonical(p.version)}`, p ]));
     const found = new Map<string, HostFinding>();
     for (const result of scan.Results) {
         if (result.Class !== "os-pkgs" || result.Type !== report.os) {
@@ -60,7 +62,7 @@ export function parseHostScan(value: unknown, report: HostReport): HostFinding[]
                 typeof v.PkgName !== "string" || typeof v.InstalledVersion !== "string") {
                 continue;
             }
-            const pkg = report.packages.find(p => p.name.split(":")[0] === v.PkgName && p.version === v.InstalledVersion);
+            const pkg = packages.get(`${v.PkgName}@${canonical(v.InstalledVersion)}`);
             if (!pkg) {
                 throw new Error("hosts.invalidScan");
             }
@@ -72,7 +74,7 @@ export function parseHostScan(value: unknown, report: HostReport): HostFinding[]
                 fixed,
                 severity: [ "LOW", "MEDIUM", "HIGH", "CRITICAL" ].includes(String(v.Severity)) ? String(v.Severity) : "UNKNOWN",
                 url: report.os === "debian" ? `https://security-tracker.debian.org/tracker/${id}` : `https://ubuntu.com/security/${id}`,
-                status: "vulnerable",
+                status: pkg.origin === "official" ? "vulnerable" : "indeterminate",
                 fix: !fixed ? "none" : pkg.available === fixed ? "available" : "published" });
         }
     }
