@@ -270,7 +270,7 @@ def main():
                 continue
             os.close(fd)
             file.unlink()
-            result = {'id': request['id'], 'at': time.time(), 'state': 'running', 'scope': request.get('scope', 'all'), 'automatic': False}
+            result = {'id': request['id'], 'at': time.time(), 'state': 'running', 'scope': request['schedule']['scope'] if request['action'] == 'schedule' else request.get('scope', 'all'), 'automatic': False}
             if request['action'] == 'install':
                 publish(result)
             result['state'] = 'failed'

@@ -33,7 +33,7 @@
                     <h3>{{ $t('hosts.scheduleTitle') }}</h3>
                     <p>{{ $t('hosts.scheduleHelp') }}</p>
                     <p>{{ $t(snapshot.operations.schedule?.enabled ? 'hosts.scheduleActive' : 'hosts.scheduleInactive') }}</p>
-                    <label class="d-block"><input v-model="schedule.enabled" :disabled="!snapshot.operations.automatic" type="checkbox"> {{ $t('hosts.scheduleEnable') }}</label>
+                    <label class="d-block"><input v-model="schedule.enabled" :disabled="!snapshot.operations.automatic && !schedule.enabled" type="checkbox"> {{ $t('hosts.scheduleEnable') }}</label>
                     <label for="host-schedule-scope">{{ $t('hosts.scope') }}</label>
                     <select id="host-schedule-scope" v-model="schedule.scope" class="form-select"><option v-for="item in snapshot.operations.scopes" :key="item" :value="item">{{ $t('hosts.scope.' + item) }}</option></select>
                     <div class="d-flex flex-wrap gap-3 my-2"><label v-for="day in 7" :key="day"><input v-model="schedule.days" type="checkbox" :value="day - 1"> {{ $t('hosts.day.' + (day - 1)) }}</label></div>
@@ -43,6 +43,7 @@
                     <input id="host-schedule-minute" v-model.number="schedule.minute" class="form-control" type="number" min="0" max="59">
                     <button class="btn btn-warning mt-3" :disabled="busy || pending || !schedule.days.length" @click="saveSchedule">{{ $t('hosts.scheduleSave') }}</button>
                     <p v-if="pending">{{ $t('hosts.pending') }}</p>
+                    <p v-if="snapshot.operations.result">{{ $t('hosts.operation.' + snapshot.operations.result.state) }}</p>
                 </div>
             </template>
             <template v-else-if="section === 'security'">
