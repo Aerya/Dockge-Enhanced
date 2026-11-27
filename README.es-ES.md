@@ -64,7 +64,7 @@ Los cambios recientes más importantes se agrupan aquí para entender rápidamen
 
 ### 🆕 Noviembre de 2026
 
-**Gestión de hosts (Beta) :** Opcional y desactivado por defecto en `/watcher/hosts`: inventario local, actualizaciones APT/Pacman, análisis CVE Debian/Ubuntu con la imagen Trivy existente y operaciones APT manuales limitadas con autorización local. Los informes se montan en solo lectura. La federación existente transporta las solicitudes; los agentes antiguos permanecen no disponibles. No se ofrecen actualizaciones automáticas, AUR, RPM/APK/Zypper ni cobertura completa del proveedor. [→](docs/host-management.es.md).
+**Actualizaciones de hosts (Beta) :** Opcional y desactivado por defecto en `/watcher/hosts`: inventario local, actualizaciones APT/Pacman, análisis CVE Debian/Ubuntu con la imagen Trivy existente y operaciones APT manuales limitadas con autorización local. Los informes se montan en solo lectura. La federación existente transporta las solicitudes; los agentes antiguos permanecen no disponibles. No se ofrecen actualizaciones automáticas, AUR, RPM/APK/Zypper ni cobertura completa del proveedor. [→](docs/host-management.es.md). La pestaña Actualizaciones de hosts siempre está visible; solo la supervisión está desactivada por defecto. Actualizaciones agrupa Dockge-Enhanced, Imágenes Docker y Actualizaciones de hosts (Beta) en tres subpestañas visibles. Se mantienen ocho pestañas principales, las URL existentes y los enlaces a instancias remotas.
 
 **1Password: nueva API de secretos :** 1Password utiliza ahora `listSecrets` con los valores revelados en lugar de `getVariables`, cuya retirada está prevista para el 20 de enero de 2027. El SDK se fija en `0.0.0-credential-broker-dev-preview.4`. Actualice también las instancias vinculadas.
 
@@ -700,7 +700,7 @@ La navegación, Logs/Compose, indicadores de recursos, tarjetas de salud, temas 
 
 ### Monitorización
 
-- **Gestión de hosts (Beta)** — Opcional y desactivado por defecto en `/watcher/hosts`: inventario local, actualizaciones APT/Pacman, análisis CVE Debian/Ubuntu con la imagen Trivy existente y operaciones APT manuales limitadas con autorización local. Los informes se montan en solo lectura. La federación existente transporta las solicitudes; los agentes antiguos permanecen no disponibles. No se ofrecen actualizaciones automáticas, AUR, RPM/APK/Zypper ni cobertura completa del proveedor. [→](docs/host-management.es.md).
+- **Actualizaciones de hosts (Beta)** — Opcional y desactivado por defecto en `/watcher/hosts`: inventario local, actualizaciones APT/Pacman, análisis CVE Debian/Ubuntu con la imagen Trivy existente y operaciones APT manuales limitadas con autorización local. Los informes se montan en solo lectura. La federación existente transporta las solicitudes; los agentes antiguos permanecen no disponibles. No se ofrecen actualizaciones automáticas, AUR, RPM/APK/Zypper ni cobertura completa del proveedor. [→](docs/host-management.es.md). La pestaña Actualizaciones de hosts siempre está visible; solo la supervisión está desactivada por defecto.
 - **Recuperación de la conexión Docker** — `DOCKGE_DOCKER_RECOVERY_RETRIES` / `DOCKGE_DOCKER_RECOVERY_INTERVAL_SECONDS`
 - Estadísticas de CPU, RAM y disco del sistema, los stacks y los contenedores, con barra de estado configurable
 - Detalles del sistema host, temperaturas y particiones de disco supervisadas

@@ -24,7 +24,7 @@ export async function notifyHost(state: string, reboot: string, security: HostSe
         return;
     }
     const lang = await getNotificationLang();
-    const title = notificationText(lang, "Gestion des hôtes (Bêta)", "Host Management (Beta)", "Gestión de hosts (Beta)", "主机管理（测试版）");
+    const title = notificationText(lang, "Mises à jour des hôtes (Bêta)", "Host Updates (Beta)", "Actualizaciones de hosts (Beta)", "主机更新（测试版）");
     const body = notificationText(lang, "L’état de l’hôte a changé. Consulter /watcher/hosts.", "Host status changed. Check /watcher/hosts.", "El estado del host ha cambiado. Consulte /watcher/hosts.", "主机状态已改变。请检查 /watcher/hosts。") + `\n${state} · ${reboot} · HIGH/CRITICAL: ${count}`;
     const results = await Promise.all([
         new DiscordNotifier(config.discordWebhooks).sendEmbed({ title,

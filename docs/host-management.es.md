@@ -1,8 +1,12 @@
-# Gestión de hosts (Beta)
+# Actualizaciones de hosts (Beta)
 
 [English](host-management.md) · [Français](host-management.fr.md) · [Deutsch](host-management.de.md) · [Español](host-management.es.md) · [简体中文](host-management.zh-CN.md)
 
 Opcional y desactivado por defecto en `/watcher/hosts`: inventario local, actualizaciones APT/Pacman, análisis CVE Debian/Ubuntu con la imagen Trivy existente y operaciones APT manuales limitadas con autorización local. Los informes se montan en solo lectura. La federación existente transporta las solicitudes; los agentes antiguos permanecen no disponibles. No se ofrecen actualizaciones automáticas, AUR, RPM/APK/Zypper ni cobertura completa del proveedor.
+
+La pestaña Actualizaciones de hosts siempre está visible; solo la supervisión está desactivada por defecto.
+
+Actualizaciones agrupa Dockge-Enhanced, Imágenes Docker y Actualizaciones de hosts (Beta) en tres subpestañas visibles. Se mantienen ocho pestañas principales, las URL existentes y los enlaces a instancias remotas.
 
 ## Instalación y seguridad
 

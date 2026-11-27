@@ -1,8 +1,12 @@
-# Gestion des hôtes (Bêta)
+# Mises à jour des hôtes (Bêta)
 
 [English](host-management.md) · [Français](host-management.fr.md) · [Deutsch](host-management.de.md) · [Español](host-management.es.md) · [简体中文](host-management.zh-CN.md)
 
 Optionnel et désactivé par défaut, dans `/watcher/hosts` : inventaire de l’hôte local, mises à jour APT/Pacman, analyse CVE Debian/Ubuntu avec l’image Trivy existante et opérations APT manuelles limitées avec autorisation locale. Les rapports sont montés en lecture seule. La fédération existante transporte les requêtes ; les anciens agents restent indisponibles. Mises à jour automatiques, AUR, RPM/APK/Zypper et couverture éditeur complète indisponibles.
+
+L’onglet Mises à jour des hôtes reste toujours visible ; seule la surveillance est désactivée par défaut.
+
+Mises à jour regroupe Dockge-Enhanced, Images Docker et Mises à jour des hôtes (Bêta) dans trois sous-onglets visibles. Huit onglets principaux sont conservés ; les URL existantes et les liens vers les instances distantes restent valides.
 
 ## Installation et sécurité
 

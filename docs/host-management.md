@@ -1,8 +1,12 @@
-# Host Management (Beta)
+# Host Updates (Beta)
 
 [English](host-management.md) · [Français](host-management.fr.md) · [Deutsch](host-management.de.md) · [Español](host-management.es.md) · [简体中文](host-management.zh-CN.md)
 
 Optional and disabled by default, under `/watcher/hosts`: local host inventory, APT/Pacman updates, Debian/Ubuntu CVE analysis using the existing Trivy image, and restricted manual APT operations with local authorization. Reports are mounted read-only. Existing federation transports requests; old agents remain unavailable. Automatic updates, AUR, RPM/APK/Zypper and complete vendor coverage are unavailable.
+
+The Host Updates tab is always visible; only monitoring is disabled by default.
+
+Updates groups Dockge-Enhanced, Docker Images and Host Updates (Beta) in three visible subtabs. Eight main tabs remain; existing URLs and remote-instance links are preserved.
 
 ## Installation and security
 

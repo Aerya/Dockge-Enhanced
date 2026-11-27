@@ -1,7 +1,7 @@
 # Dockge Enhanced 更新日志
 
 
-> **变更草案 — 主机管理（测试版）** — 位于 `/watcher/hosts`，可选且默认关闭：本地主机清单、APT/Pacman 更新、通过现有 Trivy 镜像进行 Debian/Ubuntu CVE 分析，以及需要本地授权的受限手动 APT 操作。报告只读挂载。请求使用现有联合通信；旧代理显示不可用。不支持自动更新、AUR、RPM/APK/Zypper 或完整厂商覆盖。
+> **变更草案 — 主机更新（测试版）** — 位于 `/watcher/hosts`，可选且默认关闭：本地主机清单、APT/Pacman 更新、通过现有 Trivy 镜像进行 Debian/Ubuntu CVE 分析，以及需要本地授权的受限手动 APT 操作。报告只读挂载。请求使用现有联合通信；旧代理显示不可用。不支持自动更新、AUR、RPM/APK/Zypper 或完整厂商覆盖。 主机更新标签页始终可见；默认仅禁用监控功能。 更新分为 Dockge-Enhanced、Docker 镜像和主机更新（测试版）三个可见子标签页。保留八个主标签页，现有 URL 和远程实例链接保持有效。
 
 > **Windows 11 / WSL2 验证：**提供安装指南，已测试 Compose 操作、Restic/Zerobyte 备份和关联实例。Windows 更新 sidecar 挂载及共享网络服务的顺序重启修复保留 Linux/Unraid 路径和权限。 [在 Windows 11 上使用 Docker Desktop（WSL2）](docs/windows.zh-CN.md). Windows 重启后，某些 WSL 挂载需要按指南手动恢复。
 

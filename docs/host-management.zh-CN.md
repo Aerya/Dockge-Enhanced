@@ -1,8 +1,12 @@
-# 主机管理（测试版）
+# 主机更新（测试版）
 
 [English](host-management.md) · [Français](host-management.fr.md) · [Deutsch](host-management.de.md) · [Español](host-management.es.md) · [简体中文](host-management.zh-CN.md)
 
 位于 `/watcher/hosts`，可选且默认关闭：本地主机清单、APT/Pacman 更新、通过现有 Trivy 镜像进行 Debian/Ubuntu CVE 分析，以及需要本地授权的受限手动 APT 操作。报告只读挂载。请求使用现有联合通信；旧代理显示不可用。不支持自动更新、AUR、RPM/APK/Zypper 或完整厂商覆盖。
+
+主机更新标签页始终可见；默认仅禁用监控功能。
+
+更新分为 Dockge-Enhanced、Docker 镜像和主机更新（测试版）三个可见子标签页。保留八个主标签页，现有 URL 和远程实例链接保持有效。
 
 ## 安装与安全
 

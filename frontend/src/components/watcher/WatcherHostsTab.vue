@@ -1,6 +1,6 @@
 <template>
     <section>
-        <h2>{{ $t('hosts.title') }}</h2>
+        <h2>{{ $t('hosts.title') }} <span class="badge bg-warning text-dark">{{ $t('hosts.beta') }}</span></h2>
         <div v-if="error" class="alert alert-warning">{{ $t(error) }}</div>
         <p>{{ $t('hosts.description') }}</p>
         <div v-if="snapshot" class="d-flex flex-wrap gap-2 mb-3">
