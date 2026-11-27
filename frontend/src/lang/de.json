@@ -3072,7 +3072,7 @@
     "hosts.operation.simulated": "Simulation bereit (läuft nach fünf Minuten ab)",
     "hosts.operation.complete": "Vorgang abgeschlossen",
     "hosts.operation.failed": "Vorgang fehlgeschlagen oder lokal abgelehnt",
-    "releaseNews.item.hostManagement": "Optionales Hostinventar und Sicherheit, standardmäßig deaktiviert. Hostverwaltung (Beta) — /watcher/hosts.",
+    "releaseNews.item.hostManagement": "Hostverwaltung (Beta): neuer Tab /watcher/hosts, optional und standardmäßig deaktiviert. Lokale und verknüpfte Inventare, APT/Pacman-Updates, teilweise Debian/Ubuntu-CVE-Analyse und manuelles APT mit lokaler Freigabe. Keine automatischen Updates oder AUR.",
     "hosts.notifications": "Bestehende ImageWatcher-Kanäle benachrichtigen (dedupliziert, höchstens stündlich)",
     "hosts.kernelPackages": "Installierte Kernelpakete",
     "hosts.repositories": "Quellenhosts / Namen (bereinigt)",

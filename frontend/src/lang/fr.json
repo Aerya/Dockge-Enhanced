@@ -3068,7 +3068,7 @@
     "hosts.operation.simulated": "Simulation prête (expire après cinq minutes)",
     "hosts.operation.complete": "Opération terminée",
     "hosts.operation.failed": "Opération échouée ou refusée par la politique locale",
-    "releaseNews.item.hostManagement": "Inventaire et sécurité des hôtes, optionnels et désactivés par défaut. Gestion des hôtes (Bêta) — /watcher/hosts.",
+    "releaseNews.item.hostManagement": "Gestion des hôtes (Bêta) : nouvel onglet /watcher/hosts, optionnel et désactivé par défaut. Inventaires locaux et distants, mises à jour APT/Pacman, analyse CVE Debian/Ubuntu partielle et APT manuel avec autorisation locale. Aucune mise à jour automatique ni AUR.",
     "hosts.notifications": "Notifier via les canaux ImageWatcher existants (dédupliqué, au plus horaire)",
     "hosts.kernelPackages": "Paquets de noyaux installés",
     "hosts.repositories": "Hôtes / noms des dépôts (expurgés)",

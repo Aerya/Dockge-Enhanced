@@ -3009,7 +3009,7 @@
     "hosts.operation.simulated": "模拟就绪（五分钟后过期）",
     "hosts.operation.complete": "操作完成",
     "hosts.operation.failed": "操作失败或被本地策略拒绝",
-    "releaseNews.item.hostManagement": "可选的主机清单与安全功能，默认关闭。 主机管理（测试版） — /watcher/hosts.",
+    "releaseNews.item.hostManagement": "主机管理（测试版）：新增 /watcher/hosts 标签页，可选且默认关闭。提供本地和关联主机清单、APT/Pacman 更新、部分 Debian/Ubuntu CVE 分析和本地授权的手动 APT。不提供自动更新或 AUR。",
     "hosts.notifications": "使用现有 ImageWatcher 通知渠道（去重，最多每小时一次）",
     "hosts.kernelPackages": "已安装内核软件包",
     "hosts.repositories": "仓库主机 / 名称（已脱敏）",
