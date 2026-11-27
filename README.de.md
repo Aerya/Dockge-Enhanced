@@ -64,6 +64,8 @@ Die wichtigsten kürzlichen Änderungen sind hier gruppiert, damit Sie schnell s
 
 ### 🆕 November 2026
 
+**Host-Updates (Beta) :** Optional und standardmäßig deaktiviert unter `/watcher/hosts`: Inventar und Update-Erkennung für Debian/Ubuntu und Arch/Garuda, CVE-Analyse für Debian/Ubuntu sowie manuelle oder geplante APT-Updates nach lokaler Installation und Freigabe. Profile: alle erlaubten Updates, nur Sicherheit, vorsichtig, Sicherheit und vorsichtig. Konfigurierbare Benachrichtigungen für Erkennungen und Vorgänge. Schreibgeschützte Berichte und bestehende Föderation. Arch/Garuda bleiben auf Überwachung beschränkt; AUR, RPM/APK/Zypper, Flottenaktionen und vollständige CVE-Abdeckung fehlen weiterhin. [→](docs/host-management.de.md). Der Tab Host-Updates bleibt immer sichtbar; nur die Überwachung ist standardmäßig deaktiviert. Updates bündelt Dockge-Enhanced, Docker-Images und Host-Updates (Beta) in drei sichtbaren Untertabs. Acht Haupttabs bleiben; bestehende URLs und Links zu entfernten Instanzen bleiben gültig.
+
 **Compose-Overrides bei Image-Aktualisierungen :** Automatische und manuelle Image-Aktualisierungen erhalten die wirksame Compose-Konfiguration: Standard-Overrides, `COMPOSE_FILE`, `.env` und die gemeinsame `global.env`. Externe Projekte behalten ihre ausdrückliche Dateireihenfolge und Umgebungsdateien. Schrittweise Aktualisierungen prüfen die ursprüngliche Konfiguration, bevor sie ein temporäres Override hinzufügen. [Auswahl der Compose-Dateien](docs/image-update-verification.de.md).
 
 **1Password: neue Secrets-API :** 1Password verwendet jetzt `listSecrets` mit offengelegten Werten statt `getVariables`, das am 20. Januar 2027 entfernt werden soll. Das SDK ist auf `0.0.0-credential-broker-dev-preview.4` festgelegt. Aktualisieren Sie auch verknüpfte Instanzen.
@@ -697,6 +699,8 @@ Die Stack-Navigation, der Logs/Compose-Arbeitsbereich, Ressourcenindikatoren, St
 - Prüfung der TLS-Zertifikatsspeicher nach dem eMudhra-Vorfall ([TLS-Prüfungen](security/emudhra/README.md))
 
 ### Monitoring
+
+- **Host-Updates (Beta)** — Optional und standardmäßig deaktiviert unter `/watcher/hosts`: Inventar und Update-Erkennung für Debian/Ubuntu und Arch/Garuda, CVE-Analyse für Debian/Ubuntu sowie manuelle oder geplante APT-Updates nach lokaler Installation und Freigabe. Profile: alle erlaubten Updates, nur Sicherheit, vorsichtig, Sicherheit und vorsichtig. Konfigurierbare Benachrichtigungen für Erkennungen und Vorgänge. Schreibgeschützte Berichte und bestehende Föderation. Arch/Garuda bleiben auf Überwachung beschränkt; AUR, RPM/APK/Zypper, Flottenaktionen und vollständige CVE-Abdeckung fehlen weiterhin. [→](docs/host-management.de.md). Der Tab Host-Updates bleibt immer sichtbar; nur die Überwachung ist standardmäßig deaktiviert.
 - **Docker-Verbindung wiederherstellen** — `DOCKGE_DOCKER_RECOVERY_RETRIES` / `DOCKGE_DOCKER_RECOVERY_INTERVAL_SECONDS`
 - CPU-, RAM- und Datenträgerstatistiken für System, Stacks und Container, mit konfigurierbarer Statusleiste
 - Host-Systemdetails, Temperaturen und überwachte Partitionen
@@ -1165,6 +1169,9 @@ Kommerzielle Drittanbieter-Clients sind durch die Lizenz gestattet, dürfen jedo
 ---
 
 ## Mitwirkende
+
+- [PatchMon](https://github.com/PatchMon/PatchMon) — Inspiration für Systeminventar, Überwachung und Update-Orchestrierung.
+- [PatchBase](https://github.com/patchbase/patchbase) — Inspiration für Paketinventar, Sicherheitsmeldungsabgleich und Schwachstellenerkennung.
 
 - Danke an **yodadl**.
 

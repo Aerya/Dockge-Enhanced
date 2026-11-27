@@ -4,9 +4,15 @@ on:
   pull_request:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      hosts_only:
+        description: Tests Host Management isolés uniquement
+        type: boolean
+        default: false
 
 jobs:
   build-check:
+    if: ${{ inputs.hosts_only != true }}
     name: TypeScript + Frontend build
     runs-on: ubuntu-latest
 
@@ -325,6 +331,16 @@ jobs:
         if: steps.docs.outputs.docs_only != 'true'
         run: npx tsx --test frontend/src/service-healthcheck.test.ts
 
+      - name: Tests Host Management (Bêta)
+        if: steps.docs.outputs.docs_only != 'true'
+        run: |
+          npx tsx --test backend/hosts/*.test.ts
+          python3 -m unittest discover -s extra/host-management -p 'test_*.py'
+          sudo --preserve-env=GITHUB_ACTIONS /usr/bin/python3 extra/host-management/integration_apt.py
+          mkdir -p "$RUNNER_TEMP/host-reports"
+          python3 extra/host-management/collector.py --output "$RUNNER_TEMP/host-reports"
+          HOST_TEST_REPORT="$RUNNER_TEMP/host-reports/inventory.json" npx tsx backend/hosts/ci-smoke.ts
+
       - name: Build frontend (Vite)
         if: steps.docs.outputs.docs_only != 'true'
         run: npm run build:frontend
@@ -377,3 +393,26 @@ jobs:
           path: ${{ runner.temp }}/npm-audit-*.json
           if-no-files-found: ignore
           retention-days: 14
+
+  hosts:
+    if: ${{ inputs.hosts_only == true }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run check-ts
+      - run: npx eslint 'backend/hosts/*.ts' backend/agent-socket-handlers/hosts-socket-handler.ts frontend/src/components/watcher/WatcherHostsTab.vue --quiet
+      - run: npx tsx --test backend/hosts/*.test.ts frontend/src/release-news.test.ts
+      - run: python3 -m unittest discover -s extra/host-management -p 'test_*.py'
+      - run: sudo --preserve-env=GITHUB_ACTIONS /usr/bin/python3 extra/host-management/integration_apt.py
+      - run: |
+          mkdir -p "$RUNNER_TEMP/host-reports"
+          python3 extra/host-management/collector.py --output "$RUNNER_TEMP/host-reports"
+          HOST_TEST_REPORT="$RUNNER_TEMP/host-reports/inventory.json" npx tsx backend/hosts/ci-smoke.ts
+      - run: npm run build:frontend
+      - run: python3 .github/scripts/check_docs.py

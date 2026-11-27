@@ -1,0 +1,10 @@
+{
+  "mode": "disabled",
+  "allowInstall": false,
+  "allowAutomatic": false,
+  "allowedScopes": ["security", "conservative", "security-conservative"],
+  "utcHours": [],
+  "exclusions": [],
+  "conservativePackages": [],
+  "refreshMetadata": false
+}

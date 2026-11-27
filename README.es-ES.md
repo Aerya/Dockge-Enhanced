@@ -64,6 +64,8 @@ Los cambios recientes más importantes se agrupan aquí para entender rápidamen
 
 ### 🆕 Noviembre de 2026
 
+**Actualizaciones de hosts (Beta) :** Opcional y desactivado por defecto en `/watcher/hosts`: inventario y detección de actualizaciones Debian/Ubuntu y Arch/Garuda, análisis CVE Debian/Ubuntu y actualizaciones APT manuales o programadas tras instalación y autorización locales. Perfiles: todas las permitidas, solo seguridad, prudente, seguridad y prudente. Notificaciones configurables de detecciones y operaciones. Informes de solo lectura y federación existente. Arch/Garuda solo permiten supervisión; AUR, RPM/APK/Zypper, operaciones de flota y cobertura CVE completa siguen sin estar disponibles. [→](docs/host-management.es.md). La pestaña Actualizaciones de hosts siempre está visible; solo la supervisión está desactivada por defecto. Actualizaciones agrupa Dockge-Enhanced, Imágenes Docker y Actualizaciones de hosts (Beta) en tres subpestañas visibles. Se mantienen ocho pestañas principales, las URL existentes y los enlaces a instancias remotas.
+
 **Overrides Compose durante las actualizaciones :** Las actualizaciones automáticas y manuales de imágenes conservan la configuración Compose efectiva: overrides predeterminados, `COMPOSE_FILE`, `.env` y `global.env` compartido. Los proyectos externos mantienen el orden explícito de sus archivos y sus archivos de entorno. Las actualizaciones progresivas verifican la configuración original antes de añadir un override temporal. [Selección de archivos Compose](docs/image-update-verification.es.md).
 
 **1Password: nueva API de secretos :** 1Password utiliza ahora `listSecrets` con los valores revelados en lugar de `getVariables`, cuya retirada está prevista para el 20 de enero de 2027. El SDK se fija en `0.0.0-credential-broker-dev-preview.4`. Actualice también las instancias vinculadas.
@@ -699,6 +701,8 @@ La navegación, Logs/Compose, indicadores de recursos, tarjetas de salud, temas 
 - Comprobaciones de los almacenes de certificados TLS tras el incidente de eMudhra ([comprobaciones TLS](security/emudhra/README.md))
 
 ### Monitorización
+
+- **Actualizaciones de hosts (Beta)** — Opcional y desactivado por defecto en `/watcher/hosts`: inventario y detección de actualizaciones Debian/Ubuntu y Arch/Garuda, análisis CVE Debian/Ubuntu y actualizaciones APT manuales o programadas tras instalación y autorización locales. Perfiles: todas las permitidas, solo seguridad, prudente, seguridad y prudente. Notificaciones configurables de detecciones y operaciones. Informes de solo lectura y federación existente. Arch/Garuda solo permiten supervisión; AUR, RPM/APK/Zypper, operaciones de flota y cobertura CVE completa siguen sin estar disponibles. [→](docs/host-management.es.md). La pestaña Actualizaciones de hosts siempre está visible; solo la supervisión está desactivada por defecto.
 - **Recuperación de la conexión Docker** — `DOCKGE_DOCKER_RECOVERY_RETRIES` / `DOCKGE_DOCKER_RECOVERY_INTERVAL_SECONDS`
 - Estadísticas de CPU, RAM y disco del sistema, los stacks y los contenedores, con barra de estado configurable
 - Detalles del sistema host, temperaturas y particiones de disco supervisadas
@@ -1167,6 +1171,9 @@ Los clientes de terceros comerciales están permitidos por la licencia, pero no 
 ---
 
 ## Créditos
+
+- [PatchMon](https://github.com/PatchMon/PatchMon) — Inspiración para inventario de sistemas, supervisión y orquestación de actualizaciones.
+- [PatchBase](https://github.com/patchbase/patchbase) — Inspiración para inventario de paquetes, correlación de avisos y detección de vulnerabilidades.
 
 - Gracias a **yodadl**.
 

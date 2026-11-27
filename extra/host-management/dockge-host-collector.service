@@ -1,0 +1,25 @@
+[Unit]
+Description=Dockge-Enhanced optional host inventory (Beta)
+
+[Service]
+Type=oneshot
+User=dockge-host
+Group=dockge-host
+ExecStart=/usr/bin/python3 /usr/local/lib/dockge-host/collector.py
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+LockPersonality=true
+CapabilityBoundingSet=
+StateDirectory=dockge-host-reports
+StateDirectoryMode=0755
+ReadWritePaths=/var/lib/dockge-host-reports
+TimeoutStartSec=10min
+MemoryMax=256M
+CPUQuota=25%

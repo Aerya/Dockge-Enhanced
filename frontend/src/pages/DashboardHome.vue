@@ -68,7 +68,7 @@
 
                     <!-- Local values first; federation totals never depend on sidebar filters. -->
                     <div class="row g-3 mb-4">
-                        <div v-for="card in homeCards" :key="card.kind" class="col-12 col-sm-6">
+                        <div v-for="card in homeCards.filter(c => c.kind !== 'hosts' || Object.values(instanceHomeSummaries).some(s => s?.hosts?.enabled && s.hosts.hosts > 0))" :key="card.kind" class="col-12 col-sm-6">
                             <div class="shadow-box summary-card" :class="localHomeValue(card.kind).state">
                                 <font-awesome-icon :icon="card.icon" class="summary-icon" />
                                 <h3 class="summary-label">{{ $t(card.title) }}</h3>
@@ -410,6 +410,10 @@ export default {
             instanceHomeSummaries: {},
             refreshingHome: false,
             homeCards: [
+                { kind: "hosts",
+                    tab: "hosts",
+                    icon: "server",
+                    title: "hosts.title" },
                 { kind: "images",
                     tab: "images",
                     icon: "sync-alt",

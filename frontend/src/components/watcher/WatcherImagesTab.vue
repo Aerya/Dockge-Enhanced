@@ -1,6 +1,7 @@
 <template>
     <div>
         <SchedulingTimezoneNotice />
+        <ImageBatchUpdate />
         <!-- IMAGE WATCHER CONFIG -->
         <div class="shadow-box big-padding mb-4">
             <div class="d-flex justify-content-between align-items-center mb-3">
@@ -757,6 +758,7 @@
 
 <script setup lang="ts">
 import ImageVersionPreview from "./ImageVersionPreview.vue";
+import ImageBatchUpdate from "./ImageBatchUpdate.vue";
 import SchedulingTimezoneNotice from "../SchedulingTimezoneNotice.vue";
 import { isScheduledTime } from "../../../../common/image-update-time";
 import { ref, computed, watch, onMounted, onUnmounted } from "vue";

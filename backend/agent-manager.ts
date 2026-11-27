@@ -704,7 +704,11 @@ export class AgentManager {
             }
         }
 
-        client.emit("agent", endpoint, eventName, ...args);
+        if (eventName === "hosts:operation") {
+            client.volatile.emit("agent", endpoint, eventName, ...args);
+        } else {
+            client.emit("agent", endpoint, eventName, ...args);
+        }
     }
 
     requestEndpoint<T>(endpoint: string, eventName: string, ...args: unknown[]): Promise<T> {

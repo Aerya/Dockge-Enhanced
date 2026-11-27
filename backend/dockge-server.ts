@@ -23,6 +23,7 @@ import { getSelfUpdateBlocker } from "./self-update/operation-guard";
 import { activeDockerUpdateOperation } from "./self-update/operation-coordinator";
 import { hasActiveStackMutations } from "./stack-mutation";
 import { isDockerBuildActive, isDockerCleanupActive } from "./docker-operation-state";
+import { HostManager } from "./hosts/manager";
 import { TrivyScanner } from "./watchers/trivy-scanner";
 import { BackupManager } from "./watchers/backup-manager";
 import { MonitoringWatcher } from "./watchers/monitoring-watcher";
@@ -690,6 +691,7 @@ export class DockgeServer {
             checkVersion.startInterval();
 
             startAnonymousInstallCount(this.config.dataDir);
+            HostManager.instance.start();
 
             if (hubOnly()) {
                 log.info("server", "Hub-only mode: local watchers, schedules, cleanup and self-update disabled");

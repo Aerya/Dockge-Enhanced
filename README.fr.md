@@ -65,6 +65,8 @@ Les évolutions majeures récentes sont regroupées ici afin de comprendre rapid
 
 ### 🆕 Novembre 2026
 
+**Mises à jour des hôtes (Bêta) :** Optionnel et désactivé par défaut, dans `/watcher/hosts` : inventaire et détection des mises à jour Debian/Ubuntu et Arch/Garuda, analyse CVE Debian/Ubuntu, mises à jour APT manuelles ou programmées après installation et autorisation locales. Profils : toutes les mises à jour autorisées, sécurité uniquement, prudent, sécurité et prudent. Notifications configurables pour les détections et les opérations. Rapports en lecture seule, transport par la fédération existante. Arch/Garuda restent en surveillance seule ; AUR, RPM/APK/Zypper, opérations de parc et couverture CVE complète restent indisponibles. [→](docs/host-management.fr.md). L’onglet Mises à jour des hôtes reste toujours visible ; seule la surveillance est désactivée par défaut. Mises à jour regroupe Dockge-Enhanced, Images Docker et Mises à jour des hôtes (Bêta) dans trois sous-onglets visibles. Huit onglets principaux sont conservés ; les URL existantes et les liens vers les instances distantes restent valides.
+
 **Overrides Compose lors des mises à jour :** Les mises à jour automatiques et manuelles des images conservent la configuration Compose effective : overrides par défaut, `COMPOSE_FILE`, `.env` et `global.env` partagé. Les projets externes gardent l’ordre explicite de leurs fichiers et leurs fichiers d’environnement. Les mises à jour progressives vérifient la configuration d’origine avant d’ajouter un override temporaire. [Sélection des fichiers Compose](docs/image-update-verification.fr.md).
 
 **1Password : nouvelle API de secrets :** 1Password utilise désormais `listSecrets` avec les valeurs révélées à la place de `getVariables`, dont la suppression est prévue le 20 janvier 2027. Le SDK est fixé à `0.0.0-credential-broker-dev-preview.4`. Mettez aussi les instances liées à jour.
@@ -698,6 +700,8 @@ La navigation des stacks, l'espace Logs/Compose, les indicateurs de ressources, 
 - Contrôles des magasins de certificats TLS après l’incident eMudhra ([contrôles TLS](security/emudhra/README.md))
 
 ### Supervision
+
+- **Mises à jour des hôtes (Bêta)** — Optionnel et désactivé par défaut, dans `/watcher/hosts` : inventaire et détection des mises à jour Debian/Ubuntu et Arch/Garuda, analyse CVE Debian/Ubuntu, mises à jour APT manuelles ou programmées après installation et autorisation locales. Profils : toutes les mises à jour autorisées, sécurité uniquement, prudent, sécurité et prudent. Notifications configurables pour les détections et les opérations. Rapports en lecture seule, transport par la fédération existante. Arch/Garuda restent en surveillance seule ; AUR, RPM/APK/Zypper, opérations de parc et couverture CVE complète restent indisponibles. [→](docs/host-management.fr.md). L’onglet Mises à jour des hôtes reste toujours visible ; seule la surveillance est désactivée par défaut.
 - **Récupération de la connexion Docker** — `DOCKGE_DOCKER_RECOVERY_RETRIES` / `DOCKGE_DOCKER_RECOVERY_INTERVAL_SECONDS`
 - Statistiques CPU, RAM et disque du système, des stacks et des conteneurs, avec barre d’état configurable
 - Détails du système hôte, températures et partitions disque surveillées
@@ -1166,6 +1170,9 @@ Les clients tiers commerciaux sont autorisés par la licence, mais ne doivent pa
 ---
 
 ## Crédits
+
+- [PatchMon](https://github.com/PatchMon/PatchMon) — Inspiration pour l’inventaire des systèmes, la surveillance et l’orchestration des mises à jour.
+- [PatchBase](https://github.com/patchbase/patchbase) — Inspiration pour l’inventaire des paquets, la corrélation avec les avis de sécurité et la détection des vulnérabilités.
 
 - Merci à **yodadl**.
 

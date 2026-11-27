@@ -64,6 +64,8 @@ The most important recent changes are grouped here so you can quickly see what h
 
 ### 🆕 November 2026
 
+**Host Updates (Beta) :** Optional and disabled by default, under `/watcher/hosts`: Debian/Ubuntu and Arch/Garuda inventory and update detection, Debian/Ubuntu CVE analysis, manual or scheduled APT updates after local installation and authorization. Profiles: all permitted updates, security only, conservative, security and conservative. Configurable detection and operation notifications. Read-only reports and existing federation transport. Arch/Garuda remain monitoring-only; AUR, RPM/APK/Zypper, fleet operations and complete CVE coverage remain unavailable. [→](docs/host-management.md). The Host Updates tab is always visible; only monitoring is disabled by default. Updates groups Dockge-Enhanced, Docker Images and Host Updates (Beta) in three visible subtabs. Eight main tabs remain; existing URLs and remote-instance links are preserved.
+
 **Compose overrides during image updates :** Automatic and manual image updates preserve the effective Compose configuration: default overrides, `COMPOSE_FILE`, `.env` and shared `global.env`. External projects keep their explicit file order and environment files. Rolling updates verify the original configuration before adding a temporary override. [Compose file selection](docs/image-update-verification.md).
 
 **1Password: new secrets API :** 1Password now uses `listSecrets` with revealed values instead of `getVariables`, scheduled for removal on January 20, 2027. The SDK is pinned to `0.0.0-credential-broker-dev-preview.4`. Update linked instances too.
@@ -697,6 +699,8 @@ Stack navigation, the Logs/Compose workspace, resource indicators, health cards,
 - TLS trust-store checks after the eMudhra incident ([TLS checks](security/emudhra/README.md))
 
 ### Monitoring
+
+- **Host Updates (Beta)** — Optional and disabled by default, under `/watcher/hosts`: Debian/Ubuntu and Arch/Garuda inventory and update detection, Debian/Ubuntu CVE analysis, manual or scheduled APT updates after local installation and authorization. Profiles: all permitted updates, security only, conservative, security and conservative. Configurable detection and operation notifications. Read-only reports and existing federation transport. Arch/Garuda remain monitoring-only; AUR, RPM/APK/Zypper, fleet operations and complete CVE coverage remain unavailable. [→](docs/host-management.md). The Host Updates tab is always visible; only monitoring is disabled by default.
 - **Docker connection recovery** — `DOCKGE_DOCKER_RECOVERY_RETRIES` / `DOCKGE_DOCKER_RECOVERY_INTERVAL_SECONDS`
 - System, stack and container CPU, RAM and disk statistics, with a configurable status bar
 - Host system details, temperatures and monitored disk partitions
@@ -1165,6 +1169,9 @@ Commercial third-party clients are allowed by the license, but must not imply of
 ---
 
 ## Credits
+
+- [PatchMon](https://github.com/PatchMon/PatchMon) — System inventory, monitoring and update orchestration inspiration.
+- [PatchBase](https://github.com/patchbase/patchbase) — Package inventory, security advisory correlation and vulnerability detection inspiration.
 
 - Thanks to **yodadl**.
 

@@ -17,19 +17,11 @@
             <div class="watcher-tab-bar mb-4">
                 <button
                     class="watcher-tab"
-                    :class="{ active: currentTab === 'updates' }"
+                    :class="{ active: isUpdatesTab }"
                     @click="$router.push('/watcher/updates')"
                 >
                     <font-awesome-icon icon="sync-alt" class="watcher-tab-icon" />
                     <span>{{ $t("updates.heading") }}</span>
-                </button>
-                <button
-                    class="watcher-tab"
-                    :class="{ active: currentTab === 'images' }"
-                    @click="$router.push('/watcher/images')"
-                >
-                    <font-awesome-icon icon="sync-alt" class="watcher-tab-icon" />
-                    <span>{{ $t("watcher.tab.images") }}</span>
                 </button>
                 <button
                     class="watcher-tab"
@@ -65,14 +57,6 @@
                 </button>
                 <button
                     class="watcher-tab"
-                    :class="{ active: currentTab === 'notifications' }"
-                    @click="$router.push('/watcher/notifications')"
-                >
-                    <font-awesome-icon icon="bell" class="watcher-tab-icon" />
-                    <span>{{ $t("watcher.tab.notifications") }}</span>
-                </button>
-                <button
-                    class="watcher-tab"
                     :class="{ active: currentTab === 'monitoring' }"
                     @click="$router.push('/watcher/monitoring')"
                 >
@@ -81,11 +65,32 @@
                 </button>
                 <button
                     class="watcher-tab"
+                    :class="{ active: currentTab === 'notifications' }"
+                    @click="$router.push('/watcher/notifications')"
+                >
+                    <font-awesome-icon icon="bell" class="watcher-tab-icon" />
+                    <span>{{ $t("watcher.tab.notifications") }}</span>
+                </button>
+                <button
+                    class="watcher-tab"
                     :class="{ active: currentTab === 'audit' }"
                     @click="$router.push('/watcher/audit')"
                 >
                     <font-awesome-icon icon="history" class="watcher-tab-icon" />
                     <span>{{ $t("watcher.tab.audit") }}</span>
+                </button>
+            </div>
+
+            <div v-if="isUpdatesTab" class="watcher-tab-bar mb-4" :aria-label="$t('updates.heading')">
+                <button class="watcher-tab" :class="{ active: currentTab === 'updates' }" @click="$router.push('/watcher/updates')">
+                    {{ $t("watcher.tab.enhancedUpdates") }}
+                </button>
+                <button class="watcher-tab" :class="{ active: currentTab === 'images' }" @click="$router.push('/watcher/images')">
+                    {{ $t("watcher.tab.images") }}
+                </button>
+                <button class="watcher-tab" :class="{ active: currentTab === 'hosts' }" @click="$router.push('/watcher/hosts')">
+                    <span>{{ $t("hosts.title") }}</span>
+                    <span class="badge bg-warning text-dark">{{ $t("hosts.beta") }}</span>
                 </button>
             </div>
 
@@ -146,6 +151,8 @@ const currentTab = computed(() => {
     const name = String(route.name ?? "");
     return name.startsWith("watcher-") ? name.slice("watcher-".length) : "images";
 });
+
+const isUpdatesTab = computed(() => [ "updates", "images", "hosts" ].includes(currentTab.value));
 
 // ─── État partagé entre onglets ───────────────────────────────────
 // imgSettings / trivySettings : édités par les onglets Images/Trivy

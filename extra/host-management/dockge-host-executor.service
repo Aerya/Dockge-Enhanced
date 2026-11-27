@@ -1,0 +1,11 @@
+[Unit]
+Description=Dockge-Enhanced local APT executor (Beta)
+ConditionPathExists=/etc/dockge-host/policy.json
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 /usr/local/lib/dockge-host/executor.py
+TimeoutStartSec=infinity
+# Never terminate apt/dpkg writes on a timer timeout or service stop.
+KillMode=none
+UMask=0077
