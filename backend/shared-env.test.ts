@@ -11,7 +11,7 @@ test("real Compose inherits shared values, applies local empty values and keeps 
     t.after(() => rm(root, { recursive: true,
         force: true }));
     const stacksDir = path.join(root, "managed");
-    const workingDir = path.join(root, "separate", "demo");
+    const workingDir = path.join(stacksDir, "demo");
     await mkdir(stacksDir, { recursive: true });
     await mkdir(workingDir, { recursive: true });
     await writeFile(path.join(root, ".env"), "INHERIT_VALUE=do-not-inherit-parent\n");
@@ -50,7 +50,9 @@ test("real Compose inherits shared values, applies local empty values and keeps 
     await mkdir(otherInstance);
     await writeFile(path.join(otherInstance, "global.env"), "INHERIT_VALUE=other-instance\n");
     host.stacksDir = otherInstance;
-    assert.equal(run().VALUE, "other-instance");
+    assert.throws(() => args(), /inside the stacks directory/);
+    host.stacksDir = stacksDir;
+    assert.equal(run().VALUE, "default");
 });
 
 test("external stacks retain explicit env-file order without inheriting Enhanced global.env", async t => {

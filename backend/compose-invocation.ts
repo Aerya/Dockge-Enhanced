@@ -26,11 +26,15 @@ export function composeInvocation(composePath: string, args: string[], project?:
 
 /** Native stacks inherit global.env before their local .env; externals opt out. */
 export function managedComposeEnvFiles(stacksDir: string, cwd: string): string[] {
+    const root = path.resolve(stacksDir) + path.sep;
+    const local = path.resolve(cwd, ".env");
+    if (!local.startsWith(root)) {
+        throw new Error("Managed Compose environment must remain inside the stacks directory");
+    }
     const global = path.resolve(stacksDir, "global.env");
     if (!fs.existsSync(global)) {
         return [];
     }
-    const local = path.resolve(cwd, ".env");
     return [ global, ...(fs.existsSync(local) ? [ local ] : []) ];
 }
 

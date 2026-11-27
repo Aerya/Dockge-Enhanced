@@ -5,7 +5,7 @@ import { mkdtemp, writeFile, rm, mkdir } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { composeExecInvocation } from "./watchers/image-watcher";
-import { composePrefixWithOverride } from "./compose-invocation";
+import { composePrefixWithOverride, managedComposeEnvFiles } from "./compose-invocation";
 import { Stack } from "./stack";
 import type { DockgeServer } from "./dockge-server";
 
@@ -162,4 +162,17 @@ test("a removed native stack cannot fall back to a parent Compose project", asyn
     await writeFile(path.join(root, "compose.yaml"), base);
     const invocation = composeExecInvocation(path.join(cwd, "compose.yaml"), [ "config", "--format", "json" ]);
     assert.throws(() => run(invocation.args, invocation.cwd));
+});
+
+test("managed environment rejects traversal, absolute escapes and sibling prefixes", async t => {
+    const root = await mkdtemp(path.join(os.tmpdir(), "compose-env-boundary-"));
+    t.after(() => rm(root, { recursive: true,
+        force: true }));
+    const stacksDir = path.join(root, "stacks");
+    await mkdir(stacksDir);
+    await writeFile(path.join(stacksDir, "global.env"), "VALUE=shared\n");
+    for (const cwd of [ root, path.join(stacksDir, "..", "outside"), `${stacksDir}-other/demo` ]) {
+        assert.throws(() => managedComposeEnvFiles(stacksDir, cwd), /inside the stacks directory/);
+    }
+    assert.deepEqual(managedComposeEnvFiles(stacksDir, path.join(stacksDir, "demo")), [ path.join(stacksDir, "global.env") ]);
 });
