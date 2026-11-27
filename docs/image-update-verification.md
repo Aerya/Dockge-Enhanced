@@ -13,3 +13,9 @@ A missing local tag is resolved through the image of the running container. Regi
 Cleanup and image updates exclude one another. Before pulling, Enhanced persists a protection for the target reference, then records its downloaded image ID. An interrupted or unverified update keeps this protection for 24 hours, including after restart. Verified completion releases only that update’s protection. The grace period starts at the attempt/download time, not the image build date; normal unused-image cleanup can apply after expiry.
 
 The stack date is labelled “Last operation” with an explanatory tooltip. It describes an operation affecting the stack, possibly a single service, and is not a guarantee that all services are current. Per-image results remain available in Watcher history. Pauses, ignored images, maintenance windows and rollback remain respected.
+
+## Compose file selection
+
+For native stacks, Docker Compose discovers its standard files and overrides itself, including `COMPOSE_FILE` set in the process or `.env`. An explicit list replaces discovery: files are merged in their declared order and no default override is appended. Shared `global.env` is loaded before the local `.env`; external projects retain their registered environment files without inheriting it. Rolling updates preserve this chain before appending their temporary file and refuse to continue if the resolved model differs. Apply the update on each linked instance that executes these operations.
+
+[Docker Compose: merge](https://docs.docker.com/compose/how-tos/multiple-compose-files/merge/) · [Docker Compose: environment](https://docs.docker.com/compose/how-tos/environment-variables/variable-interpolation/)

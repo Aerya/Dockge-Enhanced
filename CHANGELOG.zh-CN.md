@@ -1,6 +1,8 @@
 # Dockge Enhanced 更新日志
 
 
+> **PR 提案（合并后生效） — 镜像更新保留 Compose 覆盖配置** — 自动和手动镜像更新保留有效的 Compose 配置：默认覆盖文件、`COMPOSE_FILE`、`.env` 和共享的 `global.env`。外部项目保留显式文件顺序及环境文件。滚动更新在添加临时覆盖文件前验证原始配置。
+
 > **Windows 11 / WSL2 验证：**提供安装指南，已测试 Compose 操作、Restic/Zerobyte 备份和关联实例。Windows 更新 sidecar 挂载及共享网络服务的顺序重启修复保留 Linux/Unraid 路径和权限。 [在 Windows 11 上使用 Docker Desktop（WSL2）](docs/windows.zh-CN.md). Windows 重启后，某些 WSL 挂载需要按指南手动恢复。
 
 完整的项目历史，最新条目在前。每个日期均为该变更合并到 `main` 的日期。合并到 `main` 的应用变更会由构建工作流发布为 `ghcr.io/aerya/dockge-enhanced:latest`；仅涉及文档的提交不会生成新镜像。仅存在于未合并 Pull Request 或测试镜像中的功能不会列在这里。

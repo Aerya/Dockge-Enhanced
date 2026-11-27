@@ -13,3 +13,9 @@ Si falta el tag local, se utiliza la imagen del contenedor en ejecución. Los er
 La limpieza y las actualizaciones de imágenes se excluyen mutuamente. Antes del pull, Enhanced guarda una protección para la referencia objetivo y después el ID de la imagen descargada. Un intento interrumpido o no verificado conserva esta protección durante 24 horas, incluso tras reiniciar. Una finalización verificada libera solo la protección de esa operación. El plazo comienza con el intento o la descarga, no con la compilación de la imagen; después puede aplicarse la limpieza habitual de imágenes sin usar.
 
 La fecha de la stack se llama «Última operación» y tiene una ayuda explicativa. Describe una operación sobre la stack, quizá un solo servicio, y no garantiza que todos estén al día. Los resultados por imagen siguen en el historial de Watcher. Se respetan pausas, exclusiones, ventanas de mantenimiento y rollback.
+
+## Selección de archivos Compose
+
+Para las stacks nativas, Docker Compose descubre sus archivos estándar y overrides, incluido `COMPOSE_FILE` definido en el proceso o en `.env`. Una lista explícita sustituye este descubrimiento: los archivos se combinan en el orden declarado sin añadir overrides predeterminados. El archivo compartido `global.env` se carga antes del `.env` local; los proyectos externos conservan sus archivos de entorno registrados sin heredarlo. Las actualizaciones progresivas conservan esta cadena antes de añadir su archivo temporal y se detienen si el modelo resuelto difiere. Actualice cada instancia vinculada que ejecuta estas operaciones.
+
+[Docker Compose: merge](https://docs.docker.com/compose/how-tos/multiple-compose-files/merge/) · [Docker Compose: environment](https://docs.docker.com/compose/how-tos/environment-variables/variable-interpolation/)

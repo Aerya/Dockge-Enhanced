@@ -13,3 +13,9 @@ Fehlt der lokale Tag, wird das Image des laufenden Containers verwendet. Registr
 Bereinigung und Image-Updates schließen sich gegenseitig aus. Vor dem Pull speichert Enhanced einen Schutz für die Zielreferenz und anschließend die heruntergeladene Image-ID. Ein abgebrochener oder ungeprüfter Versuch behält diesen Schutz 24 Stunden lang, auch nach einem Neustart. Ein überprüfter Erfolg gibt nur den Schutz dieses Vorgangs frei. Die Frist beginnt beim Versuch oder Download, nicht beim Image-Build; nach Ablauf kann die normale Bereinigung ungenutzter Images greifen.
 
 Das Stack-Datum heißt „Letzter Vorgang“ und hat einen erklärenden Tooltip. Es beschreibt einen Vorgang am Stack, möglicherweise nur für einen Dienst, und garantiert nicht, dass alle Dienste aktuell sind. Ergebnisse je Image bleiben im Watcher-Verlauf sichtbar. Pausen, Ausschlüsse, Wartungsfenster und Rollback bleiben erhalten.
+
+## Auswahl der Compose-Dateien
+
+Bei nativen Stacks erkennt Docker Compose seine Standarddateien und Overrides selbst, einschließlich `COMPOSE_FILE` aus dem Prozess oder `.env`. Eine ausdrückliche Liste ersetzt diese Erkennung: Dateien werden in der angegebenen Reihenfolge zusammengeführt, ohne zusätzliche Standard-Overrides. Die gemeinsame `global.env` wird vor der lokalen `.env` geladen; externe Projekte behalten ihre registrierten Umgebungsdateien und erben sie nicht. Schrittweise Aktualisierungen erhalten diese Kette vor dem Hinzufügen ihrer temporären Datei und brechen ab, wenn das aufgelöste Modell abweicht. Aktualisieren Sie jede verbundene Instanz, die diese Vorgänge ausführt.
+
+[Docker Compose: merge](https://docs.docker.com/compose/how-tos/multiple-compose-files/merge/) · [Docker Compose: environment](https://docs.docker.com/compose/how-tos/environment-variables/variable-interpolation/)

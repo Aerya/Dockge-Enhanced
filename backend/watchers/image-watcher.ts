@@ -1,3 +1,5 @@
+import { composeInvocation, managedComposeEnvFiles } from "../compose-invocation";
+import { rolloutTransport } from "../service-rollout";
 /**
  * ImageWatcher — Lit les compose.yaml de chaque stack active, compare les digests
  * distants via API Registry v2 (sans pull), notifie Discord.
@@ -1060,25 +1062,11 @@ export function composeExecInvocation(
     envFiles?: string[],
 ): { args: string[];
     cwd: string } {
-    const composeDir = path.dirname(composePath);
-    const cwd = workingDir ? path.resolve(workingDir) : composeDir;
-    const files = configFiles?.length ? configFiles : [ composePath ];
-    const fileArgs = files.flatMap((file) => {
-        const resolved = path.resolve(file);
-        return [ "-f", path.dirname(resolved) === cwd ? path.basename(resolved) : resolved ];
-    });
-    const envArgs = (envFiles ?? []).flatMap((file) => [ "--env-file", path.resolve(file) ]);
-    return {
-        args: [
-            "compose",
-            ...(workingDir ? [ "--project-directory", cwd ] : []),
-            ...(project ? [ "--project-name", project ] : []),
-            ...envArgs,
-            ...fileArgs,
-            ...args,
-        ],
-        cwd,
-    };
+    const nativeEnv = !configFiles?.length && !workingDir
+        ? managedComposeEnvFiles(path.dirname(path.dirname(composePath)), path.dirname(composePath)) : [];
+    // A stack removed after discovery must fail, never discover a parent project.
+    const files = configFiles?.length ? configFiles : fsSync.existsSync(composePath) ? undefined : [ composePath ];
+    return composeInvocation(composePath, args, project, files, workingDir, envFiles ?? nativeEnv);
 }
 
 async function docker(args: string[], options: { cwd?: string;
@@ -2491,12 +2479,8 @@ export class ImageWatcher {
                 envFiles,
             );
             const runningCommand = composeExecInvocation(composePath, [ "ps", "--status", "running", "--services" ], project, configFiles, workingDir, envFiles);
-            const rolloutCompose: ComposeRun = (args, timeout, override) => {
-                const invocation = composeExecInvocation(composePath, args, project,
-                    override ? [ ...(configFiles?.length ? configFiles : [ composePath ]).filter(file => path.resolve(file) !== path.resolve(override)), override ] : configFiles, workingDir, envFiles);
-                return docker(invocation.args, { cwd: invocation.cwd,
-                    timeout });
-            };
+            const rolloutInvocation = composeExecInvocation(composePath, [], project, configFiles, workingDir, envFiles);
+            const rolloutCompose: ComposeRun = rolloutTransport(rolloutInvocation.args, rolloutInvocation.cwd).compose;
             const rolloutTargets = recreateArgs.slice(1).filter(arg => !arg.startsWith("-"));
             const rollout = await prepareRollout(rolloutCompose, (args, timeout) => docker(args, { timeout }), rolloutTargets, { stateDir: path.join(this.dataDir, "rolling-updates"),
                 projectPath: path.resolve(workingDir ?? path.dirname(composePath)) });
