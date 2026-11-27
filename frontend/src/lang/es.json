@@ -1995,5 +1995,8 @@
     "hosts.operation.complete": "Operación completada",
     "hosts.operation.failed": "Operación fallida o rechazada por política local",
     "releaseNews.item.hostManagement": "Inventario y seguridad opcionales, desactivados por defecto. Gestión de hosts (Beta) — /watcher/hosts.",
-    "hosts.notifications": "Notificar mediante canales ImageWatcher existentes (sin duplicados, máximo cada hora)"
+    "hosts.notifications": "Notificar mediante canales ImageWatcher existentes (sin duplicados, máximo cada hora)",
+    "hosts.kernelPackages": "Paquetes de núcleo instalados",
+    "hosts.repositories": "Hosts / nombres de repositorios (depurados)",
+    "hosts.uptime": "Tiempo activo (horas)"
 }

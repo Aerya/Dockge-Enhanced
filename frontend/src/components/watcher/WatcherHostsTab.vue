@@ -47,6 +47,9 @@
                     <dt class="col-sm-4">{{ $t('hosts.host') }}</dt><dd class="col-sm-8">{{ snapshot.report.host }}</dd>
                     <dt class="col-sm-4">{{ $t('hosts.os') }}</dt><dd class="col-sm-8">{{ snapshot.report.osName }} · {{ snapshot.report.arch }}</dd>
                     <dt class="col-sm-4">{{ $t('hosts.kernel') }}</dt><dd class="col-sm-8">{{ snapshot.report.kernel }}</dd>
+                    <dt class="col-sm-4">{{ $t('hosts.kernelPackages') }}</dt><dd class="col-sm-8">{{ snapshot.report.kernelPackages.join(', ') || '—' }}</dd>
+                    <dt class="col-sm-4">{{ $t('hosts.repositories') }}</dt><dd class="col-sm-8">{{ snapshot.report.repositories?.join(', ') || '—' }}</dd>
+                    <dt class="col-sm-4">{{ $t('hosts.uptime') }}</dt><dd class="col-sm-8">{{ Math.floor(snapshot.report.uptime / 3600) }}</dd>
                     <dt class="col-sm-4">{{ $t('hosts.collectedAt') }}</dt><dd class="col-sm-8">{{ date(snapshot.report.collectedAt) }}</dd>
                     <dt class="col-sm-4">{{ $t('hosts.metadata') }}</dt><dd class="col-sm-8">{{ $t('hosts.metadata.' + snapshot.report.metadata) }}</dd>
                     <dt class="col-sm-4">{{ $t('hosts.reboot') }}</dt><dd class="col-sm-8">{{ $t('hosts.reboot.' + snapshot.report.reboot) }}</dd>

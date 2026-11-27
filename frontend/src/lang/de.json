@@ -3073,5 +3073,8 @@
     "hosts.operation.complete": "Vorgang abgeschlossen",
     "hosts.operation.failed": "Vorgang fehlgeschlagen oder lokal abgelehnt",
     "releaseNews.item.hostManagement": "Optionales Hostinventar und Sicherheit, standardmäßig deaktiviert. Hostverwaltung (Beta) — /watcher/hosts.",
-    "hosts.notifications": "Bestehende ImageWatcher-Kanäle benachrichtigen (dedupliziert, höchstens stündlich)"
+    "hosts.notifications": "Bestehende ImageWatcher-Kanäle benachrichtigen (dedupliziert, höchstens stündlich)",
+    "hosts.kernelPackages": "Installierte Kernelpakete",
+    "hosts.repositories": "Quellenhosts / Namen (bereinigt)",
+    "hosts.uptime": "Laufzeit (Stunden)"
 }

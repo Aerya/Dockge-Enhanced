@@ -151,6 +151,7 @@ export class HostManager {
             report: report ? { ...report,
                 packages: report.packages.slice(0, 500),
                 packageCount: report.packages.length,
+                kernelPackages: report.packages.filter(p => /^(linux-image-|linux(?:-lts|-zen|-hardened)?$)/.test(p.name)).map(p => `${p.name}: ${p.version}`).slice(0, 100),
                 updateCount: report.packages.filter(p => p.available).length } : null,
             state: !settings.enabled ? "disabled" : this.failed ? "unavailable" : reportState(report, settings.staleHours),
             collectorFailed: settings.enabled && this.failed,

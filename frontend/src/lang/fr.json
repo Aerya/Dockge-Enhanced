@@ -3069,5 +3069,8 @@
     "hosts.operation.complete": "Opération terminée",
     "hosts.operation.failed": "Opération échouée ou refusée par la politique locale",
     "releaseNews.item.hostManagement": "Inventaire et sécurité des hôtes, optionnels et désactivés par défaut. Gestion des hôtes (Bêta) — /watcher/hosts.",
-    "hosts.notifications": "Notifier via les canaux ImageWatcher existants (dédupliqué, au plus horaire)"
+    "hosts.notifications": "Notifier via les canaux ImageWatcher existants (dédupliqué, au plus horaire)",
+    "hosts.kernelPackages": "Paquets de noyaux installés",
+    "hosts.repositories": "Hôtes / noms des dépôts (expurgés)",
+    "hosts.uptime": "Uptime (heures)"
 }

@@ -26,6 +26,7 @@ export interface HostReport {
     provider: string;
     metadata: "cached" | "refreshed" | "unavailable";
     complete: boolean;
+    repositories?: string[] | null;
     packages: HostPackage[];
     reboot: "required" | "unknown";
     capabilities: string[];
@@ -40,6 +41,9 @@ export function parseReport(value: unknown, now = Date.now()): HostReport {
         ![ "apt", "pacman", "unsupported" ].includes(r.provider) || ![ "cached", "refreshed", "unavailable" ].includes(r.metadata) ||
         ![ "required", "unknown" ].includes(r.reboot) || !Array.isArray(r.packages) || r.packages.length > 100000 ||
         !Array.isArray(r.capabilities) || r.capabilities.some(v => ![ "inventory", "updates" ].includes(v))) {
+        throw new Error("hosts.invalidReport");
+    }
+    if (r.repositories != null && (!Array.isArray(r.repositories) || r.repositories.length > 200 || r.repositories.some(v => !/^(apt|pacman):[A-Za-z0-9._:-]{1,200}$/.test(v)))) {
         throw new Error("hosts.invalidReport");
     }
     const keys = new Set<string>();
@@ -76,6 +80,7 @@ export function parseReport(value: unknown, now = Date.now()): HostReport {
         provider: r.provider,
         metadata: r.metadata,
         complete: r.complete,
+        repositories: r.repositories ?? null,
         packages,
         reboot: r.reboot,
         capabilities: r.capabilities };

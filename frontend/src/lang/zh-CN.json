@@ -3010,5 +3010,8 @@
     "hosts.operation.complete": "操作完成",
     "hosts.operation.failed": "操作失败或被本地策略拒绝",
     "releaseNews.item.hostManagement": "可选的主机清单与安全功能，默认关闭。 主机管理（测试版） — /watcher/hosts.",
-    "hosts.notifications": "使用现有 ImageWatcher 通知渠道（去重，最多每小时一次）"
+    "hosts.notifications": "使用现有 ImageWatcher 通知渠道（去重，最多每小时一次）",
+    "hosts.kernelPackages": "已安装内核软件包",
+    "hosts.repositories": "仓库主机 / 名称（已脱敏）",
+    "hosts.uptime": "运行时间（小时）"
 }

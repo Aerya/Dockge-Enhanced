@@ -9,6 +9,8 @@ import platform
 import re
 import shutil
 import subprocess
+import stat
+from urllib.parse import urlsplit
 import tempfile
 from pathlib import Path
 
@@ -74,6 +76,40 @@ def pacman(run=command):
 PROVIDERS = {"apt": apt, "pacman": pacman}
 
 
+def repositories(provider):
+    """Only repository hostnames/section names; never credentials, paths or query strings."""
+    files = [Path('/etc/pacman.conf')] if provider == 'pacman' else [Path('/etc/apt/sources.list'), *Path('/etc/apt/sources.list.d').glob('*.list'), *Path('/etc/apt/sources.list.d').glob('*.sources')]
+    found = set()
+    for file in files[:100]:
+        try:
+            fd = os.open(file, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
+            try:
+                info = os.fstat(fd)
+                if not stat.S_ISREG(info.st_mode) or info.st_size > 1024 * 1024:
+                    continue
+                content = os.read(fd, 1024 * 1024 + 1).decode('utf-8')
+            finally:
+                os.close(fd)
+        except (OSError, UnicodeError):
+            continue
+        for line in content.splitlines():
+            line = line.strip()
+            if provider == 'pacman':
+                match = re.fullmatch(r'\[([A-Za-z0-9_.-]{1,100})\]', line)
+                if match and match[1] != 'options':
+                    found.add('pacman:' + match[1])
+            elif line.startswith(('deb ', 'deb-src ', 'URIs:')):
+                for token in line.split():
+                    if token.startswith(('https://', 'http://')):
+                        try:
+                            host = urlsplit(token).hostname
+                            if host and re.fullmatch(r'[A-Za-z0-9.:-]{1,200}', host):
+                                found.add('apt:' + host.lower())
+                        except ValueError:
+                            pass
+    return sorted(found)[:200] or None
+
+
 def host_identity():
     value = Path('/etc/machine-id').read_text().strip()
     if not re.fullmatch(r'[a-f0-9]{32}', value):
@@ -97,6 +133,7 @@ def collect():
                 host=platform.node(), hostId=host_identity(), os=release.get("ID", "unknown"), osVersion=release.get("VERSION_ID", ""),
                 osName=release.get("PRETTY_NAME", "unknown"), arch=platform.machine(), kernel=platform.release(),
                 uptime=float(Path("/proc/uptime").read_text().split()[0]), provider=provider,
+                repositories=repositories(provider) if provider in PROVIDERS else None,
                 metadata=freshness, complete=provider in PROVIDERS, packages=packages,
                 reboot="required" if Path("/run/reboot-required").exists() else "unknown",
                 capabilities=["inventory", "updates"] if provider in PROVIDERS else [])
