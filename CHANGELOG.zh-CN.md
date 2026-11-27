@@ -3,6 +3,8 @@
 
 > **变更草案 — 主机更新（测试版）** — 位于 `/watcher/hosts`，可选且默认关闭：Debian/Ubuntu 和 Arch/Garuda 清单与更新检测、Debian/Ubuntu CVE 分析，以及需要本地安装和授权的手动或计划 APT 更新。提供全部已授权更新、仅安全、审慎、安全且审慎四种策略，可配置检测和操作通知。报告只读，使用现有联合通信。Arch/Garuda 仅支持监控；不支持 AUR、RPM/APK/Zypper、主机群操作或完整 CVE 覆盖。 主机更新标签页始终可见；默认仅禁用监控功能。 更新分为 Dockge-Enhanced、Docker 镜像和主机更新（测试版）三个可见子标签页。保留八个主标签页，现有 URL 和远程实例链接保持有效。
 
+**2026-11-27 — 防止 ImageWatcher 重建自身** — ImageWatcher 继续监控 Dockge-Enhanced，但不会自动或手动重建其镜像，也不会因网络命名空间依赖而重建它。请使用带恢复 sidecar 的专用自更新机制。该镜像已有的待处理镜像更新会被移除；失败摘要的自动重试保护保持不变。
+
 **2026-11-27 — 镜像更新保留 Compose 覆盖配置** — 自动和手动镜像更新保留有效的 Compose 配置：默认覆盖文件、`COMPOSE_FILE`、`.env` 和共享的 `global.env`。外部项目保留显式文件顺序及环境文件。滚动更新在添加临时覆盖文件前验证原始配置。
 
 > **Windows 11 / WSL2 验证：**提供安装指南，已测试 Compose 操作、Restic/Zerobyte 备份和关联实例。Windows 更新 sidecar 挂载及共享网络服务的顺序重启修复保留 Linux/Unraid 路径和权限。 [在 Windows 11 上使用 Docker Desktop（WSL2）](docs/windows.zh-CN.md). Windows 重启后，某些 WSL 挂载需要按指南手动恢复。

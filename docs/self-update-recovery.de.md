@@ -2,7 +2,11 @@
 
 [en](self-update-recovery.md) · [fr](self-update-recovery.fr.md) · [de](self-update-recovery.de.md) · [es](self-update-recovery.es.md) · [zh-CN](self-update-recovery.zh-CN.md)
 
-Diese Anleitung betrifft nur „Duplicate mount point“ beim Start des Sidecars. Die Korrektur #607 ist im offiziellen Image `:latest` veröffentlicht. Die alte Version kann sie nicht selbst installieren. Ich entschuldige mich für diese Regression.
+Die ursprüngliche Anleitung betrifft „Duplicate mount point“ beim Start des Sidecars. Die Korrektur #607 ist im offiziellen Image `:latest` veröffentlicht. Die alte Version kann sie nicht selbst installieren. Ich entschuldige mich für diese Regression.
+
+## Wiederherstellung nach ImageWatcher (#713)
+
+Wenn ImageWatcher Enhanced gestoppt zurückgelassen hat, führen Sie die folgende Wiederherstellung auf dem Docker-Host aus und behalten Sie alle Compose-Dateien und Umgebungsoptionen bei. Deaktivieren Sie bis zur Installation der korrigierten Version das automatische ImageWatcher-Update für das Enhanced-Image. Die Digest-Wiederholungssperre gehört zum eigenen Selbstupdate: Prüfen Sie den Fehler vor einem manuellen Neuversuch; löschen Sie keine Statusdateien.
 
 ## Vor den Befehlen
 
