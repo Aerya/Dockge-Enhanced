@@ -1,3 +1,4 @@
+import { composePrefixWithOverride } from "./compose-invocation";
 import { runCanary } from "./rollout-canary";
 /**
  * Conservative rolling replacement inspired by Wowu/docker-rollout (MIT):
@@ -53,10 +54,9 @@ export function rolloutTransport(prefix: string[], cwd: string): { compose: Comp
         return stdout;
     };
     return { docker,
-        compose: (args, timeout, override) => {
-            const base = override ? prefix.filter((arg, index) =>
-                !(arg === "-f" && prefix[index + 1] === override) && !(arg === override && prefix[index - 1] === "-f")) : prefix;
-            return docker([ ...base, ...(override ? [ "-f", override ] : []), ...args ], timeout);
+        compose: async (args, timeout, override) => {
+            const base = override ? await composePrefixWithOverride(prefix, cwd, override, docker) : prefix;
+            return docker([ ...base, ...args ], timeout);
         } };
 }
 

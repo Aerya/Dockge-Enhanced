@@ -13,3 +13,9 @@ ImageWatcher 可从运行中的容器找回本地标签丢失的镜像，在 Com
 清理与镜像更新互斥。拉取前，Enhanced 持久保存目标引用的保护，之后记录下载镜像的 ID。中断或未验证的更新保留此保护 24 小时，重启后仍有效。验证成功仅释放该操作的保护。保护期从尝试或下载时间开始，而非镜像构建时间；到期后可按正常规则清理未使用镜像。
 
 堆栈时间标为“最近操作”，并提供说明提示。它描述对堆栈的一次操作，可能只影响一个服务，不保证全部服务均为最新。每个镜像的结果仍可在 Watcher 历史中查看。暂停、排除、维护时间窗口及回滚机制均保留。
+
+## Compose 文件选择
+
+对于原生堆栈，Docker Compose 自行发现标准文件及覆盖文件，包括进程或 `.env` 中设置的 `COMPOSE_FILE`。显式列表会替代自动发现：按声明顺序合并文件，不再追加默认覆盖文件。共享的 `global.env` 在本地 `.env` 之前加载；外部项目保留已登记的环境文件，不继承此共享文件。滚动更新先保留此文件链，再追加临时文件；如果解析后的模型不同，则拒绝继续。请更新每个执行这些操作的关联实例。
+
+[Docker Compose: merge](https://docs.docker.com/compose/how-tos/multiple-compose-files/merge/) · [Docker Compose: environment](https://docs.docker.com/compose/how-tos/environment-variables/variable-interpolation/)

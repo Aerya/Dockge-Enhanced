@@ -1,6 +1,8 @@
 # Dockge-Enhanced-Changelog
 
 
+> **Vorgeschlagene Korrektur, noch nicht veröffentlicht — Compose-Overrides bei Image-Aktualisierungen** — Automatische und manuelle Image-Aktualisierungen erhalten die wirksame Compose-Konfiguration: Standard-Overrides, `COMPOSE_FILE`, `.env` und die gemeinsame `global.env`. Externe Projekte behalten ihre ausdrückliche Dateireihenfolge und Umgebungsdateien. Schrittweise Aktualisierungen prüfen die ursprüngliche Konfiguration, bevor sie ein temporäres Override hinzufügen.
+
 > **Validierung unter Windows 11 / WSL2:** Installationsanleitung, Compose-Aktionen, Restic-/Zerobyte-Sicherungen und verbundene Instanzen getestet. Die Korrekturen für Windows-Sidecar-Mounts und geordnete Neustarts bei gemeinsamem Netzwerk erhalten Linux-/Unraid-Pfade und Berechtigungen. [Windows 11 mit Docker Desktop (WSL2)](docs/windows.de.md). Nach einem Windows-Neustart benötigen manche WSL-Mounts die im Leitfaden beschriebene manuelle Wiederaufnahme.
 
 Vollständige Projekthistorie, neueste Einträge zuerst. Jedes Datum ist der Tag, an dem die Änderung in `main` gemergt wurde. Anwendungsänderungen in `main` werden vom Build-Workflow als `ghcr.io/aerya/dockge-enhanced:latest` veröffentlicht; reine Dokumentations-Commits erzeugen kein neues Image. Funktionen, die nur in einem offenen Pull Request oder einem Test-Image existieren, werden hier nicht aufgeführt.
