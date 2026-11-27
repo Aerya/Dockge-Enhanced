@@ -102,6 +102,21 @@ export function isMandatoryManagedUpdate(status: Pick<ImageStatus, "stack" | "im
     return status.stack === MANAGED_DOZZLE_STACK && status.image === MANAGED_DOZZLE_IMAGE;
 }
 
+/** Dockge must be replaced by its independent recovery sidecar, never by ImageWatcher. */
+export function isDockgeEnhancedImage(image: string): boolean {
+    return /(^|\/)dockge-enhanced(?=[:@]|$)/i.test(image);
+}
+
+const SELF_UPDATE_REQUIRED = "Use the dedicated Dockge-Enhanced self-update mechanism; ImageWatcher cannot recreate Dockge-Enhanced";
+
+export function assertNoDockgeRecreation(resolvedComposeOutput: string, args: string[]): void {
+    const model = parseResolvedComposeModel(resolvedComposeOutput);
+    const targets = args.slice(args.indexOf("--no-deps") + 1);
+    if (targets.some(service => isDockgeEnhancedImage(String(model.services[service]?.image ?? "")))) {
+        throw new Error(SELF_UPDATE_REQUIRED);
+    }
+}
+
 export function buildImageUpdateComposePlan(
     resolvedComposeOutput: string,
     image: string,
@@ -126,7 +141,10 @@ export function buildRollbackComposeRecreateArgs(
     resolvedComposeOutput: string,
     services: string[],
 ): string[] {
-    return targetedComposeRecreateArgs(parseResolvedComposeModel(resolvedComposeOutput), services);
+    const model = parseResolvedComposeModel(resolvedComposeOutput);
+    const args = targetedComposeRecreateArgs(model, services);
+    assertNoDockgeRecreation(resolvedComposeOutput, args);
+    return args;
 }
 
 /** A targeted Compose up must never wake a stopped or absent service. */
@@ -343,7 +361,7 @@ export interface ManualUpdateBatch {
 }
 
 export function isManualBatchCandidate(status: ImageStatus): boolean {
-  return status.hasUpdate && !status.error && !/(^|\/)dockge-enhanced(?=[:@]|$)/i.test(status.image);
+  return status.hasUpdate && !status.error && !isDockgeEnhancedImage(status.image);
 }
 /* eslint-enable @stylistic/indent */
 
@@ -1995,7 +2013,7 @@ export class ImageWatcher {
     const stack = key.slice(0, sepIdx);
     const image = key.slice(sepIdx + 2);
     const cfg = this.getAutoUpdateEntry(key);
-    if (!cfg || cfg.mode !== "immediate") {
+    if (!cfg || cfg.mode !== "immediate" || isDockgeEnhancedImage(image)) {
       return "skipped";
     }
 
@@ -2149,6 +2167,9 @@ export class ImageWatcher {
         const globalPaused = isUpdatePaused(this.settings.globalUpdatePause);
         const globalWindowPolicy = await automaticImageUpdateWindowPolicy();
         for (const r of updates) {
+            if (isDockgeEnhancedImage(r.image)) {
+                continue;
+            }
             const key = `${r.stack}::${r.image}`;
             const cfg = autoUpdateConfig[key];
             if (globalPaused || isUpdatePaused(cfg?.pause)) {
@@ -2238,7 +2259,17 @@ export class ImageWatcher {
     }
 
     private async runPendingUpdates(now: Date): Promise<void> {
-        const pending = this.settings.pendingAutoUpdates ?? [];
+        const previousPending = this.settings.pendingAutoUpdates ?? [];
+        const pending = previousPending.filter(key => !isDockgeEnhancedImage(key.slice(key.indexOf("::") + 2)));
+        if (pending.length !== previousPending.length) {
+            this.settings.pendingAutoUpdates = pending;
+            for (const key of previousPending) {
+                if (!pending.includes(key)) {
+                    delete this.settings.pendingAutoUpdateDue?.[key];
+                }
+            }
+            await this.persistToFile();
+        }
         if (pending.length === 0) {
             return;
         }
@@ -2391,7 +2422,10 @@ export class ImageWatcher {
         try {
             const stdout = await docker(configCommand.args, { cwd: configCommand.cwd,
                 timeout: 30_000 });
-            return buildImageUpdateComposePlan(stdout, image);
+            const plan = buildImageUpdateComposePlan(stdout, image);
+            // Namespace dependents are recreated too, even for a different selected image.
+            assertNoDockgeRecreation(stdout, plan.recreateArgs);
+            return plan;
         } catch (error) {
             throw composeModelReadError(error);
         }
@@ -2409,6 +2443,13 @@ export class ImageWatcher {
         respectPaused = false,
         onDeferred?: () => void,
     ): Promise<boolean> {
+        // Last line of defence for stale scheduled work and direct/manual callers.
+        if (isDockgeEnhancedImage(status.image)) {
+            if (mode === "manual") {
+                throw new Error(SELF_UPDATE_REQUIRED);
+            }
+            return false;
+        }
         try {
             return await withStackMutation(path.resolve(watched.workingDir ?? path.dirname(watched.composePath)),
                 () => this.performReservedAutoUpdate(status, watched, mode, respectPaused, onDeferred));
@@ -2705,6 +2746,10 @@ export class ImageWatcher {
         const stack = key.slice(0, sepIdx);
         const image = key.slice(sepIdx + 2);
 
+        if (isDockgeEnhancedImage(image)) {
+            throw new Error(SELF_UPDATE_REQUIRED);
+        }
+
         const status = imageStatusStore.get(key);
         if (!status || status.stack !== stack || status.image !== image) {
             throw new Error("Image status not found; run an image check first");
@@ -2898,6 +2943,9 @@ export class ImageWatcher {
         const entry = rollbackStore.get(key);
         if (!entry) {
             throw new Error("Aucune entrée de rollback pour cette image");
+        }
+        if (isDockgeEnhancedImage(entry.image)) {
+            throw new Error(SELF_UPDATE_REQUIRED);
         }
         return withStackMutation(path.resolve(entry.workingDir ?? path.dirname(entry.composePath)), () => this.performReservedRollback(key));
     }

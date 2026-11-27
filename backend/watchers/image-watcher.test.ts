@@ -6,6 +6,10 @@ import * as fs from "node:fs/promises";
 import axios from "axios";
 import {
     ImageWatcher,
+    isDockgeEnhancedImage,
+    assertNoDockgeRecreation,
+    type ImageStatus,
+    type WatchedComposeStack,
     imageStatusStore,
     assertRegistryHost,
     buildImageUpdateComposePlan,
@@ -38,6 +42,74 @@ import {
 import { tryReserveDockerUpdate } from "../self-update/operation-coordinator";
 import { targetedComposeRecreateArgsForTargets } from "../compose-network-namespace";
 import { resolveDataDir } from "../data-dir";
+
+test("Dockge-Enhanced reste réservé au self-update pour les tags et digests", () => {
+    for (const image of [ "ghcr.io/aerya/dockge-enhanced", "ghcr.io/aerya/dockge-enhanced:latest",
+        "registry.example:5000/mirror/dockge-enhanced:test", "dockge-enhanced@sha256:abc" ]) {
+        assert.equal(isDockgeEnhancedImage(image), true, image);
+    }
+    for (const image of [ "amir20/dozzle:latest", "example/dockge-enhanced-helper:latest", "example/app:dockge-enhanced" ]) {
+        assert.equal(isDockgeEnhancedImage(image), false, image);
+    }
+});
+
+test("aucun chemin de mise à jour ImageWatcher ne lance Docker pour Dockge-Enhanced", async () => {
+    const watcher = new ImageWatcher();
+    const internal = watcher as unknown as {
+        performAutoUpdate(status: ImageStatus, watched: WatchedComposeStack, mode: "immediate" | "scheduled" | "manual"): Promise<boolean>;
+        reserveImageMutation(): never;
+    };
+    internal.reserveImageMutation = () => {
+        throw new Error("Unexpected Docker mutation reservation");
+    };
+    const status: ImageStatus = { image: "ghcr.io/aerya/dockge-enhanced:latest",
+        stack: "dockge",
+        hasUpdate: true,
+        localDigest: "old",
+        remoteDigest: "new",
+        lastChecked: "" };
+    const watched = { composePath: "/missing/compose.yaml",
+        isExternal: false };
+    assert.equal(await internal.performAutoUpdate(status, watched, "immediate"), false);
+    assert.equal(await internal.performAutoUpdate(status, watched, "scheduled"), false);
+    await assert.rejects(internal.performAutoUpdate(status, watched, "manual"), /dedicated Dockge-Enhanced self-update/);
+    await assert.rejects(watcher.manualUpdate("dockge::ghcr.io/aerya/dockge-enhanced:latest"), /dedicated Dockge-Enhanced self-update/);
+    watcher.settings.autoUpdateConfig = { "dockge::ghcr.io/aerya/dockge-enhanced:latest": { mode: "immediate" } };
+    assert.equal(await watcher.runImmediateCheck("dockge::ghcr.io/aerya/dockge-enhanced:latest"), "skipped");
+    assert.equal(watcher.hasDockerOperationInProgress(), false);
+});
+
+test("une ancienne attente Dockge est retirée avant la lecture du créneau ou toute commande Docker", async () => {
+    const watcher = new ImageWatcher();
+    const key = "dockge::ghcr.io/aerya/dockge-enhanced:latest";
+    watcher.settings.pendingAutoUpdates = [ key ];
+    watcher.settings.pendingAutoUpdateDue = { [key]: "old slot" };
+    let persisted = 0;
+    const internal = watcher as unknown as { runPendingUpdates(now: Date): Promise<void>;
+        persistToFile(): Promise<void> };
+    internal.persistToFile = async () => {
+        persisted++;
+    };
+    await internal.runPendingUpdates(new Date());
+    assert.deepEqual(watcher.settings.pendingAutoUpdates, []);
+    assert.deepEqual(watcher.settings.pendingAutoUpdateDue, {});
+    assert.equal(persisted, 1);
+});
+
+test("la mise à jour d'un VPN ne peut pas recréer Dockge comme dépendant réseau", () => {
+    const config = JSON.stringify({ services: {
+        vpn: { image: "example/vpn:latest" },
+        dockge: { image: "ghcr.io/aerya/dockge-enhanced:latest",
+            network_mode: "service:vpn" },
+        app: { image: "example/app:latest" },
+    } });
+    // Building a read-only plan remains possible for image monitoring.
+    const plan = buildImageUpdateComposePlan(config, "example/vpn:latest");
+    assert.ok(plan.recreateArgs.includes("dockge"));
+    assert.throws(() => assertNoDockgeRecreation(config, plan.recreateArgs), /dedicated Dockge-Enhanced self-update/);
+    assert.throws(() => buildRollbackComposeRecreateArgs(config, [ "vpn" ]), /dedicated Dockge-Enhanced self-update/);
+    assert.doesNotThrow(() => assertNoDockgeRecreation(config, buildImageUpdateComposePlan(config, "example/app:latest").recreateArgs));
+});
 
 test("une mise à jour ImageWatcher actualise uniquement lastUpdated d'une stack native", async () => {
     const root = await fs.mkdtemp(path.join(os.tmpdir(), "dockge-image-meta-"));

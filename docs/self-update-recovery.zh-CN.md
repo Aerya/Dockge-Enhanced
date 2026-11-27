@@ -2,7 +2,11 @@
 
 [en](self-update-recovery.md) · [fr](self-update-recovery.fr.md) · [de](self-update-recovery.de.md) · [es](self-update-recovery.es.md) · [zh-CN](self-update-recovery.zh-CN.md)
 
-本指南仅适用于启动 sidecar 时出现的“Duplicate mount point”错误。修复 #607 已发布到官方 `:latest` 镜像。旧版本无法自行安装修复。对于此回归问题，我深表歉意。
+原始流程适用于启动 sidecar 时出现的“Duplicate mount point”错误。修复 #607 已发布到官方 `:latest` 镜像。旧版本无法自行安装修复。对于此回归问题，我深表歉意。
+
+## ImageWatcher 故障恢复（#713）
+
+如果 ImageWatcher 导致 Enhanced 停止，请从 Docker 主机执行下方恢复步骤，保留所有 Compose 文件和环境选项。在安装修正版本前，请禁用 Enhanced 镜像的 ImageWatcher 自动更新。失败摘要的重试阻止属于专用自更新机制：手动重试前请检查其错误；不要删除状态文件。
 
 ## 执行命令前
 

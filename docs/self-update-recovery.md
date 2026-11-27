@@ -2,7 +2,11 @@
 
 [en](self-update-recovery.md) · [fr](self-update-recovery.fr.md) · [de](self-update-recovery.de.md) · [es](self-update-recovery.es.md) · [zh-CN](self-update-recovery.zh-CN.md)
 
-This guide only covers “Duplicate mount point” when launching the sidecar. Fix #607 is published in the official `:latest` image. The old version cannot install it itself. I apologise for this regression.
+The original procedure covers “Duplicate mount point” when launching the sidecar. Fix #607 is published in the official `:latest` image. The old version cannot install it itself. I apologise for this regression.
+
+## ImageWatcher recovery (#713)
+
+If ImageWatcher left Enhanced stopped, use the recovery procedure below from the Docker host, preserving all Compose files and environment options. Until the corrected version is installed, disable ImageWatcher auto-update for the Enhanced image. A failed-digest retry block belongs to the dedicated self-update mechanism: inspect its failure before a manual retry; do not delete its state files.
 
 ## Before running commands
 
