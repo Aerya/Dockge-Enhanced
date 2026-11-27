@@ -9,7 +9,7 @@ import { type HostReport, inventoryHash } from "./report";
 const execute = promisify(execFile);
 const IMAGE = "ghcr.io/aquasecurity/trivy:latest";
 // Trivy templates receive Results. Keep only matching inputs, never verbose descriptions or package lists.
-const SCAN_TEMPLATE = '{{- $family := "" -}}{{- $results := list -}}{{- range . -}}{{- if eq .Class "os-pkgs" -}}{{- $family = .Type -}}{{- $vulns := list -}}{{- range .Vulnerabilities -}}{{- $vulns = append $vulns (dict "VulnerabilityID" .VulnerabilityID "PkgName" .PkgName "InstalledVersion" .InstalledVersion "FixedVersion" .FixedVersion "Severity" .Severity) -}}{{- end -}}{{- $results = append $results (dict "Class" .Class "Type" .Type "Vulnerabilities" $vulns) -}}{{- end -}}{{- end -}}{{- dict "SchemaVersion" 2 "Metadata" (dict "OS" (dict "Family" $family)) "Results" $results | toJson -}}';
+const SCAN_TEMPLATE = "{{- $family := \"\" -}}{{- $results := list -}}{{- range . -}}{{- if eq .Class \"os-pkgs\" -}}{{- $family = .Type -}}{{- $vulns := list -}}{{- range .Vulnerabilities -}}{{- $vulns = append $vulns (dict \"VulnerabilityID\" .VulnerabilityID \"PkgName\" .PkgName \"InstalledVersion\" .InstalledVersion \"FixedVersion\" .FixedVersion \"Severity\" .Severity) -}}{{- end -}}{{- $results = append $results (dict \"Class\" .Class \"Type\" .Type \"Vulnerabilities\" $vulns) -}}{{- end -}}{{- end -}}{{- dict \"SchemaVersion\" 2 \"Metadata\" (dict \"OS\" (dict \"Family\" $family)) \"Results\" $results | toJson -}}";
 export interface HostFinding {
     id: string;
     pkg: string;
