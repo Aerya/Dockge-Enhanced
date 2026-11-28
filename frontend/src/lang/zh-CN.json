@@ -17,6 +17,7 @@
     "hosts.setupApproval": "我授权 Dockge 使用临时管理员权限安装或配置主机服务、所需 Python 依赖及所选权限。",
     "hosts.setupInstall": "安装组件",
     "hosts.setupRepair": "修复 / 应用权限",
+    "hosts.setupUnsupported": "集成安装不可用：需要受支持的 Linux 主机、systemd 和以 root 运行的 Docker。",
     "hosts.setupFailed": "安装失败。请检查主机兼容性后重试；不会显示敏感详情。",
     "hosts.setupBusy": "正在主机上安装。可以稍后返回此页面；请勿停止安装程序。",
 
@@ -3033,7 +3034,7 @@
     "hosts.enable": "启用监控",
     "hosts.staleHours": "清单有效期（小时）",
     "hosts.retentionDays": "历史保留时间（天）",
-    "hosts.operationsUnavailable": "安装需要在主机本地安装并授权 APT 执行器。可用选项取决于本地权限和 python3-apt。其他软件包管理器仅支持监控，不支持安装。",
+    "hosts.operationsUnavailable": "要在 Debian/Ubuntu 上允许更新，请在上方的集成安装中选择手动或自动模式。Dockge 会安装所需组件。其他受支持的发行版仅支持监控。",
     "hosts.collectedAt": "采集时间",
     "hosts.updates": "可用更新",
     "hosts.os": "操作系统",

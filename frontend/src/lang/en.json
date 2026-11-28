@@ -17,6 +17,7 @@
     "hosts.setupApproval": "I authorize Dockge to install or configure host services with temporary administrator privileges, required Python dependencies, and the selected permissions.",
     "hosts.setupInstall": "Install components",
     "hosts.setupRepair": "Repair / apply permissions",
+    "hosts.setupUnsupported": "Integrated setup unavailable: a supported Linux host with systemd and rootful Docker is required.",
     "hosts.setupFailed": "Installation failed. Check host compatibility and retry; sensitive details are not displayed.",
     "hosts.setupBusy": "Installing on the host. You can return to this page; do not stop the installer.",
 
@@ -3096,7 +3097,7 @@
     "hosts.enable": "Enable monitoring",
     "hosts.staleHours": "Inventory expiry (hours)",
     "hosts.retentionDays": "History retention (days)",
-    "hosts.operationsUnavailable": "Installation requires a locally installed and authorized APT executor. Available choices depend on host permissions and python3-apt. Other providers retain monitoring without installation.",
+    "hosts.operationsUnavailable": "To authorize updates on Debian/Ubuntu, choose manual or automatic mode in the integrated setup above. Dockge installs the required components. Other supported distributions remain monitoring-only.",
     "hosts.collectedAt": "Collected at",
     "hosts.updates": "Available updates",
     "hosts.os": "Operating system",

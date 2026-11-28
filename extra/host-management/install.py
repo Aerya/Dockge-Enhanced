@@ -85,6 +85,20 @@ def install(payload):
         raise ValueError('executor busy')
     for directory, mode in [('/usr/local/lib/dockge-host', 0o755), ('/etc/dockge-host', 0o700), ('/var/lib/dockge-host-executor', 0o700), ('/var/lib/dockge-host-operations', 0o755), ('/var/lib/dockge-host-requests', 0o700), ('/etc/systemd/system', 0o755)]:
         safe_directory(directory, mode)
+    executor_lock = os.open('/var/lib/dockge-host-executor/lock', os.O_CREAT | os.O_WRONLY | os.O_NOFOLLOW, 0o600)
+    try:
+        fcntl.flock(executor_lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        configure(payload, options, distro)
+    finally:
+        os.close(executor_lock)
+    if options['mode'] == 'monitor' and distro in ('debian', 'ubuntu'):
+        run(['/usr/bin/python3', '/usr/local/lib/dockge-host/executor.py'])
+    elif options['mode'] != 'monitor':
+        run(['systemctl', 'enable', '--now', 'dockge-host-executor.timer'])
+    print(json.dumps({'ok': True, 'mode': options['mode']}))
+
+
+def configure(payload, options, distro):
     try:
         pwd.getpwnam('dockge-host')
     except KeyError:
@@ -127,11 +141,7 @@ def install(payload):
     run(['systemctl', 'start', 'dockge-host-collector.service'])
     if options['mode'] == 'monitor':
         run(['systemctl', 'disable', '--now', 'dockge-host-executor.timer'])
-        # Refresh capabilities even in monitoring mode; this cannot execute any update.
-        run(['/usr/bin/python3', '/usr/local/lib/dockge-host/executor.py']) if distro in ('debian', 'ubuntu') else None
-    else:
-        run(['systemctl', 'enable', '--now', 'dockge-host-executor.timer'])
-    print(json.dumps({'ok': True, 'mode': options['mode']}))
+
 
 
 def main():
