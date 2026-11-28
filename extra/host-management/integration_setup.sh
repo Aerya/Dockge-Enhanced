@@ -38,7 +38,21 @@ assert r['operations']['manual'] is False
 PY
 if docker exec dockge-host-bridge-ci sh -c 'touch /host-reports/must-not-write' 2>/dev/null; then exit 1; fi
 docker exec dockge-host-bridge-ci sh -c 'test ! -e /var/run/docker.sock'
-# Rerun is idempotent; no request or scheduled update is submitted.
+# Change permissions through the same installer; no update request is submitted.
+setup_test_manual=$(printf '%s' '{"mode":"manual","scopes":["security"],"hours":[2],"packages":[],"refreshMetadata":false}' | base64 -w0)
+docker rm dockge-host-setup-ci >/dev/null
+docker run --name dockge-host-setup-ci --privileged --pid=host --network none "$setup_test_image" node bootstrap.cjs "$setup_test_manual"
+sudo systemctl is-enabled --quiet dockge-host-executor.timer
+for attempt in $(seq 1 20); do
+ if sudo python3 -c 'import json; assert json.load(open("/var/lib/dockge-host-operations/capabilities.json"))["manual"]'; then break; fi
+ sleep 2
+done
+sudo python3 -c 'import json; p=json.load(open("/etc/dockge-host/policy.json")); assert p["allowInstall"] and not p["allowAutomatic"]'
+docker exec dockge-host-bridge-ci node bridge.mjs read > "$setup_test_dir/manual.json"
+python3 -c 'import json,sys; r=json.load(open(sys.argv[1])); assert r["operations"]["manual"] and not r["operations"]["automatic"]' "$setup_test_dir/manual.json"
+# Revoke execution through the UI installer, without submitting any update.
 docker rm dockge-host-setup-ci >/dev/null
 docker run --name dockge-host-setup-ci --privileged --pid=host --network none "$setup_test_image" node bootstrap.cjs "$setup_test_options"
+docker exec dockge-host-bridge-ci node bridge.mjs read > "$setup_test_dir/revoked.json"
+python3 -c 'import json,sys; assert not json.load(open(sys.argv[1]))["operations"]["manual"]' "$setup_test_dir/revoked.json"
 echo 'Guided setup, real systemd collector, immediate inventory, readonly bridge and idempotent retry passed'
