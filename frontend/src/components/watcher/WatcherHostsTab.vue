@@ -7,6 +7,28 @@
             <button v-for="item in sections" :key="item" class="btn btn-sm" :class="section === item ? 'btn-primary' : 'btn-outline-secondary'" @click="section = item">{{ $t('hosts.' + item) }}</button>
         </div>
         <template v-if="snapshot">
+            <div v-if="setup && (section === 'configuration' || !snapshot.report || setup.state === 'installing' || setup.state === 'failed')" class="border rounded p-3 mb-3">
+                <h3>{{ $t('hosts.setupTitle') }}</h3>
+                <p role="status">{{ $t('hosts.setupState.' + setup.state) }}</p>
+                <template v-if="setup.state !== 'unsupported' && setup.state !== 'installing'">
+                    <p>{{ $t('hosts.setupHelp') }}</p>
+                    <label for="host-setup-mode">{{ $t('hosts.setupMode') }}</label>
+                    <select id="host-setup-mode" v-model="setupOptions.mode" class="form-select mb-2">
+                        <option v-for="mode in ['monitor', 'manual', 'automatic']" :key="mode" :value="mode">{{ $t('hosts.setupMode.' + mode) }}</option>
+                    </select>
+                    <template v-if="setupOptions.mode !== 'monitor'">
+                        <p>{{ $t('hosts.setupPolicyHelp') }}</p>
+                        <label v-for="item in ['all', 'security', 'conservative', 'security-conservative']" :key="item" class="d-block"><input v-model="setupOptions.scopes" type="checkbox" :value="item"> {{ $t('hosts.scope.' + item) }}</label>
+                        <label for="host-setup-hours">{{ $t('hosts.setupHours') }}</label>
+                        <input id="host-setup-hours" v-model="setupHours" class="form-control mb-2" placeholder="2,3">
+                        <label for="host-setup-packages">{{ $t('hosts.setupPackages') }}</label>
+                        <input id="host-setup-packages" v-model="setupPackages" class="form-control mb-2">
+                        <label class="d-block"><input v-model="setupOptions.refreshMetadata" type="checkbox"> {{ $t('hosts.setupRefresh') }}</label>
+                    </template>
+                    <label class="d-block my-3"><input v-model="setupApproved" type="checkbox"> {{ $t('hosts.setupApproval') }}</label>
+                    <button class="btn btn-primary" :disabled="busy || !setupApproved" @click="installHostComponents">{{ $t(setup.state === 'ready' ? 'hosts.setupRepair' : 'hosts.setupInstall') }}</button>
+                </template>
+            </div>
             <p v-if="snapshot.report?.rolling || snapshot.report?.provider === 'pacman' || ['opensuse-tumbleweed', 'manjaro', 'endeavouros', 'garuda', 'arch'].includes(snapshot.report?.os)" class="alert alert-warning">{{ $t('hosts.rollingWarning') }}</p>
             <p class="alert alert-info">{{ $t('hosts.riskWarning') }}</p>
             <div class="alert" :class="snapshot.state === 'fresh' ? 'alert-info' : 'alert-warning'">{{ $t('hosts.state.' + snapshot.state) }}</div>
@@ -124,6 +146,13 @@
 export default {
     data() {
         return { snapshot: null,
+            setup: null,
+            setupApproved: false,
+            setupHours: "2,3",
+            setupPackages: "",
+            setupOptions: { mode: "monitor",
+                scopes: ["security", "conservative", "security-conservative"],
+                refreshMetadata: false },
             connectionNonce: null,
             historyChanges: null,
             packageRows: [],
@@ -181,6 +210,25 @@ export default {
         this.packageGeneration++;
     },
     methods: {
+        async installHostComponents() {
+            this.busy = true;
+            this.error = "";
+            const options = { ...this.setupOptions,
+                hours: this.setupHours.split(",").map(v => Number(v.trim())),
+                packages: this.setupPackages.split(/[\s,]+/).filter(Boolean) };
+            const response = await this.request("hosts:setup", { options,
+                approved: this.setupApproved,
+                connectionNonce: this.connectionNonce });
+            this.setupApproved = false;
+            this.busy = false;
+            if (response) {
+                this.setup = response;
+                this.settings.enabled = true;
+                await this.save();
+            } else {
+                this.error = "hosts.setupFailed";
+            }
+        },
         async showChanges(timestamp) {
             this.historyChanges = await this.request("hosts:history", { timestamp: Number(timestamp) });
         },
@@ -200,6 +248,10 @@ export default {
                 return;
             }
             const generation = this.generation;
+            const setup = await this.request("hosts:setup-status", {});
+            if (setup && generation === this.generation) {
+                this.setup = setup;
+            }
             const snapshot = await this.request("hosts:get", {});
             if (generation !== this.generation || !snapshot) {
                 return;
@@ -257,7 +309,7 @@ export default {
                     clearTimeout(timer);
                     resolve(response?.ok ? response.data : null);
                 };
-                if (event === "hosts:operation") {
+                if (event === "hosts:operation" || event === "hosts:setup") {
                     const socket = this.$root.getSocket();
                     if (!socket.connected) {
                         clearTimeout(timer);
@@ -283,6 +335,13 @@ export default {
                 return;
             }
             this.connectionNonce = caps.connectionNonce;
+            this.setup = await this.request("hosts:setup-status", {});
+            if (this.setup?.options) {
+                this.setupOptions = { ...this.setup.options,
+                    scopes: [ ...this.setup.options.scopes ] };
+                this.setupHours = this.setup.options.hours.join(",");
+                this.setupPackages = this.setup.options.packages.join(",");
+            }
             const snapshot = await this.request("hosts:get", {});
             if (generation !== this.generation) {
                 return;

@@ -1,5 +1,5 @@
 import { randomBytes } from "node:crypto";
-import { hostOperationStatus, queueHostOperation } from "../hosts/operations";
+import { currentHostOperations, submitHostOperation, startHostSetup, hostSetupStatus } from "../hosts/setup";
 import type { AgentSocket } from "../../common/agent-socket";
 import { checkLogin, type DockgeSocket } from "../util-server";
 import { loadUserAccess } from "../user-access";
@@ -8,7 +8,7 @@ import { AuditLogger } from "../audit-log";
 
 export function registerHosts(socket: DockgeSocket, agent: AgentSocket) {
     const connectionNonce = randomBytes(16).toString("hex");
-    for (const event of [ "hosts:capabilities", "hosts:get", "hosts:settings", "hosts:operation", "hosts:packages", "hosts:history" ]) {
+    for (const event of [ "hosts:capabilities", "hosts:get", "hosts:settings", "hosts:operation", "hosts:packages", "hosts:history", "hosts:setup", "hosts:setup-status" ]) {
         agent.on(event, async (request, callback) => {
             if (typeof callback !== "function") {
                 return;
@@ -23,6 +23,26 @@ export function registerHosts(socket: DockgeSocket, agent: AgentSocket) {
                         data: { protocol: 1,
                             connectionNonce,
                             modes: [ "disabled", "monitor" ] } });
+                    return;
+                }
+                if (event === "hosts:setup-status") {
+                    callback({ ok: true,
+                        data: await hostSetupStatus() });
+                    return;
+                }
+                if (event === "hosts:setup") {
+                    const setup = request as { connectionNonce?: string;
+                        approved?: boolean;
+                        options?: unknown };
+                    if (setup?.connectionNonce !== connectionNonce || setup?.approved !== true) {
+                        throw new Error("hosts.expired");
+                    }
+                    const data = await startHostSetup(setup.options);
+                    await AuditLogger.getInstance().logFromSocket(socket, { action: "hosts.setup",
+                        category: "host",
+                        status: "success" });
+                    callback({ ok: true,
+                        data });
                     return;
                 }
                 if (event === "hosts:history") {
@@ -43,14 +63,14 @@ export function registerHosts(socket: DockgeSocket, agent: AgentSocket) {
                     const { connectionNonce: _nonce, ...operation } = payload;
                     const cancelling = operation.action === "schedule" && (operation.schedule as { enabled?: boolean })?.enabled === false;
                     const hostId = await HostManager.instance.operationAuthority(cancelling);
-                    const capability = await hostOperationStatus(hostId);
+                    const capability = await currentHostOperations(hostId);
                     if ((!cancelling && !capability.manual) || (operation.action === "schedule" && (operation.schedule as { enabled?: boolean })?.enabled && !capability.automatic)) {
                         throw new Error("hosts.operationsUnavailable");
                     }
                     await AuditLogger.getInstance().logFromSocket(socket, { action: "hosts.operation.request",
                         category: "host",
                         status: "success" });
-                    const data = await queueHostOperation(operation, hostId);
+                    const data = await submitHostOperation(operation, hostId);
                     callback({ ok: true,
                         data });
                     return;

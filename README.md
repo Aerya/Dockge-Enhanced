@@ -64,6 +64,8 @@ The most important recent changes are grouped here so you can quickly see what h
 
 ### 🆕 November 2026
 
+**Host component installation :** Install host components from Dockge: explicit status, installation/repair and permission choices in the UI, with the first inventory started immediately. No user commands or Compose changes required. [→](docs/host-management.md).
+
 **Self-update protected from ImageWatcher :** ImageWatcher keeps monitoring Dockge-Enhanced but excludes its image from automatic and manual recreation, including network namespace dependents. Use the dedicated self-update mechanism with its recovery sidecar. Existing pending image updates are cleared for this image; the failed-digest retry safeguard remains in place. [→](docs/self-update-recovery.md).
 
 **Host Updates (Beta) :** Optional and disabled by default, under `/watcher/hosts`: Debian/Ubuntu and Arch/Garuda inventory and update detection, Debian/Ubuntu CVE analysis, manual or scheduled APT updates after local installation and authorization. Profiles: all permitted updates, security only, conservative, security and conservative. Configurable detection and operation notifications. Read-only reports and existing federation transport. Arch/Garuda remain monitoring-only; AUR, RPM/APK/Zypper, fleet operations and complete CVE coverage remain unavailable. [→](docs/host-management.md). The Host Updates tab is always visible; only monitoring is disabled by default. Updates groups Dockge-Enhanced, Docker Images and Host Updates (Beta) in three visible subtabs. Eight main tabs remain; existing URLs and remote-instance links are preserved.

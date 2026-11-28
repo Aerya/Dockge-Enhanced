@@ -336,6 +336,7 @@ jobs:
         run: |
           npx tsx --test backend/hosts/*.test.ts
           python3 -m unittest discover -s extra/host-management -p 'test_*.py'
+          bash extra/host-management/integration_setup.sh
           sudo --preserve-env=GITHUB_ACTIONS /usr/bin/python3 extra/host-management/integration_apt.py
           mkdir -p "$RUNNER_TEMP/host-reports"
           python3 extra/host-management/collector.py --output "$RUNNER_TEMP/host-reports"
@@ -409,6 +410,7 @@ jobs:
       - run: npx eslint 'backend/hosts/*.ts' backend/agent-socket-handlers/hosts-socket-handler.ts frontend/src/components/watcher/WatcherHostsTab.vue --quiet
       - run: npx tsx --test backend/hosts/*.test.ts frontend/src/release-news.test.ts
       - run: python3 -m unittest discover -s extra/host-management -p 'test_*.py'
+      - run: bash extra/host-management/integration_setup.sh
       - run: sudo --preserve-env=GITHUB_ACTIONS /usr/bin/python3 extra/host-management/integration_apt.py
       - run: |
           mkdir -p "$RUNNER_TEMP/host-reports"

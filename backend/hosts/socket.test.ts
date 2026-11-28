@@ -13,7 +13,7 @@ test("every host RPC refuses anonymous and restricted users before I/O", async t
     for (const userID of [ undefined, 42 ]) {
         const agent = new AgentSocket();
         registerHosts({ userID } as DockgeSocket, agent);
-        for (const event of [ "hosts:capabilities", "hosts:get", "hosts:settings", "hosts:operation", "hosts:packages", "hosts:history" ]) {
+        for (const event of [ "hosts:capabilities", "hosts:get", "hosts:settings", "hosts:operation", "hosts:packages", "hosts:history", "hosts:setup", "hosts:setup-status" ]) {
             const result = await new Promise<{ ok: boolean }>(resolve => agent.call(event, { command: "never-execute" }, resolve));
             assert.equal(result.ok, false);
             assert.ok(!JSON.stringify(result).includes("never-execute"));
@@ -108,4 +108,15 @@ test("a previous connection cannot replay a host operation", async t => {
     assert.equal(result.ok, false);
     assert.equal(result.msg, "hosts.unavailable");
     assert.equal(authority.mock.callCount(), 0);
+});
+
+test("host installation requires administrator confirmation and current connection nonce", async t => {
+    t.mock.method(R, "findOne", async () => ({ role: "admin" }));
+    const agent = new AgentSocket();
+    registerHosts({ userID: 42 } as DockgeSocket, agent);
+    for (const request of [{ approved: true,
+        connectionNonce: "old" }, { approved: false }, {}]) {
+        const result = await new Promise<{ ok: boolean }>(resolve => agent.call("hosts:setup", request, resolve));
+        assert.equal(result.ok, false);
+    }
 });

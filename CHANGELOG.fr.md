@@ -1,5 +1,7 @@
 # Changelog Dockge Enhanced
 
+> **Installation des composants hôtes** — Installation des composants hôtes depuis Dockge : état explicite, installation/réparation et choix des permissions dans l’interface, premier inventaire lancé immédiatement. Aucune commande ni modification Compose demandée à l’utilisateur.
+
 
 > **Évolution préparée, pas encore publiée — Mises à jour des hôtes (Bêta)** — Optionnel et désactivé par défaut, dans `/watcher/hosts` : inventaire et détection des mises à jour Debian/Ubuntu et Arch/Garuda, analyse CVE Debian/Ubuntu, mises à jour APT manuelles ou programmées après installation et autorisation locales. Profils : toutes les mises à jour autorisées, sécurité uniquement, prudent, sécurité et prudent. Notifications configurables pour les détections et les opérations. Rapports en lecture seule, transport par la fédération existante. Arch/Garuda restent en surveillance seule ; AUR, RPM/APK/Zypper, opérations de parc et couverture CVE complète restent indisponibles. L’onglet Mises à jour des hôtes reste toujours visible ; seule la surveillance est désactivée par défaut. Mises à jour regroupe Dockge-Enhanced, Images Docker et Mises à jour des hôtes (Bêta) dans trois sous-onglets visibles. Huit onglets principaux sont conservés ; les URL existantes et les liens vers les instances distantes restent valides.
 

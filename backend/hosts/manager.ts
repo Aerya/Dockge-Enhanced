@@ -1,7 +1,8 @@
+import { currentHostOperations, managedHostData, hostSetupStatus } from "./setup";
 import { packageChanges } from "./history";
 import { AuditLogger } from "../audit-log";
 import { DEFAULT_HOST_EVENTS, HOST_EVENTS, notifyDetection, operationNotification, sendHostNotification, type HostNotificationEvents } from "./notifications";
-import { EMPTY_OPERATIONS, hostOperationStatus, type HostOperationEvent } from "./operations";
+import { EMPTY_OPERATIONS, type HostOperationEvent } from "./operations";
 import { scanHost, type HostSecurity } from "./security";
 import { hubOnly } from "../hub-mode";
 import { R } from "redbean-node";
@@ -62,7 +63,7 @@ export class HostManager {
             return;
         }
         this.timer = setInterval(() => {
-            void this.refresh().then(() => this.pollOperations()).catch(() => {});
+            void hostSetupStatus().then(() => this.refresh()).then(() => this.pollOperations()).catch(() => {});
         }, 15000);
         this.timer.unref();
     }
@@ -75,7 +76,7 @@ export class HostManager {
     async save(value: unknown) {
         const config = hostSettings(value);
         if (!config.enabled && this.report) {
-            const operations = await hostOperationStatus(this.report.hostId);
+            const operations = await currentHostOperations(this.report.hostId);
             if (operations.schedule?.enabled || operations.result?.state === "running") {
                 throw new Error("hosts.scheduleActive");
             }
@@ -109,7 +110,7 @@ export class HostManager {
         }
         this.lastRead = Date.now();
         try {
-            const report = await readReport(process.env.DOCKGE_HOST_REPORT_DIR || "/host-reports");
+            const report = (await managedHostData())?.report ?? await readReport(process.env.DOCKGE_HOST_REPORT_DIR || "/host-reports");
             const fingerprint = inventoryHash(report);
             const timestamp = Date.parse(report.collectedAt);
             const previous = await R.getRow("SELECT collected_at FROM host_history ORDER BY collected_at DESC LIMIT 1");
@@ -174,7 +175,7 @@ export class HostManager {
         if (!settings.enabled || !this.report) {
             return;
         }
-        const operations = await hostOperationStatus(this.report.hostId).catch(() => ({ ...EMPTY_OPERATIONS }));
+        const operations = await currentHostOperations(this.report.hostId).catch(() => ({ ...EMPTY_OPERATIONS }));
         for (const event of operations.events) {
             const key = `${event.hostId}:${event.id}:${event.state}`;
             await R.exec("INSERT OR IGNORE INTO host_operations (event_key, at, event, notified, audited) VALUES (?, ?, ?, 0, 0)", [ key, Math.floor(event.at * 1000), JSON.stringify(event) ]);
@@ -203,7 +204,7 @@ export class HostManager {
         const settings = await this.settings();
         const report = settings.enabled ? this.report : null;
         await this.pollOperations();
-        const operations = settings.enabled ? await hostOperationStatus(report?.hostId).catch(() => ({ ...EMPTY_OPERATIONS })) : { ...EMPTY_OPERATIONS };
+        const operations = settings.enabled ? await currentHostOperations(report?.hostId).catch(() => ({ ...EMPTY_OPERATIONS })) : { ...EMPTY_OPERATIONS };
         return { protocol: 1,
             settings,
             report: report ? { ...report,
