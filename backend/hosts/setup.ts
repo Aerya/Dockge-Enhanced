@@ -61,7 +61,7 @@ async function context(): Promise<Context> {
         bridge: `dockge-host-bridge-${owner}` };
 }
 export function bridgeArgs(c: Context): string[] {
-    return ["create", "--name", c.bridge, "--label", `${OWNER}=${c.owner}`, "--label", "net.dockge-enhanced.host-component=bridge", "--pull=never",
+    return ["create", "--name", c.bridge, "--label", `${OWNER}=${c.owner}`, "--label", "net.dockge-enhanced.host-component=bridge", "--pull=never", "--no-healthcheck",
         "--restart", "unless-stopped", "--network", "none", "--cap-drop", "ALL", "--security-opt", "no-new-privileges", "--read-only", "--user", "0:0",
         "--pids-limit", "64", "--memory", "128m", "--tmpfs", "/tmp:rw,noexec,nosuid,size=32m",
         "--mount", "type=bind,source=/var/lib/dockge-host-reports,target=/host-reports,readonly",
@@ -104,7 +104,7 @@ export async function startHostSetup(raw: unknown) {
         }
         // Only this explicitly approved one-shot process gets host namespaces. It has no Docker socket.
         const id = (await hostDocker("create", "--name", SETUP, "--label", `${OWNER}=${c.owner}`, "--label", "net.dockge-enhanced.host-component=setup",
-            "--pull=never", "--privileged", "--pid=host", "--network", "none", "--restart", "no", "--entrypoint", "node", c.image,
+            "--pull=never", "--no-healthcheck", "--privileged", "--pid=host", "--network", "none", "--restart", "no", "--entrypoint", "node", c.image,
             "/app/extra/host-management/bootstrap.cjs", Buffer.from(JSON.stringify(options)).toString("base64"))).trim();
         if (!/^[a-f0-9]{64}$/.test(id)) {
             throw new Error("hosts.setupFailed");

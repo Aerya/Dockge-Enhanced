@@ -18,6 +18,7 @@ test("permanent transport has no host root, host namespaces, network or Docker s
         owner: "fixture",
         bridge: "dockge-host-bridge-fixture" });
     assert.ok(args.includes("--read-only"));
+    assert.ok(args.includes("--no-healthcheck"));
     assert.ok(args.includes("no-new-privileges"));
     assert.equal(args[args.indexOf("--network") + 1], "none");
     assert.equal(args[args.indexOf("--cap-drop") + 1], "ALL");
