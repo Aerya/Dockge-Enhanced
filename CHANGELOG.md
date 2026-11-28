@@ -1,5 +1,7 @@
 # Dockge Enhanced Changelog
 
+> **Host component installation** — Install host components from Dockge: explicit status, installation/repair and permission choices in the UI, with the first inventory started immediately. No user commands or Compose changes required.
+
 
 > **Prepared change, not yet published — Host Updates (Beta)** — Optional and disabled by default, under `/watcher/hosts`: Debian/Ubuntu and Arch/Garuda inventory and update detection, Debian/Ubuntu CVE analysis, manual or scheduled APT updates after local installation and authorization. Profiles: all permitted updates, security only, conservative, security and conservative. Configurable detection and operation notifications. Read-only reports and existing federation transport. Arch/Garuda remain monitoring-only; AUR, RPM/APK/Zypper, fleet operations and complete CVE coverage remain unavailable. The Host Updates tab is always visible; only monitoring is disabled by default. Updates groups Dockge-Enhanced, Docker Images and Host Updates (Beta) in three visible subtabs. Eight main tabs remain; existing URLs and remote-instance links are preserved.
 

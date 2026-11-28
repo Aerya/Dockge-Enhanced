@@ -8,26 +8,17 @@ The Host Updates tab is always visible; only monitoring is disabled by default.
 
 Updates groups Dockge-Enhanced, Docker Images and Host Updates (Beta) in three visible subtabs. Eight main tabs remain; existing URLs and remote-instance links are preserved.
 
-## Installation and security
+## Host component installation
 
-Run these commands locally on the intended Linux host after reviewing the shipped scripts. Never install the collector inside Enhanced. Python 3 and systemd are required. No SSH connection is required or implemented. Do not run these instructions on production merely to test the feature. Installation and upgrades are local administrator actions; the hub cannot replace these files.
+Install host components from Dockge: explicit status, installation/repair and permission choices in the UI, with the first inventory started immediately. No user commands or Compose changes required.
 
-```sh
-sudo useradd --system --no-create-home --shell /usr/sbin/nologin dockge-host
-sudo install -d -m 0755 /usr/local/lib/dockge-host
-sudo install -m 0644 extra/host-management/collector.py /usr/local/lib/dockge-host/
-sudo install -m 0644 extra/host-management/dockge-host-collector.service extra/host-management/dockge-host-collector.timer /etc/systemd/system/
-sudo systemctl daemon-reload
-sudo systemctl enable --now dockge-host-collector.timer
-sudo systemctl start dockge-host-collector.service
-```
+Dockge installs the required components and starts the first inventory. No commands, Compose edits or SSH connection are required. Monitoring: Debian/Ubuntu and Arch/Garuda; update execution: fixed-release Debian/Ubuntu.
 
-```yaml
-services:
-  dockge:
-    volumes:
-      - /var/lib/dockge-host-reports:/host-reports:ro
-```
+Allowed UTC hours, comma-separated. Packages allowed for the conservative profile, comma-separated (empty: none). These choices replace the host executor permissions. Existing exclusions are preserved. Schedulable mode does not enable a schedule; configure it afterwards.
+
+An administrator confirms the selected mode in the UI. A temporary container based on the exact instance image enters the host system namespaces to install bundled files, missing Python dependencies and systemd services. No browser-supplied command, path or image is accepted. The permanent transport has no system privileges, network, Docker socket or host root mount; reports are read-only and only the request directory is writable. Dockge does not need recreation or stack changes. Existing manual installations remain compatible. Rootless Docker, user remapping, Docker Desktop and hosts without systemd are unsupported by this installer. A hub must select a compatible agent. Interrupted setup can be retried; never kill an actively writing package manager.
+
+Requests expire after two minutes, simulations after five; plans are recalculated and approval consumed before execution. Update operations expose no shell, new dependencies, removals or automatic reboot. APT locks remain enabled and configurations are preserved; inspect `.dpkg-dist` afterwards. Interrupted transactions require local `dpkg --audit` and distribution recovery; there is no universal rollback. Disabling schedules and the timer prevents new work without interrupting current writes. A compromised Enhanced administrator can authorize the offered installations; host root compromise is outside this trust boundary.
 
 ## Limitations and recovery
 
@@ -37,72 +28,15 @@ CVE analysis is optional and runs at most hourly when inventory changes, otherwi
 
 [Trivy SBOM](https://trivy.dev/docs/latest/target/sbom/) · [Trivy DB sources and licenses](https://github.com/aquasecurity/trivy-db/blob/main/LICENSE)
 
-```sh
-sudo systemctl disable --now dockge-host-collector.timer
-sudo rm /etc/systemd/system/dockge-host-collector.timer /etc/systemd/system/dockge-host-collector.service
-sudo systemctl daemon-reload
-# Reports and history are retained.
-```
-
 [PatchMon](https://github.com/PatchMon/PatchMon) — System inventory, monitoring and update orchestration inspiration.
 
 [PatchBase](https://github.com/patchbase/patchbase) — Package inventory, security advisory correlation and vulnerability detection inspiration.
-
-## Local APT executor
-
-Manual is locally enabled only: install the executor separately, choose UTC hours and exclusions in the root-owned policy. Default policy refuses installation. Requests expire after two minutes; simulations expire after five minutes and are recalculated before installation. Approval is consumed before execution. No shell command, reboot, dependency addition or removal is exposed. Native APT locks remain enabled. Existing configuration files are kept; inspect .dpkg-dist files locally afterwards. Do not stop an executing package manager; disabling the timer prevents new requests. An interrupted or failed transaction requires local diagnosis with dpkg --audit and the distribution recovery procedure. No universal rollback. A compromised authorized admin/hub can request locally permitted updates; a compromised host/root is outside this trust boundary.
-
-Use a directory owned by the Enhanced process UID for requests (replace 1000 appropriately). Only this directory is writable; operation reports remain read-only. Never mount /etc/dockge-host or the executor state in Enhanced. Shared transport uses existing direct/reverse agents and checks administrator access on both ends. Hub-only can read inventory but does not run Trivy. Agent-only keeps the same RPCs. Notifications and per-host scheduling are detailed below. Fleet operations and individual package selection remain unavailable.
-
-```sh
-sudo install -m 0644 extra/host-management/executor.py extra/host-management/apt_provider.py /usr/local/lib/dockge-host/
-sudo install -d -m 0700 /etc/dockge-host /var/lib/dockge-host-executor
-sudo install -d -m 0755 /var/lib/dockge-host-operations
-sudo install -d -m 0700 -o 1000 /var/lib/dockge-host-requests
-sudo install -m 0600 extra/host-management/policy.example.json /etc/dockge-host/policy.json
-sudo install -m 0644 extra/host-management/dockge-host-executor.service extra/host-management/dockge-host-executor.timer /etc/systemd/system/
-sudo systemctl daemon-reload
-sudo systemctl enable --now dockge-host-executor.timer
-```
-
-```json
-{
-  "mode": "manual",
-  "allowInstall": true,
-  "allowAutomatic": false,
-  "allowedScopes": ["security", "conservative", "security-conservative"],
-  "conservativePackages": [],
-  "refreshMetadata": false,
-  "utcHours": [2, 3],
-  "exclusions": ["example-package"]
-}
-```
-
-```yaml
-services:
-  dockge:
-    environment:
-      DOCKGE_HOST_REQUEST_DIR: /host-requests
-      DOCKGE_HOST_OPERATION_REPORT_DIR: /host-operations
-    volumes:
-      - /var/lib/dockge-host-requests:/host-requests
-      - /var/lib/dockge-host-operations:/host-operations:ro
-```
-
-```sh
-sudo systemctl disable --now dockge-host-executor.timer
-# Wait for any running apt/dpkg operation to complete before removing the service.
-sudo rm /etc/systemd/system/dockge-host-executor.timer /etc/systemd/system/dockge-host-executor.service
-sudo systemctl daemon-reload
-```
 
 ## Profiles, schedules and notifications
 
 No update is guaranteed free of breaking changes. **Security only** selects versions from trusted official Debian/Ubuntu security repositories using native APT comparisons. It does not depend on Trivy CVE detection and excludes ESM and third-party repositories. **Conservative** requires a local `conservativePackages` allowlist and excludes essential/important packages and major critical families (kernel, boot, networking, drivers, Docker, databases). An empty list updates nothing. **Security and conservative** combines both restrictions. Dependencies outside the selection, new packages, removals and held packages are rejected; an additional dependency can block the entire operation. The `all` profile also requires explicit `allowedScopes` authorization and is not conservative.
 
 Arch/Garuda and rolling-release distributions may encounter dependency, driver or application breakage requiring manual intervention. Read distribution announcements, back up and prefer a full upgrade using the distribution procedure (for example `garuda-update`). Partial, security-only and automatic rolling-release upgrades are not offered in this beta.
-
-Also install `apt_provider.py` and the system `python3-apt` package for targeted profiles. The executor uses `/usr/bin/python3`. `mode: manual` enables simulation followed by manual approval. Scheduling on fixed-release Debian/Ubuntu requires the local administrator to set `mode: automatic`, `allowInstall: true`, `allowAutomatic: true`, permitted `allowedScopes` and `utcHours`. Policy remains local and inaccessible to the hub. `refreshMetadata: true` explicitly permits APT metadata refresh before simulations and scheduled jobs; failure prevents installation. Otherwise existing indexes are used.
 
 In Configuration, choose weekdays, UTC time and profile, then save. The local executor recalculates each plan and rechecks policy. Each slot runs once; a delay of five minutes skips it, without catch-up or automatic retries after failure. Scheduling continues while the hub is disconnected. Disable and save the schedule before disabling monitoring. Revoke local policy or disable the timer to prevent new jobs; never interrupt active APT/dpkg writes. No automatic reboot, distribution release upgrade or universal rollback.
 

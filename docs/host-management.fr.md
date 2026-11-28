@@ -8,26 +8,17 @@ L’onglet Mises à jour des hôtes reste toujours visible ; seule la surveillan
 
 Mises à jour regroupe Dockge-Enhanced, Images Docker et Mises à jour des hôtes (Bêta) dans trois sous-onglets visibles. Huit onglets principaux sont conservés ; les URL existantes et les liens vers les instances distantes restent valides.
 
-## Installation et sécurité
+## Installation des composants hôtes
 
-Exécuter ces commandes localement sur l’hôte Linux choisi après lecture des scripts fournis. Ne jamais installer le collecteur dans Enhanced. Python 3 et systemd sont nécessaires. SSH n’est ni requis ni implémenté. Ne pas exécuter ces instructions en production pour tester la fonctionnalité. Installation et mises à niveau relèvent de l’administrateur local ; le hub ne peut pas remplacer ces fichiers.
+Installation des composants hôtes depuis Dockge : état explicite, installation/réparation et choix des permissions dans l’interface, premier inventaire lancé immédiatement. Aucune commande ni modification Compose demandée à l’utilisateur.
 
-```sh
-sudo useradd --system --no-create-home --shell /usr/sbin/nologin dockge-host
-sudo install -d -m 0755 /usr/local/lib/dockge-host
-sudo install -m 0644 extra/host-management/collector.py /usr/local/lib/dockge-host/
-sudo install -m 0644 extra/host-management/dockge-host-collector.service extra/host-management/dockge-host-collector.timer /etc/systemd/system/
-sudo systemctl daemon-reload
-sudo systemctl enable --now dockge-host-collector.timer
-sudo systemctl start dockge-host-collector.service
-```
+Dockge installe les composants nécessaires et lance le premier inventaire. Aucune commande, modification Compose ou reconnexion SSH n’est demandée. Surveillance : Debian/Ubuntu et Arch/Garuda ; installation des mises à jour : Debian/Ubuntu à version fixe.
 
-```yaml
-services:
-  dockge:
-    volumes:
-      - /var/lib/dockge-host-reports:/host-reports:ro
-```
+Heures UTC autorisées, séparées par des virgules. Paquets autorisés pour le profil prudent, séparés par des virgules (vide : aucun). Ces choix remplacent les autorisations de l’exécuteur sur l’hôte. Les exclusions existantes sont conservées. Le mode programmable n’active aucun planning : configurez-le ensuite.
+
+L’administrateur confirme le mode choisi dans l’interface. Un conteneur temporaire, basé sur l’image exacte de l’instance, entre dans les espaces système de l’hôte pour installer les fichiers fournis, leurs dépendances Python si absentes et les services systemd. Il n’accepte aucune commande, chemin ou image fourni par le navigateur. Le composant permanent de transport n’a ni privilèges système, ni réseau, ni socket Docker, ni montage de la racine hôte ; les rapports y sont en lecture seule. Seul le dossier de requêtes est accessible en écriture. Aucune recréation de Dockge ni modification de sa stack n’est nécessaire. Les installations manuelles existantes restent compatibles. Docker rootless, remappage utilisateur, Docker Desktop et hôtes sans systemd ne sont pas pris en charge par cet installateur. Une instance hub doit sélectionner un agent compatible. Une installation interrompue peut être relancée ; ne jamais tuer un gestionnaire de paquets en cours d’écriture.
+
+Les requêtes expirent après deux minutes, les simulations après cinq minutes ; le plan est recalculé avant installation et l’approbation consommée avant exécution. Aucun shell, ajout de dépendance, suppression ou redémarrage automatique n’est exposé par les opérations de mise à jour. Les verrous APT restent actifs et les configurations sont conservées : vérifier ensuite les fichiers `.dpkg-dist`. Après une transaction interrompue, diagnostic local avec `dpkg --audit` et procédure de récupération de la distribution ; aucun rollback universel. Désactiver le planning et la minuterie empêche de nouveaux travaux, sans interrompre les écritures en cours. Un administrateur Enhanced compromis peut autoriser les installations offertes ; une compromission root de l’hôte reste hors de cette frontière de confiance.
 
 ## Limitations et récupération
 
@@ -37,72 +28,15 @@ L’analyse CVE est optionnelle, au plus horaire si l’inventaire change, sinon
 
 [Trivy SBOM](https://trivy.dev/docs/latest/target/sbom/) · [Trivy DB sources and licenses](https://github.com/aquasecurity/trivy-db/blob/main/LICENSE)
 
-```sh
-sudo systemctl disable --now dockge-host-collector.timer
-sudo rm /etc/systemd/system/dockge-host-collector.timer /etc/systemd/system/dockge-host-collector.service
-sudo systemctl daemon-reload
-# Reports and history are retained.
-```
-
 [PatchMon](https://github.com/PatchMon/PatchMon) — Inspiration pour l’inventaire des systèmes, la surveillance et l’orchestration des mises à jour.
 
 [PatchBase](https://github.com/patchbase/patchbase) — Inspiration pour l’inventaire des paquets, la corrélation avec les avis de sécurité et la détection des vulnérabilités.
-
-## Exécuteur APT local
-
-Manual doit être activé localement : installer l’exécuteur séparément, choisir les heures UTC et exclusions dans la politique appartenant à root. La politique par défaut refuse toute installation. Requêtes valables deux minutes ; simulations valables cinq minutes, recalculées avant installation. L’approbation est consommée avant exécution. Aucun shell, redémarrage, ajout de dépendance ou suppression exposé. Les verrous APT natifs restent actifs. Les configurations existantes sont conservées ; vérifier ensuite localement les fichiers .dpkg-dist. Ne pas arrêter un gestionnaire en cours d’écriture ; désactiver le timer empêche les nouvelles requêtes. Une transaction interrompue ou échouée nécessite un diagnostic local avec dpkg --audit et la procédure de récupération de la distribution. Aucun rollback universel. Un administrateur/hub compromis peut demander les mises à jour permises localement ; une compromission root de l’hôte est hors de cette frontière de confiance.
-
-Utiliser un répertoire de requêtes appartenant à l’UID du processus Enhanced (adapter 1000). Lui seul est accessible en écriture ; les rapports d’opération restent en lecture seule. Ne jamais monter /etc/dockge-host ou l’état de l’exécuteur dans Enhanced. Le transport utilise les agents directs/inversés existants et vérifie les droits administrateur aux deux extrémités. Hub-only peut lire l’inventaire mais ne lance pas Trivy. Agent-only conserve les mêmes RPC. Les notifications et la programmation par hôte sont détaillées ci-dessous. Les opérations de parc et la sélection individuelle de paquets restent indisponibles.
-
-```sh
-sudo install -m 0644 extra/host-management/executor.py extra/host-management/apt_provider.py /usr/local/lib/dockge-host/
-sudo install -d -m 0700 /etc/dockge-host /var/lib/dockge-host-executor
-sudo install -d -m 0755 /var/lib/dockge-host-operations
-sudo install -d -m 0700 -o 1000 /var/lib/dockge-host-requests
-sudo install -m 0600 extra/host-management/policy.example.json /etc/dockge-host/policy.json
-sudo install -m 0644 extra/host-management/dockge-host-executor.service extra/host-management/dockge-host-executor.timer /etc/systemd/system/
-sudo systemctl daemon-reload
-sudo systemctl enable --now dockge-host-executor.timer
-```
-
-```json
-{
-  "mode": "manual",
-  "allowInstall": true,
-  "allowAutomatic": false,
-  "allowedScopes": ["security", "conservative", "security-conservative"],
-  "conservativePackages": [],
-  "refreshMetadata": false,
-  "utcHours": [2, 3],
-  "exclusions": ["example-package"]
-}
-```
-
-```yaml
-services:
-  dockge:
-    environment:
-      DOCKGE_HOST_REQUEST_DIR: /host-requests
-      DOCKGE_HOST_OPERATION_REPORT_DIR: /host-operations
-    volumes:
-      - /var/lib/dockge-host-requests:/host-requests
-      - /var/lib/dockge-host-operations:/host-operations:ro
-```
-
-```sh
-sudo systemctl disable --now dockge-host-executor.timer
-# Wait for any running apt/dpkg operation to complete before removing the service.
-sudo rm /etc/systemd/system/dockge-host-executor.timer /etc/systemd/system/dockge-host-executor.service
-sudo systemctl daemon-reload
-```
 
 ## Profils, programmation et notifications
 
 Aucune mise à jour n’est garantie sans risque de rupture. **Sécurité uniquement** sélectionne les versions des dépôts de sécurité officiels et approuvés Debian/Ubuntu avec les comparaisons natives APT. Cela ne dépend pas de la détection CVE Trivy et n’inclut pas ESM ni les dépôts tiers. **Prudent** exige une liste locale `conservativePackages`, refuse les paquets essentiels/importants et les principales familles critiques (noyau, démarrage, réseau, pilotes, Docker, bases de données). Une liste vide ne met rien à jour. **Sécurité et prudent** applique les deux restrictions. Les dépendances hors sélection, nouveaux paquets, suppressions et paquets gelés sont refusés. Une dépendance supplémentaire peut donc bloquer toute l’opération. Le profil `all` doit aussi être autorisé explicitement dans `allowedScopes` ; il n’est pas prudent.
 
 Arch/Garuda et les distributions rolling-release peuvent rencontrer des ruptures de dépendances, pilotes ou applications et nécessiter une intervention manuelle. Lire les annonces de la distribution, sauvegarder et privilégier une mise à jour complète selon sa procédure (par exemple `garuda-update`). Les mises à jour partielles, de sécurité uniquement et automatiques des rolling-release ne sont pas proposées dans cette bêta.
-
-Installer aussi `apt_provider.py` et le paquet système `python3-apt` pour les profils ciblés. L’exécuteur utilise `/usr/bin/python3`. `mode: manual` autorise simulation puis approbation manuelle. Pour programmer sur Debian/Ubuntu à version fixe, l’administrateur local doit choisir `mode: automatic`, `allowInstall: true`, `allowAutomatic: true`, les `allowedScopes` et les heures `utcHours`. La politique reste locale et inaccessible au hub. `refreshMetadata: true` autorise explicitement le rafraîchissement APT avant les simulations et travaux programmés ; son échec interdit l’installation. Sinon seuls les index déjà présents sont utilisés.
 
 Dans Configuration, choisir les jours et l’heure UTC ainsi que le profil, puis enregistrer. L’exécuteur local recalcule le plan à chaque exécution et vérifie sa politique. Un créneau ne s’exécute qu’une fois ; après cinq minutes de retard, il est ignoré, sans rattrapage ni nouvelle tentative automatique après échec. Le planning continue même si le hub est déconnecté. Désactiver et enregistrer le planning avant de désactiver la surveillance. Révoquer la politique locale ou désactiver le timer empêche les nouveaux travaux ; ne jamais interrompre APT/dpkg en cours. Aucun redémarrage automatique, changement de version de distribution ni rollback universel.
 

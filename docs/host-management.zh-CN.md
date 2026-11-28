@@ -8,26 +8,17 @@
 
 更新分为 Dockge-Enhanced、Docker 镜像和主机更新（测试版）三个可见子标签页。保留八个主标签页，现有 URL 和远程实例链接保持有效。
 
-## 安装与安全
+## 安装主机组件
 
-检查随附脚本后，在目标 Linux 主机本地执行命令。不要在 Enhanced 容器中安装采集器。需要 Python 3 和 systemd。不需要也未实现 SSH。请勿为测试功能而在生产环境安装。安装和升级由本地管理员执行；中心不能替换这些文件。
+直接在 Dockge 中安装主机组件：明确状态、安装/修复及权限选择，立即启动首次清单采集。用户无需执行命令或修改 Compose。
 
-```sh
-sudo useradd --system --no-create-home --shell /usr/sbin/nologin dockge-host
-sudo install -d -m 0755 /usr/local/lib/dockge-host
-sudo install -m 0644 extra/host-management/collector.py /usr/local/lib/dockge-host/
-sudo install -m 0644 extra/host-management/dockge-host-collector.service extra/host-management/dockge-host-collector.timer /etc/systemd/system/
-sudo systemctl daemon-reload
-sudo systemctl enable --now dockge-host-collector.timer
-sudo systemctl start dockge-host-collector.service
-```
+Dockge 安装所需组件并立即生成首份清单，无需命令、修改 Compose 或 SSH 连接。监控支持 Debian/Ubuntu 和 Arch/Garuda；执行更新仅支持固定版本 Debian/Ubuntu。
 
-```yaml
-services:
-  dockge:
-    volumes:
-      - /var/lib/dockge-host-reports:/host-reports:ro
-```
+允许的 UTC 小时，以逗号分隔. 审慎策略允许的软件包，以逗号分隔（留空：无）. 这些选项将替换主机执行器权限，并保留现有排除项。可计划模式不会自动启用计划，请随后配置。
+
+管理员在界面中确认模式。临时容器使用与实例完全相同的镜像，进入主机系统命名空间，安装内置文件、缺少的 Python 依赖及 systemd 服务。不接受浏览器提供的命令、路径或镜像。长期运行的传输组件没有系统特权、网络、Docker 套接字或主机根目录挂载；报告只读，仅请求目录可写。无需重建 Dockge 或修改其 stack。现有手动安装保持兼容。此安装器不支持 rootless Docker、用户重映射、Docker Desktop 或无 systemd 的主机。中枢必须选择兼容代理。安装中断后可以重试；切勿终止正在写入的软件包管理器。
+
+请求两分钟、模拟五分钟后过期；执行前重新计算计划并消耗批准。更新操作不提供 shell、新增依赖、删除或自动重启。保留 APT 锁和配置，之后检查 `.dpkg-dist`。中断事务需要本地 `dpkg --audit` 和发行版恢复流程，没有通用回滚。禁用计划和定时器可阻止新任务，不会中断当前写入。被攻陷的 Enhanced 管理员能够授权提供的安装功能；主机 root 被攻陷不在此信任边界内。
 
 ## 限制与恢复
 
@@ -37,72 +28,15 @@ CVE 分析可选，清单变更时最多每小时一次，否则每天一次。�
 
 [Trivy SBOM](https://trivy.dev/docs/latest/target/sbom/) · [Trivy DB sources and licenses](https://github.com/aquasecurity/trivy-db/blob/main/LICENSE)
 
-```sh
-sudo systemctl disable --now dockge-host-collector.timer
-sudo rm /etc/systemd/system/dockge-host-collector.timer /etc/systemd/system/dockge-host-collector.service
-sudo systemctl daemon-reload
-# Reports and history are retained.
-```
-
 [PatchMon](https://github.com/PatchMon/PatchMon) — 为系统清单、监控和更新编排提供功能灵感。
 
 [PatchBase](https://github.com/patchbase/patchbase) — 为软件包清单、安全公告关联和漏洞检测提供功能灵感。
-
-## 本地 APT 执行器
-
-Manual 必须本地授权：单独安装执行器，在 root 拥有的策略中配置 UTC 时段和排除包。默认拒绝安装。请求两分钟过期；模拟五分钟过期，安装前重新计算。批准在执行前消耗。不暴露 shell、重启、新依赖或删除。保留 APT 原生锁及已有配置；之后本地检查 .dpkg-dist 文件。不要停止正在写入的软件包管理器；禁用定时器可阻止新请求。失败后使用 dpkg --audit 和发行版恢复程序进行本地诊断。没有通用回滚。被攻陷的管理员或中心可请求本地允许的更新；主机 root 被攻陷不在此信任边界内。
-
-请求目录归 Enhanced 进程 UID 所有（调整 1000）。仅此目录可写，操作报告只读。不要挂载 /etc/dockge-host 或执行器状态。使用现有直连/反向代理并在两端检查管理员权限。Hub-only 可读取清单但不执行 Trivy，Agent-only 使用相同 RPC。通知和单主机计划见下文。不提供主机群操作或单包选择。
-
-```sh
-sudo install -m 0644 extra/host-management/executor.py extra/host-management/apt_provider.py /usr/local/lib/dockge-host/
-sudo install -d -m 0700 /etc/dockge-host /var/lib/dockge-host-executor
-sudo install -d -m 0755 /var/lib/dockge-host-operations
-sudo install -d -m 0700 -o 1000 /var/lib/dockge-host-requests
-sudo install -m 0600 extra/host-management/policy.example.json /etc/dockge-host/policy.json
-sudo install -m 0644 extra/host-management/dockge-host-executor.service extra/host-management/dockge-host-executor.timer /etc/systemd/system/
-sudo systemctl daemon-reload
-sudo systemctl enable --now dockge-host-executor.timer
-```
-
-```json
-{
-  "mode": "manual",
-  "allowInstall": true,
-  "allowAutomatic": false,
-  "allowedScopes": ["security", "conservative", "security-conservative"],
-  "conservativePackages": [],
-  "refreshMetadata": false,
-  "utcHours": [2, 3],
-  "exclusions": ["example-package"]
-}
-```
-
-```yaml
-services:
-  dockge:
-    environment:
-      DOCKGE_HOST_REQUEST_DIR: /host-requests
-      DOCKGE_HOST_OPERATION_REPORT_DIR: /host-operations
-    volumes:
-      - /var/lib/dockge-host-requests:/host-requests
-      - /var/lib/dockge-host-operations:/host-operations:ro
-```
-
-```sh
-sudo systemctl disable --now dockge-host-executor.timer
-# Wait for any running apt/dpkg operation to complete before removing the service.
-sudo rm /etc/systemd/system/dockge-host-executor.timer /etc/systemd/system/dockge-host-executor.service
-sudo systemctl daemon-reload
-```
 
 ## 策略、计划与通知
 
 任何更新都无法保证完全没有破坏性风险。**仅安全**使用 APT 原生版本比较，从受信任的 Debian/Ubuntu 官方安全仓库选择版本，不依赖 Trivy CVE 检测，不含 ESM 或第三方仓库。**审慎**要求本地 `conservativePackages` 允许列表，排除 essential/important 软件包和关键类别（内核、引导、网络、驱动、Docker、数据库）。空列表不会更新任何软件包。**安全且审慎**同时应用两种限制。拒绝选定范围外的依赖、新增软件包、删除和锁定软件包；额外依赖可能阻止整个操作。`all` 也必须在 `allowedScopes` 中明确授权，它不是审慎策略。
 
 Arch/Garuda 等滚动发行版可能发生依赖、驱动或应用损坏，需要手动处理。请阅读发行版公告、备份，并按发行版流程进行完整更新（例如 `garuda-update`）。此测试版不提供滚动发行版的部分更新、仅安全更新或自动更新。
-
-针对性策略还需安装 `apt_provider.py` 和系统软件包 `python3-apt`，执行器使用 `/usr/bin/python3`。`mode: manual` 支持模拟后手动批准。固定版本 Debian/Ubuntu 的计划任务需要本地设置 `mode: automatic`、`allowInstall: true`、`allowAutomatic: true`、`allowedScopes` 和 `utcHours`。中枢无法修改此本地策略。`refreshMetadata: true` 明确允许在模拟和计划任务前刷新 APT 索引；刷新失败则禁止安装，否则使用现有索引。
 
 在配置中选择星期、UTC 时间和策略并保存。每次执行时，本地执行器重新计算计划并检查策略。每个时段仅执行一次，延迟五分钟后跳过，不补执行，失败也不自动重试。中枢断开时计划仍会运行。关闭监控前先禁用并保存计划。撤销本地授权或禁用定时器会阻止新任务；切勿中断正在写入的 APT/dpkg。不自动重启、不升级发行版版本，也无通用回滚。
 
